@@ -5,8 +5,9 @@
 #include <stdexcept>
 #include <cstdlib>
 
-#include <map>
 #include <vector>
+#include <set>
+#include <map>
 #include <optional>
 #include <string.h>
 
@@ -29,7 +30,9 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
 
 struct QueueFamilyIndices {
     std::optional<uint32_t> graphicsFamily;
-    bool isComplete() { return graphicsFamily.has_value(); };
+    std::optional<uint32_t> presentFamily;
+
+    bool isComplete() { return graphicsFamily.has_value() && presentFamily.has_value(); };
 };
 
 class HelloTriangleApplication {
@@ -59,11 +62,14 @@ private:
 
     VkInstance instance;
 
+    VkSurfaceKHR surface;
+
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
 
     VkDevice device;
 
     VkQueue graphicsQueue;
+    VkQueue presentQueue;
 
     VkDebugUtilsMessengerEXT debugMessenger;
 
@@ -79,6 +85,7 @@ private:
     void initVulkan() {
         createInstance();
         setupDebugMessenger();
+        createSurface();
         pickPhysicalDevice();
         createLogicalDevice();
     }
@@ -98,10 +105,15 @@ private:
         return extensions;
     }
 
+    const std::vector<const char*> deviceExtensions = {
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME
+    };
+
     bool isDeviceSuitable(VkPhysicalDevice device) {
         QueueFamilyIndices indices = findQueueFamilies(device);
+        bool deviceExtension = checkDeviceExtensionSupport(device);
 
-        return indices.isComplete();
+        return indices.isComplete() && deviceExtension;
     }
 
     int32_t rateDevice(VkPhysicalDevice device) {
@@ -160,6 +172,12 @@ private:
         }
     }
 
+    void createSurface() {
+        if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS) {
+            throw std::runtime_error("Failed to create window surface");
+        }
+    }
+
     void pickPhysicalDevice() {
         uint32_t deviceCount;
 
@@ -186,7 +204,7 @@ private:
             physicalDevice = candidates.rbegin()->second;
         }
         else {
-            std::runtime_error("No suitable GPU found");
+            throw std::runtime_error("No suitable GPU found");
         }
 
         VkPhysicalDeviceProperties deviceProperties;
@@ -197,22 +215,28 @@ private:
     void createLogicalDevice() {
         QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
 
-        VkDeviceQueueCreateInfo queueCreateInfo{};
-        queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        queueCreateInfo.queueFamilyIndex = indices.graphicsFamily.value();
-        queueCreateInfo.queueCount = 1;
+        std::vector< VkDeviceQueueCreateInfo> queueCreateInfos;
+        std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value()};
 
         float queuePriority = 1.0;
-        queueCreateInfo.pQueuePriorities = &queuePriority;
 
+        for (uint32_t queueFamily : uniqueQueueFamilies) {
+            VkDeviceQueueCreateInfo queueCreateInfo{};
+            queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+            queueCreateInfo.queueFamilyIndex = queueFamily;
+            queueCreateInfo.queueCount = 1;
+            queueCreateInfo.pQueuePriorities = &queuePriority;
+            queueCreateInfos.push_back(queueCreateInfo);
+        }
+        
         VkPhysicalDeviceFeatures deviceFeatures{};
+
 
         VkDeviceCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 
-
-        createInfo.pQueueCreateInfos = &queueCreateInfo;
-        createInfo.queueCreateInfoCount = 1;
+        createInfo.pQueueCreateInfos = queueCreateInfos.data();
+        createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
 
         createInfo.pEnabledFeatures = &deviceFeatures;
 
@@ -233,6 +257,7 @@ private:
         }
 
         vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
+        //vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
     }
 
     void mainLoop() {
@@ -273,9 +298,9 @@ private:
     }
 
     bool checkInstantExtensionSupport(const std::vector<const char*>& extensions) {
-        uint32_t extensionCount = 0;
+        uint32_t extensionCount;
         if (vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to count extensions");
+            throw std::runtime_error("Failed to count instant extensions");
         }
 
         std::vector<VkExtensionProperties> availableExtension(extensionCount);
@@ -301,6 +326,26 @@ private:
         return true;
     }
 
+    bool checkDeviceExtensionSupport(VkPhysicalDevice device) {
+        uint32_t extensionCount;
+
+        if (vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr) != VK_SUCCESS) {
+            throw std::runtime_error("Failed to count device extensions");
+        }
+        std::vector<VkExtensionProperties> availableExtension(extensionCount);
+        if (vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtension.data()) != VK_SUCCESS) {
+            throw std::runtime_error("Failed to enumerate device extensions");
+        }
+
+        std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
+
+        for (const auto& extensions : availableExtension) {
+            requiredExtensions.erase(extensions.extensionName);
+        }
+
+        return requiredExtensions.empty();
+    }
+
     QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
         QueueFamilyIndices indices;
 
@@ -314,8 +359,13 @@ private:
         for (const auto& queue : queueFamilies) {
             if (queue.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
                 indices.graphicsFamily = i;
-                break;
             }
+            VkBool32 presentSupport;
+            vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
+            if (presentSupport) {
+                indices.presentFamily = i;
+            }
+
             i++;
         }
 
@@ -353,6 +403,12 @@ private:
             vkDestroyDevice(device, nullptr);
 
             device = VK_NULL_HANDLE;
+        }
+
+        if (surface) {
+            vkDestroySurfaceKHR(instance, surface, nullptr);
+
+            surface = VK_NULL_HANDLE;
         }
 
         if (enableValidationLayers) {
