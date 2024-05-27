@@ -145,6 +145,9 @@
   <ItemGroup>
     <ClInclude Include="vk_types.h" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="shaders\terrain.txt" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

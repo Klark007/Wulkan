@@ -133,7 +133,7 @@ const std::vector<Vertex> vertices = {
 };
 
 const std::vector<uint16_t> indices = {
-    0, 1, 2, 2, 3, 0
+    0, 1, 2, 3
 };
 
 class HelloTriangleApplication {
@@ -603,7 +603,7 @@ private:
         uboLayoutBinding.binding = 0;
         uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         uboLayoutBinding.descriptorCount = 1; // non zero if array of uniform buffers
-        uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
 
         VkDescriptorSetLayoutBinding samplerLayoutBinding{};
         samplerLayoutBinding.binding = 1;
@@ -626,9 +626,13 @@ private:
     void createGraphicsPipeline() {
         auto vertShaderCode = readFile("shaders/vert.spv");
         auto fragShaderCode = readFile("shaders/frag.spv");
+        auto tessCtrlShaderCode = readFile("shaders/terrain_tcs.spv");
+        auto tessEvalShaderCode = readFile("shaders/terrain_tes.spv");
 
         VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
         VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
+        VkShaderModule tessCtrlShaderModule = createShaderModule(tessCtrlShaderCode);
+        VkShaderModule tessEvalShaderModule = createShaderModule(tessEvalShaderCode);
 
         VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
         vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -642,7 +646,19 @@ private:
         fragShaderStageInfo.module = fragShaderModule;
         fragShaderStageInfo.pName = "main";
 
-        VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
+        VkPipelineShaderStageCreateInfo tessCtrlShaderStageInfo{};
+        tessCtrlShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        tessCtrlShaderStageInfo.stage = VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+        tessCtrlShaderStageInfo.module = tessCtrlShaderModule;
+        tessCtrlShaderStageInfo.pName = "main";
+
+        VkPipelineShaderStageCreateInfo tessEvalShaderStageInfo{};
+        tessEvalShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        tessEvalShaderStageInfo.stage = VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+        tessEvalShaderStageInfo.module = tessEvalShaderModule;
+        tessEvalShaderStageInfo.pName = "main";
+
+        std::vector<VkPipelineShaderStageCreateInfo> shaderStages = { vertShaderStageInfo, fragShaderStageInfo, tessCtrlShaderStageInfo, tessEvalShaderStageInfo};
 
 
         VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
@@ -658,7 +674,7 @@ private:
 
         VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo{};
         inputAssemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-        inputAssemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+        inputAssemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
         inputAssemblyInfo.primitiveRestartEnable = VK_FALSE; 
 
         std::vector<VkDynamicState> dynamicStates = {
@@ -680,7 +696,7 @@ private:
         rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
         rasterizer.depthClampEnable = VK_FALSE; // Otherwise clamps polygon to near and farpline instead of discarding
         rasterizer.rasterizerDiscardEnable = VK_FALSE; // Otherwise no geometry passes through frame buffer
-        rasterizer.polygonMode = VK_POLYGON_MODE_FILL; // VK_POLYGON_MODE_LINE; // VK_POLYGON_MODE_FILL
+        rasterizer.polygonMode = VK_POLYGON_MODE_LINE; // VK_POLYGON_MODE_FILL
         rasterizer.lineWidth = 1.0f;
         rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
         rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
@@ -719,11 +735,14 @@ private:
         depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
         depthStencil.depthBoundsTestEnable = VK_FALSE;
 
+        VkPipelineTessellationStateCreateInfo tesselationInfo{};
+        tesselationInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO;
+        tesselationInfo.patchControlPoints = 4;
 
         VkGraphicsPipelineCreateInfo pipelineInfo{};
         pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-        pipelineInfo.stageCount = 2;
-        pipelineInfo.pStages = shaderStages;
+        pipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
+        pipelineInfo.pStages = shaderStages.data();
 
         pipelineInfo.pVertexInputState = &vertexInputInfo;
         pipelineInfo.pInputAssemblyState = &inputAssemblyInfo;
@@ -733,6 +752,7 @@ private:
         pipelineInfo.pColorBlendState = &colorBlending;
         pipelineInfo.pDynamicState = &dynamicStateInfo;
         pipelineInfo.pDepthStencilState = &depthStencil;
+        pipelineInfo.pTessellationState = &tesselationInfo;
 
         pipelineInfo.layout = pipelineLayout;
 
@@ -746,6 +766,8 @@ private:
 
         vkDestroyShaderModule(device, vertShaderModule, nullptr);
         vkDestroyShaderModule(device, fragShaderModule, nullptr);
+        vkDestroyShaderModule(device, tessCtrlShaderModule, nullptr);
+        vkDestroyShaderModule(device, tessEvalShaderModule, nullptr);
     }
 
     void createFrameBuffers() {
