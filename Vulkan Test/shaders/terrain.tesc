@@ -1,5 +1,7 @@
 #version 450
 
+layout(location = 0) in vec4 inPos[];
+layout(location = 1) in vec2 inUV[];
 
 layout(binding = 0) uniform UniformBufferObject {
     mat4 model;
@@ -13,9 +15,7 @@ layout(binding = 1) uniform sampler2D heightMap;
 
 layout (vertices = 4) out;
 
-layout(location = 0) in vec2 inUV[];
 layout(location = 0) out vec2 outUV[4];
-layout(location = 1) out float outStrength[4];
 
 float local_tesselation_strength(uint idx);
 
@@ -36,9 +36,6 @@ void main()
         gl_TessLevelInner[0] = mix(gl_TessLevelOuter[1], gl_TessLevelOuter[3], 0.5);
         gl_TessLevelInner[1] = mix(gl_TessLevelOuter[0], gl_TessLevelOuter[2], 0.5);
 
-        outStrength[gl_InvocationID] = ls0;
-    } else {
-        outStrength[gl_InvocationID] = local_tesselation_strength(gl_InvocationID);
     }
 
     gl_out[gl_InvocationID].gl_Position =  gl_in[gl_InvocationID].gl_Position;
@@ -59,11 +56,6 @@ float s_der_y(vec2 uv, vec2 dir1, vec2 dir2, float eps1, float eps2) {
     return (f_der_y(uv + eps2*dir2, dir1, eps1) - f_der_y(uv - eps2*dir2, dir1, eps1)) / (2*eps2);
 }
 
-/*
-mat2 jacobian(vec2 uv, vec2 eps) {
-}
-*/
-
 const float smoothness_factor = 50.0;
 float normalized_derivative(float der, float eps) {
     return clamp(map(abs(der),0,1.0/(smoothness_factor * 2*eps), 0, 1), 0, 1);
@@ -83,6 +75,16 @@ float local_tesselation_strength(uint idx) {
 
     float ddydduu = normalized_s_der(inUV[idx], vec2(1,0), vec2(1,0), epsilon[0], epsilon[0]);
     float ddyddvv = normalized_s_der(inUV[idx], vec2(0,1), vec2(0,1), epsilon[1], epsilon[1]);
+    float ddydduv = normalized_s_der(inUV[idx], vec2(1,0), vec2(0,1), epsilon[0], epsilon[1]);
+    float ddyddvu = normalized_s_der(inUV[idx], vec2(1,0), vec2(1,0), epsilon[1], epsilon[0]);
+    
+    vec4 pos = inPos[idx];
 
-    return sqrt(ddydduu * ddydduu + ddyddvv * ddyddvv) / sqrt(2);
+    float depth = pos.z;
+
+    float approach_1 = sqrt(ddydduu * ddydduu + ddyddvv * ddyddvv) / sqrt(2);
+    float approach_2 = sqrt(ddydduu * ddydduu + ddyddvv * ddyddvv + ddydduv * ddydduv + ddyddvu * ddyddvu) / sqrt(4);
+    float approach_3 = 0.5 * approach_2 + 0.5 * depth;
+
+    return approach_2;
 }
