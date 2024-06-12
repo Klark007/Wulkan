@@ -1796,7 +1796,7 @@ private:
 
         ubo.proj[1][1] *= -1;
 
-        ubo.tesselationStrength = abs(cos(time/10)) * 64; // max innerTess is found using limits.maxTessellationGenerationLevel
+        ubo.tesselationStrength = 16; //abs(cos(time/10)) * 64; // max innerTess is found using limits.maxTessellationGenerationLevel
         ubo.heightScale = 0.6f;
 
         memcpy(uniformBuffersMapped[currentFrame], &ubo, sizeof(ubo));
