@@ -12,6 +12,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
+#include "renderer/Camera.h"
+
 #include <chrono>
 
 #include <iostream>
@@ -33,6 +35,16 @@
 #include <string>
 
 const unsigned int MAX_FRAMES_IN_FLIGHT = 2;
+const uint32_t WIDTH = 800;
+const uint32_t HEIGHT = 600;
+
+Camera camera = { glm::vec3(0.0, 12.0, 8.0), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0) };
+float delta_time;
+
+bool can_move = true;
+
+void glfm_mouse_move_callback(GLFWwindow* window, double xpos, double ypos);
+void handle_input(GLFWwindow* window);
 
 static std::vector<char> readFile(const std::string& filename) {
     // start at end of file to compute buffer size
@@ -128,20 +140,23 @@ struct UniformBufferObject {
     alignas(4) float heightScale;
 };
 
+/*
 const std::vector<Vertex> vertices = {
-    {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-    {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-    {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-    {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
+    {{-0.5f, 0.0, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+    {{0.5f, 0.0f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+    {{0.5f, 0.0f, 0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+    {{-0.5f, 0.0f, 0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
 };
 
 const std::vector<uint16_t> indices = {
     0, 1, 2, 3
 };
+*/
 
 class HelloTriangleApplication {
 public:
     void run() {
+        initModel();
         initWindow();
         initVulkan();
         mainLoop();
@@ -150,9 +165,6 @@ public:
 
 private:
     GLFWwindow* window;
-
-    const uint32_t WIDTH = 800;
-    const uint32_t HEIGHT = 600;
 
     const std::vector<const char*> validationLayers = {
         "VK_LAYER_KHRONOS_validation"
@@ -227,6 +239,37 @@ private:
 
     VkDebugUtilsMessengerEXT debugMessenger;
 
+    std::vector<Vertex> model_vertices;
+    std::vector<uint16_t> model_indices;
+
+    void initModel() {
+        model_vertices = std::vector<Vertex>();
+
+        const uint32_t mesh_res = 64;
+        
+        for (uint32_t iy = 0; iy < mesh_res; iy++) {
+            for (uint32_t ix = 0; ix < mesh_res; ix++) {
+                float u = ((float)ix) / mesh_res;
+                float v = ((float)iy) / mesh_res;
+                float pos_x = (u - 0.5) * 2;
+                float pos_z = (v - 0.5) * 2;
+
+                model_vertices.push_back({ {pos_x,0,pos_z}, {0,0,0}, {u,v} });
+            }
+        }
+
+        model_indices = std::vector<uint16_t>();
+
+        for (uint32_t iy = 0; iy < mesh_res-1; iy++) {
+            for (uint32_t ix = 0; ix < mesh_res-1; ix++) {
+                model_indices.push_back(ix + iy * mesh_res);
+                model_indices.push_back(ix+1 + iy * mesh_res);
+                model_indices.push_back(ix+1 + (iy+1) * mesh_res);
+                model_indices.push_back(ix + (iy+1) * mesh_res);
+            }
+        }
+    }
+
     void initWindow() {
         glfwInit();
 
@@ -235,6 +278,14 @@ private:
         window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
         glfwSetWindowUserPointer(window, this);
         glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
+
+        // disable cursor so can use raw mouse movement
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        if (!glfwRawMouseMotionSupported()) {
+            throw std::runtime_error("Raw mouse motion not supported");
+        }
+
+        glfwSetCursorPosCallback(window, glfm_mouse_move_callback);
     }
 
     void initVulkan() {
@@ -413,6 +464,7 @@ private:
         VkPhysicalDeviceProperties deviceProperties;
         vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
         std::cout << "Selected GPU:" << deviceProperties.deviceName << std::endl;
+        std::cout << "Tesselation limit:" << deviceProperties.limits.maxTessellationGenerationLevel << std::endl;
     }
 
     void createLogicalDevice() {
@@ -909,7 +961,7 @@ private:
     }
 
     void createVertexBuffer() {
-        VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+        VkDeviceSize bufferSize = sizeof(model_vertices[0]) * model_vertices.size();
         
         VkBuffer stagingBuffer;
         VkDeviceMemory stagingBufferMemory;
@@ -919,7 +971,7 @@ private:
         if (vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data) != VK_SUCCESS) {
             throw std::runtime_error("Failed to map vertex buffer");
         }
-            memcpy(data, vertices.data(), (size_t)bufferSize);
+            memcpy(data, model_vertices.data(), (size_t)bufferSize);
         vkUnmapMemory(device, stagingBufferMemory);
 
         createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer, vertexBufferMemory);
@@ -931,7 +983,7 @@ private:
     }
 
     void createIndexBuffer() {
-        VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
+        VkDeviceSize bufferSize = sizeof(model_indices[0]) * model_indices.size();
 
         VkBuffer stagingBuffer;
         VkDeviceMemory stagingBufferMemory;
@@ -941,7 +993,7 @@ private:
         if (vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data) != VK_SUCCESS) {
             throw std::runtime_error("Failed to map index buffer");
         }
-        memcpy(data, indices.data(), (size_t)bufferSize);
+        memcpy(data, model_indices.data(), (size_t)bufferSize);
         
         vkUnmapMemory(device, stagingBufferMemory);
         
@@ -1095,8 +1147,16 @@ private:
     }
 
     void mainLoop() {
+        float current_time = glfwGetTime();
+        float last_time = current_time - (1.0 / 30);
         while (!glfwWindowShouldClose(window)) {
             glfwPollEvents();
+
+            current_time = glfwGetTime();
+            delta_time = current_time - last_time;
+            last_time = current_time;
+
+            handle_input(window);
             drawFrame();
         }
 
@@ -1461,7 +1521,7 @@ private:
             vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
             vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
-            vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+            vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(model_indices.size()), 1, 0, 0, 0);
 
         vkCmdEndRenderPass(commandBuffer);
 
@@ -1730,14 +1790,13 @@ private:
         float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
         UniformBufferObject ubo{};
-        ubo.model = glm::scale(glm::rotate(glm::mat4(1.0), 0 * glm::radians(10.0f), glm::vec3(0.0, 0.0, 1.0)), glm::vec3(2.0,2.0,2.0));
-        ubo.view  = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        ubo.proj  = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 10.0f);
+        ubo.model = glm::scale(glm::mat4(1), glm::vec3(25.0,25.0,25.0));
+        ubo.view  = camera.generate_view_mat(); // glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        ubo.proj  = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 500.0f);
 
         ubo.proj[1][1] *= -1;
 
-        ubo.tesselationStrength = abs(cos(time/5)) * 30 + 30;
-        std::cout << ubo.tesselationStrength << std::endl;
+        ubo.tesselationStrength = abs(cos(time/10)) * 64; // max innerTess is found using limits.maxTessellationGenerationLevel
         ubo.heightScale = 0.6f;
 
         memcpy(uniformBuffersMapped[currentFrame], &ubo, sizeof(ubo));
@@ -1860,4 +1919,77 @@ int main() {
     }
 
     return EXIT_SUCCESS;
+}
+
+void glfm_mouse_move_callback(GLFWwindow* window, double xpos, double ypos)
+{
+    const double strength = 0.001;
+    static double xlast = WIDTH / 2;
+    static double ylast = HEIGHT / 2;
+
+    if (!can_move) {
+        xlast = xpos;
+        ylast = ypos;
+        return;
+    }
+
+    double dx = xpos - xlast;
+    double dy = ypos - ylast;
+
+    glm::vec3 dir = camera.get_dir();
+
+    // not efficient, could compute once and update
+    double yaw = atan2(dir.z, dir.x);
+    double pitch = asin(dir.y);
+
+    yaw += dx * strength;
+    pitch += -dy * strength;
+
+    dir.x = (float)(cos(yaw) * cos(pitch));
+    dir.y = (float)sin(pitch);
+    dir.z = (float)(sin(yaw) * cos(pitch));
+
+    camera.set_dir(dir);
+
+    xlast = xpos;
+    ylast = ypos;
+}
+
+void handle_input(GLFWwindow* window)
+{
+    // to get comparison pictures
+    if (glfwGetKey(window, GLFW_KEY_X)) {
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        can_move = false;
+    }
+    if (glfwGetKey(window, GLFW_KEY_Y)) {
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        can_move = true;
+    }
+
+    if (!can_move)
+        return;
+
+    const float strength = 8.0f;
+
+    float dx = 0.0f;
+    float dy = 0.0f;
+
+    if (glfwGetKey(window, GLFW_KEY_W))
+        dx += 1;
+    if (glfwGetKey(window, GLFW_KEY_S))
+        dx -= 1;
+    if (glfwGetKey(window, GLFW_KEY_D))
+        dy += 1;
+    if (glfwGetKey(window, GLFW_KEY_A))
+        dy -= 1;
+
+    glm::vec3 pos = camera.get_pos();
+    glm::vec3 dir = camera.get_dir();
+
+    pos += dx * strength * dir * delta_time;
+    glm::vec3 side = glm::cross(dir, camera.get_up()); // can assume both normalized
+    pos += dy * strength * side * delta_time;
+
+    camera.set_pos(pos);
 }

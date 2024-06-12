@@ -25,7 +25,7 @@ void main()
 	vec4 pos2 = mix(gl_in[3].gl_Position, gl_in[2].gl_Position, gl_TessCoord.x);
 	vec4 pos = mix(pos1, pos2, gl_TessCoord.y);
 
-    pos.z += texture(heightMap, outUV).r * ubo.heightScale;
+    pos.y += texture(heightMap, outUV).r * ubo.heightScale;
 
     gl_Position = ubo.proj * ubo.view * ubo.model * pos;
 }
