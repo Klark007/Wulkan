@@ -13,13 +13,12 @@ layout(binding = 0) uniform UniformBufferObject {
 
 layout(binding = 1) uniform sampler2D texSampler;
 
-
 layout(location = 0) out vec4 outColor;
-
 
 void main() {
     float gt = texture(texSampler, texCoord).r * ubo.heightScale;
     float v  = worldPos.y;
     float err = abs(gt-v);
-    outColor = vec4(err*1.2);
+
+    outColor = texture(texSampler, texCoord); //vec4(err*1.2);
 }

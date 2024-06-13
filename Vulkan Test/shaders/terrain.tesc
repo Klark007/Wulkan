@@ -68,6 +68,17 @@ float normalized_s_der(vec2 uv, vec2 dir1, vec2 dir2, float eps1, float eps2) {
     return normalized_derivative((f_der1-f_der2) / (2*eps2), eps1*eps2);
 }
 
+const float zNear = 0.1;
+const float zFar  = 100.0;
+float linearize_depth(float d)
+{
+    return zNear * zFar / (zFar + d * (zNear - zFar));
+}
+
+float inout_bezier(float x) {
+    return x * x * (3 - 2*x);
+}
+
 float local_tesselation_strength(uint idx) {
     // returns scalar between 0 and 1
     vec2 texSize = textureSize(heightMap,0);
@@ -78,13 +89,15 @@ float local_tesselation_strength(uint idx) {
     float ddydduv = normalized_s_der(inUV[idx], vec2(1,0), vec2(0,1), epsilon[0], epsilon[1]);
     float ddyddvu = normalized_s_der(inUV[idx], vec2(1,0), vec2(1,0), epsilon[1], epsilon[0]);
     
-    vec4 pos = inPos[idx];
+    vec4 pos = ubo.proj * ubo.view * ubo.model * inPos[idx];
+    pos /= pos.w;
 
-    float depth = pos.z;
+    float linear_f_depth = map(linearize_depth(pos.z), zNear, zFar, 0, 1);
+    float depth = inout_bezier(1.0 - linear_f_depth);
 
     float approach_1 = sqrt(ddydduu * ddydduu + ddyddvv * ddyddvv) / sqrt(2);
     float approach_2 = sqrt(ddydduu * ddydduu + ddyddvv * ddyddvv + ddydduv * ddydduv + ddyddvu * ddyddvu) / sqrt(4);
     float approach_3 = 0.5 * approach_2 + 0.5 * depth;
 
-    return approach_2;
+    return approach_3;
 }
