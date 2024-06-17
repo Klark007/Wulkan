@@ -6,9 +6,10 @@ layout(location = 0) in vec2 inUV[];
 layout(binding = 0) uniform UniformBufferObject {
     mat4 model;
     mat4 view;
+    mat4 virtualView;
     mat4 proj;
-    float tesselationStrength; // push constants?
-    float heightScale; // push constants?
+    float tesselationStrength;
+    float heightScale;
 } ubo;
 
 layout(binding = 1) uniform sampler2D heightMap;

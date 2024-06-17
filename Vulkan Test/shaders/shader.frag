@@ -6,6 +6,7 @@ layout(location = 1) in vec2 texCoord;
 layout(binding = 0) uniform UniformBufferObject {
     mat4 model;
     mat4 view;
+    mat4 virtualView;
     mat4 proj;
     float tesselationStrength;
     float heightScale;

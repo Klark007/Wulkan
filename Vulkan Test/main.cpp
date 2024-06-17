@@ -46,6 +46,7 @@ Camera camera = { glm::vec3(0.0, 12.0, 8.0), glm::vec3(0.0, 0.0, 0.0), glm::vec3
 float delta_time;
 
 bool can_move = true;
+bool virtual_can_move = true; // stops camera for lod calculations but not general movement
 
 void glfm_mouse_move_callback(GLFWwindow* window, double xpos, double ypos);
 void handle_input(GLFWwindow* window);
@@ -145,9 +146,11 @@ struct Vertex {
     };
 };
 
+// TODO: use #define to enable / disable virtualView, add specialization constant to choose view matrix used
 struct UniformBufferObject {
     alignas(16) glm::mat4 model;
     alignas(16) glm::mat4 view;
+    alignas(16) glm::mat4 virtualView;
     alignas(16) glm::mat4 proj;
     alignas(4) float tesselationStrength;
     alignas(4) float heightScale;
@@ -258,6 +261,8 @@ private:
 
     std::vector<Vertex> model_vertices;
     std::vector<uint16_t> model_indices;
+
+    UniformBufferObject ubo{};
 
     void initModel() {
         model_vertices = std::vector<Vertex>();
@@ -1862,9 +1867,12 @@ private:
         auto currentTime = std::chrono::high_resolution_clock::now();
         float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
-        UniformBufferObject ubo{};
         ubo.model = glm::scale(glm::mat4(1), glm::vec3(25.0,1,25.0)); // important not to scale y for error calculations
         ubo.view  = camera.generate_view_mat(); // glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        if (virtual_can_move) {
+            ubo.virtualView = ubo.view;
+        }
+        
         ubo.proj  = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 100.0f);
 
         ubo.proj[1][1] *= -1;
@@ -2039,6 +2047,13 @@ void handle_input(GLFWwindow* window)
     if (glfwGetKey(window, GLFW_KEY_Y)) {
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
         can_move = true;
+    }
+
+    if (glfwGetKey(window, GLFW_KEY_N)) {
+        virtual_can_move = true;
+    }
+    if (glfwGetKey(window, GLFW_KEY_M)) {
+        virtual_can_move = false;
     }
 
     if (!can_move)

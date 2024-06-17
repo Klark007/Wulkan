@@ -6,6 +6,7 @@ layout(location = 1) in vec2 inUV[];
 layout(binding = 0) uniform UniformBufferObject {
     mat4 model;
     mat4 view;
+    mat4 virtualView;
     mat4 proj;
     float tesselationStrength;
     float heightScale;
@@ -89,7 +90,7 @@ float local_tesselation_strength(uint idx) {
     float ddydduv = normalized_s_der(inUV[idx], vec2(1,0), vec2(0,1), epsilon[0], epsilon[1]);
     float ddyddvu = normalized_s_der(inUV[idx], vec2(1,0), vec2(1,0), epsilon[1], epsilon[0]);
     
-    vec4 pos = ubo.proj * ubo.view * ubo.model * inPos[idx];
+    vec4 pos = ubo.proj * ubo.virtualView * ubo.model * inPos[idx];
     pos /= pos.w;
 
     float linear_f_depth = map(linearize_depth(pos.z), zNear, zFar, 0, 1);
