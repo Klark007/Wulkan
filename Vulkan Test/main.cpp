@@ -1,3 +1,7 @@
+#include "imgui.h"
+#include "backends/imgui_impl_glfw.h"
+#include "backends/imgui_impl_vulkan.h"
+
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
@@ -82,6 +86,15 @@ void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT
     }
 }
 
+static void check_vk_result(VkResult err)
+{
+    if (err == 0)
+        return;
+    fprintf(stderr, "[vulkan] Error: VkResult = %s\n", string_VkResult(err));
+    if (err < 0)
+        abort();
+}
+
 struct QueueFamilyIndices {
     std::optional<uint32_t> graphicsFamily;
     std::optional<uint32_t> presentFamily;
@@ -155,10 +168,13 @@ const std::vector<uint16_t> indices = {
 
 class HelloTriangleApplication {
 public:
+
+
     void run() {
         initModel();
         initWindow();
         initVulkan();
+        initImGui();
         mainLoop();
         cleanup();
     }
@@ -184,6 +200,7 @@ private:
 
     VkDevice device;
 
+    uint32_t graphicsQueueFamily;
     VkQueue graphicsQueue;
     VkQueue presentQueue;
     VkQueue transferQueue;
@@ -322,6 +339,33 @@ private:
         createCommandBuffers();
         
         createSyncObjects();
+    }
+
+    void initImGui() {
+        IMGUI_CHECKVERSION();
+        ImGui::CreateContext();
+
+        ImGuiIO& io = ImGui::GetIO(); (void)io;
+        io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+        
+        ImGui::StyleColorsDark();
+
+        ImGui_ImplGlfw_InitForVulkan(window, true);
+
+        ImGui_ImplVulkan_InitInfo init_info = {};
+        init_info.Instance = instance;
+        init_info.PhysicalDevice = physicalDevice;
+        init_info.Device = device;
+        init_info.QueueFamily = graphicsQueueFamily;
+        init_info.Queue = graphicsQueue;
+        init_info.DescriptorPool = descriptorPool;
+        init_info.RenderPass = renderPass;
+        init_info.Subpass = 0;
+        init_info.MinImageCount = swapChainImages.size();
+        init_info.ImageCount = swapChainImages.size();
+        init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+        init_info.CheckVkResultFn = check_vk_result;
+        ImGui_ImplVulkan_Init(&init_info);
     }
 
     std::vector<const char*> getRequiredInstantExtensions() {
@@ -517,7 +561,8 @@ private:
             throw std::runtime_error("failed to create logical device");
         }
 
-        vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
+        graphicsQueueFamily = indices.graphicsFamily.value();
+        vkGetDeviceQueue(device, graphicsQueueFamily, 0, &graphicsQueue);
         vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
         vkGetDeviceQueue(device, indices.transferFamily.value(), 0, &transferQueue);
     }
@@ -1030,9 +1075,10 @@ private:
 
         VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+        poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
         poolInfo.pPoolSizes = poolSizes.data();
         poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-        poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+        poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) + 1; // for ImGui font image sampler
 
         if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
             throw std::runtime_error("Failed to create descriptor pool");
@@ -1182,7 +1228,8 @@ private:
         updateUniformBuffer(currentFrame);
 
         vkResetCommandBuffer(commandBuffers[currentFrame], 0);
-        recordCommand(commandBuffers[currentFrame], imageIndex);
+
+        recordCommand(commandBuffers[currentFrame], imageIndex, drawImGui());
 
 
         // submit command buffer
@@ -1230,6 +1277,23 @@ private:
         currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
     }
 
+    ImDrawData* drawImGui() {
+        // Start the Dear ImGui frame
+        ImGui_ImplVulkan_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
+        ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
+
+        ImGui::Text("This is some useful text.");
+        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+        ImGui::End();
+
+
+        ImGui::Render();
+        return ImGui::GetDrawData();
+    }
+
     void cleanupSwapChain() {
         for (auto& framebuffer : swapChainFramebuffers) {
             if (framebuffer) {
@@ -1250,6 +1314,13 @@ private:
             vkDestroySwapchainKHR(device, swapChain, nullptr);
             swapChain = VK_NULL_HANDLE;
         }
+    }
+
+    void cleanupImGui() {
+        ImGui_ImplVulkan_Shutdown();
+        ImGui_ImplGlfw_Shutdown();
+        ImGui::DestroyContext();
+
     }
 
     void recreateSwapChain() {
@@ -1474,7 +1545,7 @@ private:
         return shaderModule;
     }
 
-    void recordCommand(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
+    void recordCommand(VkCommandBuffer commandBuffer, uint32_t imageIndex, ImDrawData* imgui_data) {
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
@@ -1522,6 +1593,8 @@ private:
 
             vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
             vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(model_indices.size()), 1, 0, 0, 0);
+
+            ImGui_ImplVulkan_RenderDrawData(imgui_data, commandBuffer);
 
         vkCmdEndRenderPass(commandBuffer);
 
@@ -1824,6 +1897,7 @@ private:
 
     void cleanup() {
         cleanupSwapChain();
+        cleanupImGui();
         
         VK_DESTROY(textureSampler, vkDestroySampler, device, textureSampler);
         VK_DESTROY(textureImageView, vkDestroyImageView, device, textureImageView);
