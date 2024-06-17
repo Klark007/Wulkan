@@ -29,6 +29,24 @@ void main()
         float ls2 = local_tesselation_strength(2);
         float ls3 = local_tesselation_strength(3);
 
+
+        bool all_zero = (ls0 == 0) && (ls1 == 0) && (ls2 == 0) && (ls3 == 0);
+        float eps = (ls0 + ls1 + ls2 + ls3) / 4;
+        if (!all_zero) {
+            if (ls0 == 0) {
+                ls0 = eps;
+            }
+            if (ls1 == 0) {
+                ls1 = eps;
+            }
+            if (ls2 == 0) {
+                ls2 = eps;
+            }
+            if (ls3 == 0) {
+                ls3 = eps;
+            }
+        }
+
         gl_TessLevelOuter[0] = mix(ls3, ls0, 0.5) * ubo.tesselationStrength;
         gl_TessLevelOuter[1] = mix(ls0, ls1, 0.5) * ubo.tesselationStrength;
         gl_TessLevelOuter[2] = mix(ls1, ls2, 0.5) * ubo.tesselationStrength;
@@ -90,8 +108,14 @@ float local_tesselation_strength(uint idx) {
     float ddydduv = normalized_s_der(inUV[idx], vec2(1,0), vec2(0,1), epsilon[0], epsilon[1]);
     float ddyddvu = normalized_s_der(inUV[idx], vec2(1,0), vec2(1,0), epsilon[1], epsilon[0]);
     
-    vec4 pos = ubo.proj * ubo.virtualView * ubo.model * inPos[idx];
+    vec4 mod_pos = inPos[idx];
+    mod_pos.y = texture(heightMap, inUV[idx]).r * ubo.heightScale;
+    vec4 pos = ubo.proj * ubo.virtualView * ubo.model * mod_pos;
     pos /= pos.w;
+    
+    if (!(-1 <= pos.x && pos.x <= 1) || !(-1 <= pos.y && pos.y <= 1) || !(0 <= pos.z && pos.z <= 1)) {
+        return 0;
+    }
 
     float linear_f_depth = map(linearize_depth(pos.z), zNear, zFar, 0, 1);
     float depth = inout_bezier(1.0 - linear_f_depth);
