@@ -16,7 +16,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
-#include "renderer/Camera.h"
+#include "engine/Engine.h"
+#include "engine/Camera.h"
 
 #include <chrono>
 
@@ -42,14 +43,10 @@ const unsigned int MAX_FRAMES_IN_FLIGHT = 2;
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 
-Camera camera = { glm::vec3(0.0, 12.0, 8.0), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0) };
-float delta_time;
+Engine* engine = nullptr;
+std::shared_ptr<Camera> camera = std::make_shared<Camera>(glm::vec3(0.0, 12.0, 8.0), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0),  WIDTH, HEIGHT, glm::radians(45.0f), 0.01f, 100.0f);
 
-bool can_move = true;
-bool virtual_can_move = true; // stops camera for lod calculations but not general movement
-
-void glfm_mouse_move_callback(GLFWwindow* window, double xpos, double ypos);
-void handle_input(GLFWwindow* window);
+void glfm_mouse_move_callback(GLFWwindow* window, double pos_x, double pos_y);
 
 static std::vector<char> readFile(const std::string& filename) {
     // start at end of file to compute buffer size
@@ -178,6 +175,10 @@ public:
         initWindow();
         initVulkan();
         initImGui();
+
+        Engine e {window, camera};
+        engine = &e;
+
         mainLoop();
         cleanup();
     }
@@ -1198,17 +1199,11 @@ private:
     }
 
     void mainLoop() {
-        float current_time = glfwGetTime();
-        float last_time = current_time - (1.0 / 30);
+
         while (!glfwWindowShouldClose(window)) {
-            glfwPollEvents();
-
-            current_time = glfwGetTime();
-            delta_time = current_time - last_time;
-            last_time = current_time;
-
-            handle_input(window);
+            engine->update();
             drawFrame();
+            engine->late_update();
         }
 
         vkDeviceWaitIdle(device);
@@ -1868,11 +1863,9 @@ private:
         float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
         ubo.model = glm::scale(glm::mat4(1), glm::vec3(25.0,1,25.0)); // important not to scale y for error calculations
-        ubo.view  = camera.generate_view_mat(); // glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        if (virtual_can_move) {
-            ubo.virtualView = ubo.view;
-        }
-        
+        ubo.view  = camera->generate_view_mat(); 
+        ubo.virtualView  = camera->generate_virtual_view_mat(); 
+
         ubo.proj  = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 100.0f);
 
         ubo.proj[1][1] *= -1;
@@ -2003,82 +1996,9 @@ int main() {
     return EXIT_SUCCESS;
 }
 
-void glfm_mouse_move_callback(GLFWwindow* window, double xpos, double ypos)
+void glfm_mouse_move_callback(GLFWwindow* window, double pos_x, double pos_y)
 {
-    const double strength = 0.001;
-    static double xlast = WIDTH / 2;
-    static double ylast = HEIGHT / 2;
-
-    if (!can_move) {
-        xlast = xpos;
-        ylast = ypos;
-        return;
+    if (engine != nullptr) {
+        engine->camera_controller.handle_mouse(pos_x, pos_y);
     }
-
-    double dx = xpos - xlast;
-    double dy = ypos - ylast;
-
-    glm::vec3 dir = camera.get_dir();
-
-    // not efficient, could compute once and update
-    double yaw = atan2(dir.z, dir.x);
-    double pitch = asin(dir.y);
-
-    yaw += dx * strength;
-    pitch += -dy * strength;
-
-    dir.x = (float)(cos(yaw) * cos(pitch));
-    dir.y = (float)sin(pitch);
-    dir.z = (float)(sin(yaw) * cos(pitch));
-
-    camera.set_dir(dir);
-
-    xlast = xpos;
-    ylast = ypos;
-}
-
-void handle_input(GLFWwindow* window)
-{
-    // to get comparison pictures
-    if (glfwGetKey(window, GLFW_KEY_X)) {
-        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-        can_move = false;
-    }
-    if (glfwGetKey(window, GLFW_KEY_Y)) {
-        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-        can_move = true;
-    }
-
-    if (glfwGetKey(window, GLFW_KEY_N)) {
-        virtual_can_move = true;
-    }
-    if (glfwGetKey(window, GLFW_KEY_M)) {
-        virtual_can_move = false;
-    }
-
-    if (!can_move)
-        return;
-
-    const float strength = 8.0f;
-
-    float dx = 0.0f;
-    float dy = 0.0f;
-
-    if (glfwGetKey(window, GLFW_KEY_W))
-        dx += 1;
-    if (glfwGetKey(window, GLFW_KEY_S))
-        dx -= 1;
-    if (glfwGetKey(window, GLFW_KEY_D))
-        dy += 1;
-    if (glfwGetKey(window, GLFW_KEY_A))
-        dy -= 1;
-
-    glm::vec3 pos = camera.get_pos();
-    glm::vec3 dir = camera.get_dir();
-
-    pos += dx * strength * dir * delta_time;
-    glm::vec3 side = glm::cross(dir, camera.get_up()); // can assume both normalized
-    pos += dy * strength * side * delta_time;
-
-    camera.set_pos(pos);
 }

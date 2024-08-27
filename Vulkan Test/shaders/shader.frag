@@ -21,5 +21,5 @@ void main() {
     float v  = worldPos.y;
     float err = abs(gt-v);
 
-    outColor = texture(texSampler, texCoord); //vec4(err*1.2);
+    outColor =  texture(texSampler, texCoord); // vec4(err*2);
 }
