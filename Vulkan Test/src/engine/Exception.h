@@ -20,7 +20,7 @@ protected:
 
 // outputs the line and file the exception was thrown at
 inline EngineException::EngineException(const std::string& msg, const std::string& file, int line)
-	: msg{ msg }, file{ file }, line{ line }, format_msg{ std::format("[{}] at line {} {}", file, line, msg) }
+	: msg{ msg }, file{ file }, line{ line }, format_msg{ std::format("Exception in [{}] at line {}:\n {}", file, line, msg) }
 {
 }
 

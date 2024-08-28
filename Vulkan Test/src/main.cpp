@@ -2,15 +2,10 @@
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_vulkan.h"
 
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
-
-#include <vulkan/vk_enum_string_helper.h>
 #include "vk_types.h"
 
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE // force to vulkans 0,1 range for depth
-#include <glm/glm.hpp>
+#include <GLFW/glfw3.h>
+
 #include <glm/gtc/matrix_transform.hpp>
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -32,12 +27,6 @@
 #include <algorithm>
 #include <fstream>
 
-#include <vector>
-#include <array>
-#include <set>
-#include <map>
-#include <optional>
-#include <string>
 
 const unsigned int MAX_FRAMES_IN_FLIGHT = 2;
 const uint32_t WIDTH = 800;
@@ -829,10 +818,7 @@ private:
         pipelineLayoutInfo.setLayoutCount = 1;
         pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
 
-        VkResult result;
-        if ((result = vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout)) != VK_SUCCESS) {
-            throw std::runtime_error(std::string(string_VkResult(result)) + ":Failed to create pipeline layout");
-        }
+        VK_CHECK_T(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout), "Failed to create pipeline layout");
 
         VkPipelineDepthStencilStateCreateInfo depthStencil{};
         depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
@@ -865,10 +851,7 @@ private:
         pipelineInfo.renderPass = renderPass;
         pipelineInfo.subpass = 0;
 
-        if ((result = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline)) != VK_SUCCESS) {
-            throw std::runtime_error(std::string(string_VkResult(result)) + ":Failed to create graphics pipeline");
-        }
-
+        VK_CHECK_T(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline), "Failed to create graphics pipeline");
 
         vkDestroyShaderModule(device, vertShaderModule, nullptr);
         vkDestroyShaderModule(device, fragShaderModule, nullptr);
