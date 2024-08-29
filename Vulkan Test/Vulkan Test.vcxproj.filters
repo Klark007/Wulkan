@@ -60,6 +60,9 @@
     <ClCompile Include="external\vk-bootstrap\VkBootstrap.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\engine\vk_wrap\VKW_Surface.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\shader.vert" />
@@ -120,6 +123,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="external\vk-bootstrap\VkBootstrapDispatch.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\engine\vk_wrap\VKW_Surface.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

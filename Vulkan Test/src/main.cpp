@@ -452,9 +452,11 @@ private:
     }
 
     void createSurface() {
-        if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS) {
+        /*if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS) {
             throw std::runtime_error("Failed to create window surface");
         }
+        */
+        surface = engine->surface->get_surface();
     }
 
     void pickPhysicalDevice() {
@@ -1926,27 +1928,26 @@ private:
             device = VK_NULL_HANDLE;
         }
 
+        /*
         if (surface) {
             vkDestroySurfaceKHR(instance, surface, nullptr);
             surface = VK_NULL_HANDLE;
         }
-
+        
         if (enableValidationLayers) {
             DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
         }
-
-        /*
+        
         if (instance) {
             vkDestroyInstance(instance, nullptr);
             instance = VK_NULL_HANDLE;
         }
-        */
-
-        engine->instance.reset();
 
         glfwDestroyWindow(window);
 
         glfwTerminate();
+
+        */
     }
 };
 

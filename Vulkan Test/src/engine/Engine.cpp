@@ -13,6 +13,15 @@ Engine::Engine(unsigned int res_x, unsigned int res_y, std::shared_ptr<Camera> c
 	camera_controller = CameraController(window, camera);
 }
 
+Engine::~Engine()
+{
+	surface.reset();
+	instance.reset();
+
+	glfwDestroyWindow(window);
+	glfwTerminate();
+}
+
 void Engine::run()
 {
 	camera_controller.init_time();
@@ -57,11 +66,17 @@ void Engine::init_glfw()
 void Engine::init_vulkan()
 {
 	init_instance();
+	create_surface();
 }
 
 void Engine::init_instance()
 {
 	instance = std::make_shared<VKW_Instance>("VK Study", get_required_instance_extensions(), std::vector<const char*>());
+}
+
+void Engine::create_surface()
+{
+	surface = std::make_shared<VKW_Surface>(window, instance);
 }
 
 std::vector<const char*> Engine::get_required_instance_extensions()

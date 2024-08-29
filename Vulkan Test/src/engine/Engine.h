@@ -1,6 +1,7 @@
 #pragma once
 
 #include "vk_wrap/VKW_Instance.h"
+#include "vk_wrap/VKW_Surface.h"
 
 #include "CameraController.h"
 
@@ -11,6 +12,7 @@ class Engine
 {
 public:
 	Engine(unsigned int res_x, unsigned int res_y, std::shared_ptr<Camera> camera);
+	~Engine();
 	void run();
 private:
 	struct GLFWwindow* window;
@@ -30,11 +32,13 @@ private: // TODO: remove public
 	void init_glfw();
 	void init_vulkan();
 	void init_instance();
+	void create_surface();
 
 	std::vector<const char*> get_required_instance_extensions();
 
 public: // TODO: remove public
 	std::shared_ptr<VKW_Instance> instance;
+	std::shared_ptr<VKW_Surface> surface;
 private:
 
 

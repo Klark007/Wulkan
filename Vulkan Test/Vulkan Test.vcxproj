@@ -147,6 +147,7 @@
     <ClCompile Include="external\imgui\imgui_tables.cpp" />
     <ClCompile Include="external\imgui\imgui_widgets.cpp" />
     <ClCompile Include="external\imgui\misc\cpp\imgui_stdlib.cpp" />
+    <ClCompile Include="src\engine\vk_wrap\VKW_Surface.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\engine\Camera.cpp" />
     <ClCompile Include="src\engine\vk_wrap\VKW_Instance.cpp" />
@@ -176,6 +177,7 @@
     <ClInclude Include="src\engine\Camera.h" />
     <ClInclude Include="src\engine\vk_types.h" />
     <ClInclude Include="src\engine\vk_wrap\VKW_Instance.h" />
+    <ClInclude Include="src\engine\vk_wrap\VKW_Surface.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="shaders\terrain.txt" />
