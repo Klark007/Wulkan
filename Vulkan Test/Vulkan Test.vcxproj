@@ -170,7 +170,7 @@
     <ClInclude Include="external\imgui\imstb_truetype.h" />
     <ClInclude Include="external\imgui\misc\cpp\imgui_stdlib.h" />
     <ClInclude Include="src\engine\Camera.h" />
-    <ClInclude Include="src\vk_types.h" />
+    <ClInclude Include="src\engine\vk_types.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="shaders\terrain.txt" />

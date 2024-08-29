@@ -104,7 +104,7 @@
     <ClInclude Include="src\engine\Camera.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\vk_types.h">
+    <ClInclude Include="src\engine\vk_types.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

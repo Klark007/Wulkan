@@ -8,8 +8,7 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE // force to vulkans 0,1 range for depth
 #include "glm/glm.hpp"
 
-
-#include "engine/Exception.h"
+#include "Exception.h"
 
 #include <memory>
 #include <optional>

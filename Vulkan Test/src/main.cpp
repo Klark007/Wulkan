@@ -2,8 +2,9 @@
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_vulkan.h"
 
-#include "vk_types.h"
+#include "engine/vk_types.h"
 
+#define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
 #include <glm/gtc/matrix_transform.hpp>
@@ -161,12 +162,13 @@ public:
 
     void run() {
         initModel();
-        initWindow();
+
+        Engine e{ WIDTH, HEIGHT, camera };
+        engine = &e;
+        window = engine->get_window();
+
         initVulkan();
         initImGui();
-
-        Engine e {window, camera};
-        engine = &e;
 
         mainLoop();
         cleanup();
@@ -226,7 +228,6 @@ private:
     std::vector<VkSemaphore>  imageAvailableSemaphores;
     std::vector<VkSemaphore> renderFinishedSemaphores;
     std::vector<VkFence> inFlightFences;
-    bool framebufferResized = false;
 
     VkBuffer vertexBuffer;
     VkDeviceMemory vertexBufferMemory;
@@ -280,24 +281,6 @@ private:
                 model_indices.push_back(ix + (iy+1) * mesh_res);
             }
         }
-    }
-
-    void initWindow() {
-        glfwInit();
-
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-
-        window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
-        glfwSetWindowUserPointer(window, this);
-        glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
-
-        // disable cursor so can use raw mouse movement
-        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-        if (!glfwRawMouseMotionSupported()) {
-            throw std::runtime_error("Raw mouse motion not supported");
-        }
-
-        glfwSetCursorPosCallback(window, glfm_mouse_move_callback);
     }
 
     void initVulkan() {
@@ -1249,8 +1232,8 @@ private:
 
         result = vkQueuePresentKHR(presentQueue, &presentInfo);
 
-        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized) {
-            framebufferResized = false;
+        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || engine->resize_window) {
+            engine->resize_window = false;
             recreateSwapChain();
         }
         else if (result) {
@@ -1874,11 +1857,6 @@ private:
 
     }
 
-    static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
-        auto app = reinterpret_cast<HelloTriangleApplication*>(glfwGetWindowUserPointer(window));
-        app->framebufferResized = true;
-    }
-
     void cleanup() {
         cleanupSwapChain();
         cleanupImGui();
@@ -1977,11 +1955,4 @@ int main() {
     }
 
     return EXIT_SUCCESS;
-}
-
-void glfm_mouse_move_callback(GLFWwindow* window, double pos_x, double pos_y)
-{
-    if (engine != nullptr) {
-        engine->camera_controller.handle_mouse(pos_x, pos_y);
-    }
 }
