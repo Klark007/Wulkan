@@ -285,7 +285,7 @@ private:
 
     void initVulkan() {
         createInstance();
-        setupDebugMessenger();
+        //setupDebugMessenger();
         createSurface();
 
         pickPhysicalDevice();
@@ -408,6 +408,7 @@ private:
     }
 
     void createInstance() {
+        /*
         if (enableValidationLayers && !checkValidationLayerSupport()) {
             std::runtime_error("Validation layer requested but not avilable");
         }
@@ -446,6 +447,8 @@ private:
         if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
             throw std::runtime_error("Failed instance creation");
         }
+        */
+        instance = engine->instance->get_instance();
     }
 
     void createSurface() {
@@ -1932,10 +1935,14 @@ private:
             DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
         }
 
+        /*
         if (instance) {
             vkDestroyInstance(instance, nullptr);
             instance = VK_NULL_HANDLE;
         }
+        */
+
+        engine->instance.reset();
 
         glfwDestroyWindow(window);
 

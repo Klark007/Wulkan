@@ -7,6 +7,9 @@ Engine::Engine(unsigned int res_x, unsigned int res_y, std::shared_ptr<Camera> c
 	  res_y { res_y }
 {
 	init_glfw();
+	init_vulkan();
+
+
 	camera_controller = CameraController(window, camera);
 }
 
@@ -49,6 +52,28 @@ void Engine::init_glfw()
 
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	glfwSetCursorPosCallback(window, glfm_mouse_move_callback);
+}
+
+void Engine::init_vulkan()
+{
+	init_instance();
+}
+
+void Engine::init_instance()
+{
+	instance = std::make_shared<VKW_Instance>("VK Study", get_required_instance_extensions(), std::vector<const char*>());
+}
+
+std::vector<const char*> Engine::get_required_instance_extensions()
+{
+	uint32_t glfwExtensionCount = 0;
+	const char** glfwExtensions;
+
+	glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+
+	std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+
+	return extensions;
 }
 
 void Engine::update()

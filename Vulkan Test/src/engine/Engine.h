@@ -1,5 +1,7 @@
 #pragma once
 
+#include "vk_wrap/VKW_Instance.h"
+
 #include "CameraController.h"
 
 void glfm_mouse_move_callback(GLFWwindow* window, double pos_x, double pos_y);
@@ -14,19 +16,28 @@ private:
 	struct GLFWwindow* window;
 	unsigned int res_x, res_y;
 
-public: // TODO: remove public
-	bool resize_window = false; // set to true by resize_callback(), will execute resize to avoid issues with resources 
-private: // TODO: remove public
-	void resize();
-
-
-	void init_glfw();
-
 public:  // TODO: remove public
 	void update();
 	void draw();
 	void late_update(); // executed after draw
 private: // TODO: remove public
+
+public: // TODO: remove public
+	bool resize_window = false; // set to true by resize_callback(), will execute resize to avoid issues with resources 
+private: // TODO: remove public
+	void resize();
+
+	void init_glfw();
+	void init_vulkan();
+	void init_instance();
+
+	std::vector<const char*> get_required_instance_extensions();
+
+public: // TODO: remove public
+	std::shared_ptr<VKW_Instance> instance;
+private:
+
+
 
 public:
 	CameraController camera_controller;

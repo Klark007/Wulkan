@@ -2,6 +2,7 @@
 
 #include "vulkan/vulkan.h"
 #include "vma/vk_mem_alloc.h"
+#include "VkBootstrap.h"
 #include "vulkan/vk_enum_string_helper.h"
 
 #define GLM_FORCE_RADIANS
@@ -17,6 +18,12 @@
 #include <set>
 #include <map>
 
+
+#ifdef NDEBUG
+const bool enable_validation_layers = false;
+#else
+const bool enable_validation_layers = true;
+#endif
 
 #define VK_CHECK(x)                                                     \
     do {                                                                \

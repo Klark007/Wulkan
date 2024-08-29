@@ -135,6 +135,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="external\vk-bootstrap\VkBootstrap.cpp" />
     <ClCompile Include="src\engine\CameraController.cpp" />
     <ClCompile Include="src\engine\Engine.cpp" />
     <ClCompile Include="src\engine\Exception.cpp" />
@@ -148,6 +149,7 @@
     <ClCompile Include="external\imgui\misc\cpp\imgui_stdlib.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\engine\Camera.cpp" />
+    <ClCompile Include="src\engine\vk_wrap\VKW_Instance.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\compile.bat" />
@@ -157,6 +159,8 @@
     <None Include="shaders\terrain.tese" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="external\vk-bootstrap\VkBootstrap.h" />
+    <ClInclude Include="external\vk-bootstrap\VkBootstrapDispatch.h" />
     <ClInclude Include="src\engine\CameraController.h" />
     <ClInclude Include="src\engine\Engine.h" />
     <ClInclude Include="src\engine\Exception.h" />
@@ -171,6 +175,7 @@
     <ClInclude Include="external\imgui\misc\cpp\imgui_stdlib.h" />
     <ClInclude Include="src\engine\Camera.h" />
     <ClInclude Include="src\engine\vk_types.h" />
+    <ClInclude Include="src\engine\vk_wrap\VKW_Instance.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="shaders\terrain.txt" />
