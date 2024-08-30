@@ -288,8 +288,22 @@ private:
         //setupDebugMessenger();
         createSurface();
 
-        pickPhysicalDevice();
-        createLogicalDevice();
+        physicalDevice = engine->device->get_physical_device();
+        device = engine->device->get_device();
+
+        QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+
+        std::vector< VkDeviceQueueCreateInfo> queueCreateInfos;
+        std::set<uint32_t> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value(), indices.transferFamily.value() };
+        std::cout << "Chosen queues" << indices.graphicsFamily.value() << "," << indices.presentFamily.value() << "," << indices.transferFamily.value() << std::endl;
+
+        graphicsQueueFamily = indices.graphicsFamily.value();
+        vkGetDeviceQueue(device, graphicsQueueFamily, 0, &graphicsQueue);
+        vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
+        vkGetDeviceQueue(device, indices.transferFamily.value(), 0, &transferQueue);
+        
+        //pickPhysicalDevice();
+        //createLogicalDevice();
         
         createSwapChain();
         createImageViews();
@@ -1923,12 +1937,12 @@ private:
             graphicsPipeline = VK_NULL_HANDLE;
         }
 
+        /*
         if (device) {
             vkDestroyDevice(device, nullptr);
             device = VK_NULL_HANDLE;
         }
 
-        /*
         if (surface) {
             vkDestroySurfaceKHR(instance, surface, nullptr);
             surface = VK_NULL_HANDLE;

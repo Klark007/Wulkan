@@ -151,6 +151,8 @@
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\engine\Camera.cpp" />
     <ClCompile Include="src\engine\vk_wrap\VKW_Instance.cpp" />
+    <ClCompile Include="src\engine\vk_wrap\VKW_Device.cpp" />
+    <ClCompile Include="src\engine\vk_wrap\VKW_Queue.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\compile.bat" />
@@ -178,6 +180,8 @@
     <ClInclude Include="src\engine\vk_types.h" />
     <ClInclude Include="src\engine\vk_wrap\VKW_Instance.h" />
     <ClInclude Include="src\engine\vk_wrap\VKW_Surface.h" />
+    <ClInclude Include="src\engine\vk_wrap\VKW_Device.h" />
+    <ClInclude Include="src\engine\vk_wrap\VKW_Queue.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="shaders\terrain.txt" />

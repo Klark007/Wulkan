@@ -2,6 +2,8 @@
 
 #include <GLFW/glfw3.h>
 
+#include <iostream>
+
 Engine::Engine(unsigned int res_x, unsigned int res_y, std::shared_ptr<Camera> camera)
 	: res_x { res_x },
 	  res_y { res_y }
@@ -15,6 +17,7 @@ Engine::Engine(unsigned int res_x, unsigned int res_y, std::shared_ptr<Camera> c
 
 Engine::~Engine()
 {
+	device.reset();
 	surface.reset();
 	instance.reset();
 
@@ -67,6 +70,7 @@ void Engine::init_vulkan()
 {
 	init_instance();
 	create_surface();
+	create_device();
 }
 
 void Engine::init_instance()
@@ -79,6 +83,18 @@ void Engine::create_surface()
 	surface = std::make_shared<VKW_Surface>(window, instance);
 }
 
+void Engine::create_device()
+{
+	Required_Device_Features required_features = get_required_device_features();
+
+	device = std::make_shared<VKW_Device>(instance, surface, get_required_device_extensions(), required_features);;
+	
+	VkPhysicalDeviceProperties deviceProperties;
+	vkGetPhysicalDeviceProperties(device->get_physical_device(), &deviceProperties);
+	std::cout << "Selected GPU:" << deviceProperties.deviceName << std::endl;
+	std::cout << "Tesselation limit:" << deviceProperties.limits.maxTessellationGenerationLevel << std::endl;
+}
+
 std::vector<const char*> Engine::get_required_instance_extensions()
 {
 	uint32_t glfwExtensionCount = 0;
@@ -89,6 +105,30 @@ std::vector<const char*> Engine::get_required_instance_extensions()
 	std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
 
 	return extensions;
+}
+
+std::vector<const char*> Engine::get_required_device_extensions()
+{
+	// VK_KHR_SWAPCHAIN_EXTENSION_NAME is added automatically
+	std::vector<const char*> extensions{};
+	return extensions;
+}
+
+Required_Device_Features Engine::get_required_device_features()
+{
+	Required_Device_Features features{};
+	// 1.0 features
+	features.rf.samplerAnisotropy = true;
+	features.rf.fillModeNonSolid = true;
+	features.rf.tessellationShader = true;
+	// 1.2 features
+	features.rf12.bufferDeviceAddress = true;
+	features.rf12.descriptorIndexing = true;
+	// 1.3 features
+	features.rf13.dynamicRendering = true;
+	features.rf13.synchronization2 = true;
+
+	return features;
 }
 
 void Engine::update()
