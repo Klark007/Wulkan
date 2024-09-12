@@ -3,6 +3,7 @@
 #include "vk_wrap/VKW_Instance.h"
 #include "vk_wrap/VKW_Surface.h"
 #include "vk_wrap/VKW_Device.h"
+#include "vk_wrap/VKW_Queue.h"
 
 #include "CameraController.h"
 
@@ -32,9 +33,11 @@ private: // TODO: remove public
 
 	void init_glfw();
 	void init_vulkan();
+
 	void init_instance();
 	void create_surface();
 	void create_device();
+	void create_queues();
 
 	std::vector<const char*> get_required_instance_extensions();
 	std::vector<const char*> get_required_device_extensions();
@@ -44,6 +47,10 @@ public: // TODO: remove public
 	std::shared_ptr<VKW_Instance> instance;
 	std::shared_ptr<VKW_Surface> surface;
 	std::shared_ptr<VKW_Device> device;
+
+	std::shared_ptr<VKW_Queue> graphics_queue;
+	std::shared_ptr<VKW_Queue> present_queue;
+	std::shared_ptr<VKW_Queue> transfer_queue;
 private:
 
 

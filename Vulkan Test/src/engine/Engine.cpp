@@ -71,6 +71,7 @@ void Engine::init_vulkan()
 	init_instance();
 	create_surface();
 	create_device();
+	create_queues();
 }
 
 void Engine::init_instance()
@@ -93,6 +94,13 @@ void Engine::create_device()
 	vkGetPhysicalDeviceProperties(device->get_physical_device(), &deviceProperties);
 	std::cout << "Selected GPU:" << deviceProperties.deviceName << std::endl;
 	std::cout << "Tesselation limit:" << deviceProperties.limits.maxTessellationGenerationLevel << std::endl;
+}
+
+void Engine::create_queues()
+{
+	graphics_queue = std::make_shared<VKW_Queue>(device, vkb::QueueType::graphics);
+	present_queue  = std::make_shared<VKW_Queue>(device, vkb::QueueType::present);
+	transfer_queue = std::make_shared<VKW_Queue>(device, vkb::QueueType::transfer);
 }
 
 std::vector<const char*> Engine::get_required_instance_extensions()

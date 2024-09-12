@@ -284,13 +284,24 @@ private:
     }
 
     void initVulkan() {
-        createInstance();
+        //createInstance();
         //setupDebugMessenger();
-        createSurface();
+        //createSurface();
+
+        instance = engine->instance->get_instance();
+
+        surface = engine->surface->get_surface();
 
         physicalDevice = engine->device->get_physical_device();
         device = engine->device->get_device();
 
+        graphicsQueueFamily = engine->graphics_queue->get_queue_family();
+        std::cout << "Chosen queues" << engine->graphics_queue->get_queue_family() << "," << engine->present_queue->get_queue_family() << "," << engine->transfer_queue->get_queue_family() << std::endl;
+        graphicsQueue = engine->graphics_queue->get_queue();
+        presentQueue  = engine->present_queue->get_queue();
+        transferQueue = engine->transfer_queue->get_queue();
+
+        /*
         QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
 
         std::vector< VkDeviceQueueCreateInfo> queueCreateInfos;
@@ -301,7 +312,8 @@ private:
         vkGetDeviceQueue(device, graphicsQueueFamily, 0, &graphicsQueue);
         vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
         vkGetDeviceQueue(device, indices.transferFamily.value(), 0, &transferQueue);
-        
+        */
+
         //pickPhysicalDevice();
         //createLogicalDevice();
         
@@ -422,7 +434,6 @@ private:
     }
 
     void createInstance() {
-        /*
         if (enableValidationLayers && !checkValidationLayerSupport()) {
             std::runtime_error("Validation layer requested but not avilable");
         }
@@ -461,16 +472,13 @@ private:
         if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
             throw std::runtime_error("Failed instance creation");
         }
-        */
-        instance = engine->instance->get_instance();
     }
 
     void createSurface() {
-        /*if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS) {
+        if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS) {
             throw std::runtime_error("Failed to create window surface");
         }
-        */
-        surface = engine->surface->get_surface();
+        
     }
 
     void pickPhysicalDevice() {
@@ -595,10 +603,14 @@ private:
         createInfo.imageArrayLayers = 1; // always 1 unless stereo/multiview surface
         createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
+        /*
         QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
         uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
+        */
 
-        if (indices.graphicsFamily.value() != indices.presentFamily.value()) {
+        uint32_t queueFamilyIndices[] = { engine->graphics_queue->get_queue_family(), engine->present_queue->get_queue_family() };
+
+        if (engine->graphics_queue->get_queue_family() != engine->present_queue->get_queue_family()) {
             createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
             createInfo.queueFamilyIndexCount = sizeof(queueFamilyIndices) / sizeof(queueFamilyIndices[0]);
             createInfo.pQueueFamilyIndices = queueFamilyIndices;
@@ -891,9 +903,14 @@ private:
         bufferInfo.size = size;
         bufferInfo.usage = usage;
 
+        /*
         QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
         uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.transferFamily.value() };
+        */
+        uint32_t queueFamilyIndices[] = { engine->graphics_queue->get_queue_family(), engine->transfer_queue->get_queue_family() };
 
+
+        // TODO: is this guaranteed?
         bufferInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
         bufferInfo.queueFamilyIndexCount = sizeof(queueFamilyIndices) / sizeof(queueFamilyIndices[0]);
         bufferInfo.pQueueFamilyIndices = queueFamilyIndices;
@@ -1127,12 +1144,12 @@ private:
 
     void createCommandPool() {
         // manages memory for command buffers
-        QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice);
+        // QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice);
 
         VkCommandPoolCreateInfo graphicsPoolInfo{};
         graphicsPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
         graphicsPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-        graphicsPoolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
+        graphicsPoolInfo.queueFamilyIndex = engine->graphics_queue->get_queue_family();
 
         if (vkCreateCommandPool(device, &graphicsPoolInfo, nullptr, &graphicsCommandPool) != VK_SUCCESS) {
             throw std::runtime_error("Failed to create graphics command pool!");
@@ -1141,7 +1158,7 @@ private:
         VkCommandPoolCreateInfo transferPoolInfo{};
         transferPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
         transferPoolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT; // short lived buffers
-        transferPoolInfo.queueFamilyIndex = queueFamilyIndices.transferFamily.value();
+        transferPoolInfo.queueFamilyIndex = engine->transfer_queue->get_queue_family();
 
         if (vkCreateCommandPool(device, &transferPoolInfo, nullptr, &transferCommandPool) != VK_SUCCESS) {
             throw std::runtime_error("Failed to create transfer command pool!");
