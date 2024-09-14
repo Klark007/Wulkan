@@ -17,7 +17,7 @@ Engine::Engine(unsigned int res_x, unsigned int res_y, std::shared_ptr<Camera> c
 
 Engine::~Engine()
 {
-	cleanup_swapchain();
+	destroy_swapchain();
 
 	device.reset();
 	surface.reset();
@@ -114,13 +114,13 @@ void Engine::create_swapchain()
 void Engine::recreate_swapchain()
 {
   // TODO wait device idle
-	cleanup_swapchain();
+	destroy_swapchain();
 
 	// TODO swap to recreating using previous swapchain
 	create_swapchain();
 }
 
-void Engine::cleanup_swapchain()
+void Engine::destroy_swapchain()
 {
   // Destroys images, image views and framebuffers associated with the swapchain
 	// TODO: reset images etc.

@@ -42,7 +42,7 @@ private: // TODO: remove public
 public: // TODO: remove public
   void create_swapchain();
 	void recreate_swapchain();
-	void cleanup_swapchain();
+	void destroy_swapchain();
 private:
 
 	std::vector<const char*> get_required_instance_extensions();

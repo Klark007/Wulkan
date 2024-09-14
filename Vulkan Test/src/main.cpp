@@ -365,8 +365,8 @@ private:
         init_info.DescriptorPool = descriptorPool;
         init_info.RenderPass = renderPass;
         init_info.Subpass = 0;
-        init_info.MinImageCount = swapChainImages.size();
-        init_info.ImageCount = swapChainImages.size();
+        init_info.MinImageCount = engine->swapchain->size();
+        init_info.ImageCount = engine->swapchain->size();
         init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
         init_info.CheckVkResultFn = check_vk_result;
         ImGui_ImplVulkan_Init(&init_info);
@@ -628,9 +628,13 @@ private:
         }
         */
         swapChain = engine->swapchain->get_swapchain();
+        
+        // TODO: Remove temp variables
         swapChainImageFormat = engine->swapchain->get_format();
         swapChainExtent = engine->swapchain->get_extent();
+        //swapChainImages = engine->swapchain->get_images();
 
+        /*
         unsigned int imageCount;
         if (vkGetSwapchainImagesKHR(device, swapChain, &imageCount, nullptr)) {
             throw std::runtime_error("Failed to query swapchain images");
@@ -639,15 +643,18 @@ private:
         if (vkGetSwapchainImagesKHR(device, swapChain, &imageCount, swapChainImages.data())) {
             throw std::runtime_error("Failed to query swapchain images");
         }
+        */
     }
 
     void createImageViews() {
+        /*
         // describe how and which part of image to access
         swapChainImageViews.resize(swapChainImages.size());
         
         for (size_t i = 0; i < swapChainImageViews.size(); i++) {
             swapChainImageViews.at(i) = createImageView(swapChainImages.at(i), swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
         }
+        */
     }
 
     void createRenderPass() {
@@ -879,11 +886,11 @@ private:
     }
 
     void createFrameBuffers() {
-        swapChainFramebuffers.resize(swapChainImageViews.size());
+        swapChainFramebuffers.resize(engine->swapchain->size());
 
-        for (size_t i = 0; i < swapChainImageViews.size(); i++) {
+        for (size_t i = 0; i < engine->swapchain->size(); i++) {
             std::array<VkImageView,2> attachments = {
-                swapChainImageViews[i],
+                engine->swapchain->at(i),
                 depthImageView
             };
 
@@ -1308,10 +1315,12 @@ private:
                 framebuffer = VK_NULL_HANDLE;
             }
         }
-
+        
+        /*
         for (auto imageView : swapChainImageViews) {
             vkDestroyImageView(device, imageView, nullptr);
         }
+        */
 
         VK_DESTROY(depthImageView, vkDestroyImageView, device, depthImageView);
         VK_DESTROY(depthImage, vkDestroyImage, device, depthImage);
@@ -1323,7 +1332,7 @@ private:
             swapChain = VK_NULL_HANDLE;
         }
         */
-        engine->cleanup_swapchain();
+        engine->destroy_swapchain();
     }
 
     void cleanupImGui() {

@@ -36,9 +36,31 @@ VKW_Swapchain::VKW_Swapchain(GLFWwindow* window, std::shared_ptr<VKW_Device> dev
   }
 
   swapchain = build_result.value();
+  image_views = get_image_views();
 }
 
 VKW_Swapchain::~VKW_Swapchain()
 {
+  swapchain.destroy_image_views(image_views);
   vkb::destroy_swapchain(swapchain);
+}
+
+std::vector<VkImage> VKW_Swapchain::get_images()
+{
+  auto image_result = swapchain.get_images();
+
+  if (!image_result) {
+    throw SetupException("Failed to get swapchain images: " + image_result.error().message(), __FILE__, __LINE__);
+  }
+  return image_result.value();
+}
+
+std::vector<VkImageView> VKW_Swapchain::get_image_views()
+{
+  auto view_result = swapchain.get_image_views();
+  
+  if (!view_result) {
+    throw SetupException("Failed to get swapchain image views: " + view_result.error().message(), __FILE__, __LINE__);
+  }
+  return view_result.value();
 }
