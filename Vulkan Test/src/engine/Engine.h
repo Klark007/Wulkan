@@ -4,6 +4,7 @@
 #include "vk_wrap/VKW_Surface.h"
 #include "vk_wrap/VKW_Device.h"
 #include "vk_wrap/VKW_Queue.h"
+#include "vk_wrap/VKW_Swapchain.h"
 
 #include "CameraController.h"
 
@@ -38,6 +39,11 @@ private: // TODO: remove public
 	void create_surface();
 	void create_device();
 	void create_queues();
+public: // TODO: remove public
+  void create_swapchain();
+	void recreate_swapchain();
+	void cleanup_swapchain();
+private:
 
 	std::vector<const char*> get_required_instance_extensions();
 	std::vector<const char*> get_required_device_extensions();
@@ -51,6 +57,8 @@ public: // TODO: remove public
 	std::shared_ptr<VKW_Queue> graphics_queue;
 	std::shared_ptr<VKW_Queue> present_queue;
 	std::shared_ptr<VKW_Queue> transfer_queue;
+
+	std::shared_ptr<VKW_Swapchain> swapchain;
 private:
 
 

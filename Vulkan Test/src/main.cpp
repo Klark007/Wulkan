@@ -574,7 +574,7 @@ private:
 
     void createSwapChain() {
         // create swapchain which interfaces with the presentation engine
-
+        /*
         SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice);
 
         VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
@@ -602,12 +602,12 @@ private:
 
         createInfo.imageArrayLayers = 1; // always 1 unless stereo/multiview surface
         createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-
+        */
         /*
         QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
         uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
         */
-
+        /*
         uint32_t queueFamilyIndices[] = { engine->graphics_queue->get_queue_family(), engine->present_queue->get_queue_family() };
 
         if (engine->graphics_queue->get_queue_family() != engine->present_queue->get_queue_family()) {
@@ -626,7 +626,12 @@ private:
         if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapChain) != VK_SUCCESS) {
             throw std::runtime_error("failed to create swapchain");
         }
+        */
+        swapChain = engine->swapchain->get_swapchain();
+        swapChainImageFormat = engine->swapchain->get_format();
+        swapChainExtent = engine->swapchain->get_extent();
 
+        unsigned int imageCount;
         if (vkGetSwapchainImagesKHR(device, swapChain, &imageCount, nullptr)) {
             throw std::runtime_error("Failed to query swapchain images");
         }
@@ -1312,10 +1317,13 @@ private:
         VK_DESTROY(depthImage, vkDestroyImage, device, depthImage);
         VK_DESTROY(depthImageMemory , vkFreeMemory, device, depthImageMemory);
 
+        /*
         if (swapChain) {
             vkDestroySwapchainKHR(device, swapChain, nullptr);
             swapChain = VK_NULL_HANDLE;
         }
+        */
+        engine->cleanup_swapchain();
     }
 
     void cleanupImGui() {
@@ -1337,6 +1345,7 @@ private:
 
         cleanupSwapChain();
 
+        engine->create_swapchain();
         createSwapChain();
         createImageViews();
         createDepthResources();
@@ -1990,6 +1999,11 @@ int main() {
     }
     catch (const std::exception& e) {
         std::cerr << e.what() << std::endl;
+
+        std::cout << "Press anything to close:";
+        char c;
+        std::cin >> c;
+        
         return EXIT_FAILURE;
     }
 

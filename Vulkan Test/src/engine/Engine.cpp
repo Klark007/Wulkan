@@ -17,6 +17,8 @@ Engine::Engine(unsigned int res_x, unsigned int res_y, std::shared_ptr<Camera> c
 
 Engine::~Engine()
 {
+	cleanup_swapchain();
+
 	device.reset();
 	surface.reset();
 	instance.reset();
@@ -72,6 +74,7 @@ void Engine::init_vulkan()
 	create_surface();
 	create_device();
 	create_queues();
+	create_swapchain();
 }
 
 void Engine::init_instance()
@@ -101,6 +104,28 @@ void Engine::create_queues()
 	graphics_queue = std::make_shared<VKW_Queue>(device, vkb::QueueType::graphics);
 	present_queue  = std::make_shared<VKW_Queue>(device, vkb::QueueType::present);
 	transfer_queue = std::make_shared<VKW_Queue>(device, vkb::QueueType::transfer);
+}
+
+void Engine::create_swapchain()
+{
+	swapchain = std::make_shared<VKW_Swapchain>(window, device);
+}
+
+void Engine::recreate_swapchain()
+{
+  // TODO wait device idle
+	cleanup_swapchain();
+
+	// TODO swap to recreating using previous swapchain
+	create_swapchain();
+}
+
+void Engine::cleanup_swapchain()
+{
+  // Destroys images, image views and framebuffers associated with the swapchain
+	// TODO: reset images etc.
+
+	swapchain.reset();
 }
 
 std::vector<const char*> Engine::get_required_instance_extensions()
