@@ -17,6 +17,11 @@ Engine::Engine(unsigned int res_x, unsigned int res_y, std::shared_ptr<Camera> c
 
 Engine::~Engine()
 {
+	for (unsigned int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+		command_data.at(i).graphics_command_pool.reset();
+		command_data.at(i).transfer_command_pool.reset();
+	}
+
 	destroy_swapchain();
 
 	device.reset();
@@ -74,7 +79,10 @@ void Engine::init_vulkan()
 	create_surface();
 	create_device();
 	create_queues();
+
 	create_swapchain();
+	
+	create_command_data();
 }
 
 void Engine::init_instance()
@@ -122,10 +130,24 @@ void Engine::recreate_swapchain()
 
 void Engine::destroy_swapchain()
 {
-  // Destroys images, image views and framebuffers associated with the swapchain
+	// Destroys images, image views and framebuffers associated with the swapchain
 	// TODO: reset images etc.
 
 	swapchain.reset();
+}
+
+void Engine::create_command_data()
+{
+	// Use 1 command pool with one buffer per thread and image in flight
+
+	for (unsigned int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+		std::shared_ptr<VKW_CommandPool> graphics_pool = std::make_shared<VKW_CommandPool>(device, graphics_queue, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+		command_data.at(i) = {
+			graphics_pool,
+			std::make_shared<VKW_CommandPool>(device, transfer_queue, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT),
+			std::make_shared<VKW_CommandBuffer>(device, graphics_pool)
+		};
+	}
 }
 
 std::vector<const char*> Engine::get_required_instance_extensions()

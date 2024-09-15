@@ -1,15 +1,28 @@
 #pragma once
 
+// Consider adding implicit conversions from Wrapped object to their vulkan base struct
 #include "vk_wrap/VKW_Instance.h"
 #include "vk_wrap/VKW_Surface.h"
 #include "vk_wrap/VKW_Device.h"
+
 #include "vk_wrap/VKW_Queue.h"
 #include "vk_wrap/VKW_Swapchain.h"
+
+#include "vk_wrap/VKW_CommandPool.h"
+#include "vk_wrap/VKW_CommandBuffer.h"
 
 #include "CameraController.h"
 
 void glfm_mouse_move_callback(GLFWwindow* window, double pos_x, double pos_y);
 void glfw_window_resize_callback(GLFWwindow* window, int width, int height);
+
+constexpr unsigned int MAX_FRAMES_IN_FLIGHT = 2;
+
+struct CommandData {
+	std::shared_ptr<VKW_CommandPool> graphics_command_pool;
+	std::shared_ptr<VKW_CommandPool> transfer_command_pool;
+	std::shared_ptr<VKW_CommandBuffer> graphics_command_buffer;
+};
 
 class Engine
 {
@@ -44,6 +57,7 @@ public: // TODO: remove public
 	void recreate_swapchain();
 	void destroy_swapchain();
 private:
+	void create_command_data(); // creates command pools and buffers
 
 	std::vector<const char*> get_required_instance_extensions();
 	std::vector<const char*> get_required_device_extensions();
@@ -59,6 +73,8 @@ public: // TODO: remove public
 	std::shared_ptr<VKW_Queue> transfer_queue;
 
 	std::shared_ptr<VKW_Swapchain> swapchain;
+
+	std::array<CommandData, MAX_FRAMES_IN_FLIGHT> command_data;
 private:
 
 

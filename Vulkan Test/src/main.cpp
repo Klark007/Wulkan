@@ -29,7 +29,7 @@
 #include <fstream>
 
 
-const unsigned int MAX_FRAMES_IN_FLIGHT = 2;
+// const unsigned int MAX_FRAMES_IN_FLIGHT = 2;
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 
@@ -325,7 +325,7 @@ private:
         createDescriptorSetLayout();
         createGraphicsPipeline();
         
-        createCommandPool();
+        //createCommandPool();
 
         createDepthResources();
         createFrameBuffers(); // needs depth texture
@@ -340,7 +340,7 @@ private:
         
         createDescriptorPool();
         createDescriptorSets();
-        createCommandBuffers();
+        //createCommandBuffers();
         
         createSyncObjects();
     }
@@ -1241,9 +1241,9 @@ private:
 
         updateUniformBuffer(currentFrame);
 
-        vkResetCommandBuffer(commandBuffers[currentFrame], 0);
+        vkResetCommandBuffer(engine->command_data.at(currentFrame).graphics_command_buffer->get_command_buffer(), 0);
 
-        recordCommand(commandBuffers[currentFrame], imageIndex, drawImGui());
+        recordCommand(engine->command_data.at(currentFrame).graphics_command_buffer->get_command_buffer(), imageIndex, drawImGui());
 
 
         // submit command buffer
@@ -1257,7 +1257,8 @@ private:
         submitInfo.pWaitDstStageMask = waitStages;
 
         submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &commandBuffers[currentFrame];
+        VkCommandBuffer command_buffer = engine->command_data.at(currentFrame).graphics_command_buffer->get_command_buffer();
+        submitInfo.pCommandBuffers = &command_buffer;
 
         VkSemaphore signalSemaphores[] = { renderFinishedSemaphores[currentFrame] };
         submitInfo.signalSemaphoreCount = 1;
@@ -1637,7 +1638,7 @@ private:
     }
 
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
-        VkCommandBuffer commandBuffer = beginSingleTimeCommands(transferCommandPool);
+        VkCommandBuffer commandBuffer = beginSingleTimeCommands(engine->command_data.at(currentFrame).transfer_command_pool->get_command_pool());
 
         VkBufferCopy copyRegion{};
         copyRegion.srcOffset = 0;
@@ -1645,7 +1646,7 @@ private:
         copyRegion.size = size;
         vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
 
-        endSingleTimeCommands(commandBuffer, transferCommandPool, transferQueue);
+        endSingleTimeCommands(commandBuffer, engine->command_data.at(currentFrame).transfer_command_pool->get_command_pool(), transferQueue);
     }
 
     VkCommandBuffer beginSingleTimeCommands(VkCommandPool commandPool) {
@@ -1750,7 +1751,7 @@ private:
     }
 
     void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) {
-        VkCommandBuffer commandBuffer = beginSingleTimeCommands(graphicsCommandPool);
+        VkCommandBuffer commandBuffer = beginSingleTimeCommands(engine->command_data.at(currentFrame).graphics_command_pool->get_command_pool());
 
         VkImageMemoryBarrier barrier{};
         barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -1810,11 +1811,11 @@ private:
             1, &barrier
         );
 
-        endSingleTimeCommands(commandBuffer, graphicsCommandPool, graphicsQueue);
+        endSingleTimeCommands(commandBuffer, engine->command_data.at(currentFrame).graphics_command_pool->get_command_pool(), graphicsQueue);
     }
 
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height) {
-        VkCommandBuffer commandBuffer = beginSingleTimeCommands(graphicsCommandPool);
+        VkCommandBuffer commandBuffer = beginSingleTimeCommands(engine->command_data.at(currentFrame).graphics_command_pool->get_command_pool());
 
         VkBufferImageCopy region{};
         region.bufferOffset = 0;
@@ -1835,7 +1836,7 @@ private:
         // we assume image already in VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL format
         vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
         
-        endSingleTimeCommands(commandBuffer, graphicsCommandPool, graphicsQueue);
+        endSingleTimeCommands(commandBuffer, engine->command_data.at(currentFrame).graphics_command_pool->get_command_pool(), graphicsQueue);
     }
 
     VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) {
@@ -1950,12 +1951,14 @@ private:
             }
         }
 
+        /*
         if (graphicsCommandPool) {
             vkDestroyCommandPool(device, graphicsCommandPool, nullptr);
             graphicsCommandPool = VK_NULL_HANDLE;
         }
 
         VK_DESTROY(transferCommandPool, vkDestroyCommandPool, device, transferCommandPool);
+        */
 
         if (pipelineLayout) {
             vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
