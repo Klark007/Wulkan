@@ -1,7 +1,9 @@
 #include "VKW_Device.h"
 
 VKW_Device::VKW_Device(std::shared_ptr<VKW_Instance> instance, std::shared_ptr<VKW_Surface> surface, std::vector<const char*> device_extensions, Required_Device_Features required_features, bool build)
-	: selector {instance->get_vkb_instance()}
+	: instance{ instance }, selector {
+	instance->get_vkb_instance()
+}
 {
 	selector.set_surface(surface->get_surface())
 		.add_required_extensions(device_extensions)
@@ -22,7 +24,29 @@ VKW_Device::VKW_Device(std::shared_ptr<VKW_Instance> instance, std::shared_ptr<V
 
 VKW_Device::~VKW_Device()
 {
+	if (allocator) {
+		vmaDestroyAllocator(allocator);
+		allocator = VK_NULL_HANDLE;
+	}
+
 	vkb::destroy_device(device);
+}
+
+void VKW_Device::init_allocator()
+{
+	VmaVulkanFunctions vulkan_functions = {};
+	vulkan_functions.vkGetInstanceProcAddr = &vkGetInstanceProcAddr;
+	vulkan_functions.vkGetDeviceProcAddr = &vkGetDeviceProcAddr;
+
+	VmaAllocatorCreateInfo allocator_info = {};
+	allocator_info.flags = 0;
+	allocator_info.vulkanApiVersion = VK_API_VERSION_1_3;
+	allocator_info.physicalDevice = get_physical_device();
+	allocator_info.device = get_device();
+	allocator_info.instance = instance->get_instance();
+	allocator_info.pVulkanFunctions = &vulkan_functions;
+
+	VK_CHECK_ET(vmaCreateAllocator(&allocator_info, &allocator), SetupException, "Failed to create VMA Allocator");
 }
 
 void VKW_Device::select_and_build()
@@ -45,4 +69,6 @@ void VKW_Device::select_and_build()
 	}
 
 	device = build_result.value();
+
+	init_allocator();
 }

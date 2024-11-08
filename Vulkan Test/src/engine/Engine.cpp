@@ -1,5 +1,8 @@
 #include "Engine.h"
 
+#define VMA_IMPLEMENTATION
+#include "vma/vk_mem_alloc.h"
+
 #include <GLFW/glfw3.h>
 
 #include <iostream>
@@ -18,8 +21,14 @@ Engine::Engine(unsigned int res_x, unsigned int res_y, std::shared_ptr<Camera> c
 Engine::~Engine()
 {
 	for (unsigned int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-		command_data.at(i).graphics_command_pool.reset();
-		command_data.at(i).transfer_command_pool.reset();
+		VK_DESTROY(sync_structs.at(i).swapchain_semaphore, vkDestroySemaphore, device->get_device(), sync_structs.at(i).swapchain_semaphore);
+		VK_DESTROY(sync_structs.at(i).render_semaphore, vkDestroySemaphore, device->get_device(), sync_structs.at(i).render_semaphore);
+		VK_DESTROY(sync_structs.at(i).render_fence, vkDestroyFence, device->get_device(), sync_structs.at(i).render_fence);
+	}
+
+	for (unsigned int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+		command_structs.at(i).graphics_command_pool.reset();
+		command_structs.at(i).transfer_command_pool.reset();
 	}
 
 	destroy_swapchain();
@@ -82,7 +91,8 @@ void Engine::init_vulkan()
 
 	create_swapchain();
 	
-	create_command_data();
+	create_command_structs();
+	create_sync_structs();
 }
 
 void Engine::init_instance()
@@ -136,18 +146,61 @@ void Engine::destroy_swapchain()
 	swapchain.reset();
 }
 
-void Engine::create_command_data()
+void Engine::create_command_structs()
 {
 	// Use 1 command pool with one buffer per thread and image in flight
 
 	for (unsigned int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 		std::shared_ptr<VKW_CommandPool> graphics_pool = std::make_shared<VKW_CommandPool>(device, graphics_queue, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
-		command_data.at(i) = {
+		command_structs.at(i) = {
 			graphics_pool,
 			std::make_shared<VKW_CommandPool>(device, transfer_queue, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT),
 			std::make_shared<VKW_CommandBuffer>(device, graphics_pool)
 		};
 	}
+}
+
+void Engine::create_sync_structs()
+{
+	// TODO: look into Semaphore/Fence pool
+	VkSemaphoreCreateInfo semaphore_create_info{};
+	semaphore_create_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+	VkFenceCreateInfo fence_create_info{};
+	fence_create_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+	fence_create_info.flags = VK_FENCE_CREATE_SIGNALED_BIT; // start in signaled state
+
+	for (unsigned int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+		sync_structs.at(i) = {};
+		VK_CHECK_E(vkCreateSemaphore(device->get_device(), &semaphore_create_info, nullptr, &sync_structs.at(i).swapchain_semaphore), SetupException);
+		VK_CHECK_E(vkCreateSemaphore(device->get_device(), &semaphore_create_info, nullptr, &sync_structs.at(i).render_semaphore), SetupException);
+		VK_CHECK_E(vkCreateFence(device->get_device(), &fence_create_info, nullptr, &sync_structs.at(i).render_fence), SetupException);
+	}
+}
+
+bool Engine::aquire_image()
+{
+	VK_CHECK_E(vkWaitForFences(device->get_device(), 1, &sync_structs.at(current_frame).render_fence, VK_TRUE, UINT64_MAX), RuntimeException);
+	
+	VkResult aquire_image_result = vkAcquireNextImageKHR(
+		device->get_device(), 
+		swapchain->get_swapchain(),
+		UINT64_MAX, 
+		sync_structs.at(current_frame).swapchain_semaphore, 
+		VK_NULL_HANDLE, 
+		&current_swapchain_image_idx
+	);
+	if (aquire_image_result == VK_ERROR_OUT_OF_DATE_KHR) {
+		std::cout << aquire_image_result << "," << resize_window << std::endl;
+	}
+	else if (aquire_image_result != VK_SUCCESS && aquire_image_result != VK_SUBOPTIMAL_KHR) {
+		throw RuntimeException("Failed to aquire image from swapchain: " + std::string(string_VkResult(aquire_image_result)), __FILE__, __LINE__);
+	}
+	
+	
+	// we have successfully aquired image, can reset fence
+	VK_CHECK_E(vkResetFences(device->get_device(), 1, &sync_structs.at(current_frame).render_fence), RuntimeException);
+	return false;
 }
 
 std::vector<const char*> Engine::get_required_instance_extensions()
@@ -196,10 +249,15 @@ void Engine::update()
 
 void Engine::draw()
 {
+	if (!aquire_image()) {
+		return;
+	}
 }
 
 void Engine::late_update()
 {
+	current_frame = (current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
+
 }
 
 inline void Engine::resize()

@@ -110,7 +110,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\VulkanSDK\1.3.290.0\Lib;C:\VulkanSDK\1.3.268.0\Lib;C:\Users\gruj\source\dependencies\lib;%(AdditionalLibraryDirectories);external\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\VulkanSDK\1.3.290.0\Lib;C:\VulkanSDK\1.3.268.0\Lib;%(AdditionalLibraryDirectories);external\lib</AdditionalLibraryDirectories>
       <AdditionalDependencies>vulkan-1.lib;glfw3.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -156,6 +156,8 @@
     <ClCompile Include="src\engine\vk_wrap\VKW_Swapchain.cpp" />
     <ClCompile Include="src\engine\vk_wrap\VKW_CommandPool.cpp" />
     <ClCompile Include="src\engine\vk_wrap\VKW_CommandBuffer.cpp" />
+    <ClCompile Include="src\engine\Texture.cpp" />
+    <ClCompile Include="src\engine\vk_wrap\VKW_Buffer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\compile.bat" />
@@ -188,6 +190,8 @@
     <ClInclude Include="src\engine\vk_wrap\VKW_Swapchain.h" />
     <ClInclude Include="src\engine\vk_wrap\VKW_CommandPool.h" />
     <ClInclude Include="src\engine\vk_wrap\VKW_CommandBuffer.h" />
+    <ClInclude Include="src\engine\Texture.h" />
+    <ClInclude Include="src\engine\vk_wrap\VKW_Buffer.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="shaders\terrain.txt" />

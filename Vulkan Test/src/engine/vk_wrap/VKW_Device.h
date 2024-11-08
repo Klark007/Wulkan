@@ -5,6 +5,10 @@
 #include "VKW_Instance.h"
 #include "VKW_Surface.h"
 
+#define VMA_STATIC_VULKAN_FUNCTIONS 0
+#define VMA_DYNAMIC_VULKAN_FUNCTIONS 1
+#include "vma/vk_mem_alloc.h"
+
 struct Required_Device_Features {
 	VkPhysicalDeviceFeatures rf;
 	VkPhysicalDeviceVulkan11Features rf11;
@@ -20,10 +24,15 @@ public:
 	VKW_Device(std::shared_ptr<VKW_Instance> instance, std::shared_ptr<VKW_Surface> surface, std::vector<const char*> device_extensions, Required_Device_Features required_features, bool build=true);
 	~VKW_Device();
 private:
+	std::shared_ptr<VKW_Instance> instance;
+
 	vkb::PhysicalDevice physical_device;
 	vkb::Device device;
 
 	vkb::PhysicalDeviceSelector selector;
+
+	VmaAllocator allocator;
+	void init_allocator();
 public:
 	template<class T>
 	void add_extension_features(T features);
@@ -34,6 +43,8 @@ public:
 	inline VkDevice get_device() const { return device.device; };
 	inline vkb::PhysicalDevice get_vkb_physical_device() const { return physical_device; };
 	inline VkPhysicalDevice get_physical_device() const { return physical_device.physical_device; };
+
+	inline VmaAllocator get_allocator() const { return allocator; };
 };
 
 // Not sure if working correctly

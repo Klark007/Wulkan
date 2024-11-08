@@ -201,11 +201,11 @@ private:
     VkQueue transferQueue;
 
     VkSwapchainKHR swapChain;
-    std::vector<VkImage> swapChainImages;
+    //std::vector<VkImage> swapChainImages;
     VkFormat swapChainImageFormat;
     VkExtent2D swapChainExtent;
 
-    std::vector<VkImageView> swapChainImageViews;
+    //std::vector<VkImageView> swapChainImageViews;
 
     VkImage depthImage;
     VkDeviceMemory depthImageMemory;
@@ -225,7 +225,7 @@ private:
 
     VkCommandPool transferCommandPool;
 
-    std::vector<VkSemaphore>  imageAvailableSemaphores;
+    std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> renderFinishedSemaphores;
     std::vector<VkFence> inFlightFences;
 
@@ -318,7 +318,7 @@ private:
         //createLogicalDevice();
         
         createSwapChain();
-        createImageViews();
+        //createImageViews();
         
         createRenderPass();
         
@@ -662,7 +662,7 @@ private:
         colorAttachement.format = swapChainImageFormat;
         colorAttachement.samples = VK_SAMPLE_COUNT_1_BIT;
 
-        colorAttachement.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        colorAttachement.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR; // clear before reading
         colorAttachement.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 
         colorAttachement.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED; // layout of image before renderpass
@@ -967,16 +967,17 @@ private:
 
         // create staging buffer for image
         VkBuffer stagingBuffer;
-        VkDeviceMemory stagingBufferMemory;
 
-        createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+        VKW_Buffer buffer{
+            engine->device,
+            imageSize,
+            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            true
+        };
+        stagingBuffer = buffer.get_buffer();
 
-        void* data;
-        if (vkMapMemory(device, stagingBufferMemory, 0, imageSize, 0, &data) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to map texture staging buffer");
-        }
-        memcpy(data, pixels, (size_t)imageSize);
-        vkUnmapMemory(device, stagingBufferMemory);
+        buffer.copy(pixels);
 
         stbi_image_free(pixels);
 
@@ -986,9 +987,6 @@ private:
         copyBufferToImage(stagingBuffer, textureImage, texWidth, texHeight);
 
         transitionImageLayout(textureImage, VK_FORMAT_R8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-        VK_DESTROY(stagingBuffer, vkDestroyBuffer, device, stagingBuffer);
-        VK_DESTROY(stagingBufferMemory, vkFreeMemory, device, stagingBufferMemory);
     }
 
     void createTextureImageView() {
@@ -1028,46 +1026,40 @@ private:
     void createVertexBuffer() {
         VkDeviceSize bufferSize = sizeof(model_vertices[0]) * model_vertices.size();
         
-        VkBuffer stagingBuffer;
-        VkDeviceMemory stagingBufferMemory;
-        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+        VKW_Buffer buffer{
+            engine->device,
+            bufferSize, 
+            VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            true
+        };
+        VkBuffer stagingBuffer = buffer.get_buffer();
 
-        void* data;
-        if (vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to map vertex buffer");
-        }
-            memcpy(data, model_vertices.data(), (size_t)bufferSize);
-        vkUnmapMemory(device, stagingBufferMemory);
+        buffer.copy(model_vertices.data());
 
         createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer, vertexBufferMemory);
 
         copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
-
-        VK_DESTROY(stagingBuffer, vkDestroyBuffer, device, stagingBuffer);
-        VK_DESTROY(stagingBufferMemory, vkFreeMemory, device, stagingBufferMemory);
     }
 
     void createIndexBuffer() {
         VkDeviceSize bufferSize = sizeof(model_indices[0]) * model_indices.size();
 
-        VkBuffer stagingBuffer;
-        VkDeviceMemory stagingBufferMemory;
-        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+        VKW_Buffer buffer{
+            engine->device,
+            bufferSize,
+            VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            true
+        };
 
-        void* data;
-        if (vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to map index buffer");
-        }
-        memcpy(data, model_indices.data(), (size_t)bufferSize);
+        VkBuffer stagingBuffer = buffer.get_buffer();
         
-        vkUnmapMemory(device, stagingBufferMemory);
-        
+        buffer.copy(model_indices.data());
+
         createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer, indexBufferMemory);
 
         copyBuffer(stagingBuffer, indexBuffer, bufferSize);
-
-        VK_DESTROY(stagingBuffer, vkDestroyBuffer, device, stagingBuffer);
-        VK_DESTROY(stagingBufferMemory, vkFreeMemory, device, stagingBufferMemory);
     }
 
     void createUniformBuffers() {
@@ -1216,6 +1208,7 @@ private:
 
         while (!glfwWindowShouldClose(window)) {
             engine->update();
+            engine->draw();
             drawFrame();
             engine->late_update();
         }
@@ -1224,6 +1217,7 @@ private:
     }
 
     void drawFrame() {
+        /*
         vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
         uint32_t imageIndex;
@@ -1238,33 +1232,35 @@ private:
         }
 
         vkResetFences(device, 1, &inFlightFences[currentFrame]); // only reset once work is submitted to avoid deadlock
+        */
+        uint32_t imageIndex = engine->current_swapchain_image_idx; 
 
         updateUniformBuffer(currentFrame);
 
-        vkResetCommandBuffer(engine->command_data.at(currentFrame).graphics_command_buffer->get_command_buffer(), 0);
+        vkResetCommandBuffer(engine->command_structs.at(currentFrame).graphics_command_buffer->get_command_buffer(), 0);
 
-        recordCommand(engine->command_data.at(currentFrame).graphics_command_buffer->get_command_buffer(), imageIndex, drawImGui());
+        recordCommand(engine->command_structs.at(currentFrame).graphics_command_buffer->get_command_buffer(), imageIndex, drawImGui());
 
 
         // submit command buffer
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-        VkSemaphore waitSemaphores[] = { imageAvailableSemaphores[currentFrame] };
+        VkSemaphore waitSemaphores[] = { engine->sync_structs.at(engine->current_frame).swapchain_semaphore};
         VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT}; // wait with writing colors until image available
         submitInfo.waitSemaphoreCount = 1;
         submitInfo.pWaitSemaphores = waitSemaphores;
         submitInfo.pWaitDstStageMask = waitStages;
 
         submitInfo.commandBufferCount = 1;
-        VkCommandBuffer command_buffer = engine->command_data.at(currentFrame).graphics_command_buffer->get_command_buffer();
+        VkCommandBuffer command_buffer = engine->command_structs.at(currentFrame).graphics_command_buffer->get_command_buffer();
         submitInfo.pCommandBuffers = &command_buffer;
 
         VkSemaphore signalSemaphores[] = { renderFinishedSemaphores[currentFrame] };
         submitInfo.signalSemaphoreCount = 1;
         submitInfo.pSignalSemaphores = signalSemaphores;
 
-        if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS) {
+        if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, engine->sync_structs.at(engine->current_frame).render_fence) != VK_SUCCESS) {
             throw std::runtime_error("Failed to submit draw commandbuffer");
         }
 
@@ -1279,7 +1275,7 @@ private:
         presentInfo.pSwapchains = swapChains;
         presentInfo.pImageIndices = &imageIndex;
 
-        result = vkQueuePresentKHR(presentQueue, &presentInfo);
+        VkResult result = vkQueuePresentKHR(presentQueue, &presentInfo);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || engine->resize_window) {
             engine->resize_window = false;
@@ -1357,7 +1353,7 @@ private:
 
         engine->create_swapchain();
         createSwapChain();
-        createImageViews();
+        //createImageViews();
         createDepthResources();
         createFrameBuffers();
     }
@@ -1638,7 +1634,7 @@ private:
     }
 
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
-        VkCommandBuffer commandBuffer = beginSingleTimeCommands(engine->command_data.at(currentFrame).transfer_command_pool->get_command_pool());
+        VkCommandBuffer commandBuffer = beginSingleTimeCommands(engine->command_structs.at(currentFrame).transfer_command_pool->get_command_pool());
 
         VkBufferCopy copyRegion{};
         copyRegion.srcOffset = 0;
@@ -1646,7 +1642,7 @@ private:
         copyRegion.size = size;
         vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
 
-        endSingleTimeCommands(commandBuffer, engine->command_data.at(currentFrame).transfer_command_pool->get_command_pool(), transferQueue);
+        endSingleTimeCommands(commandBuffer, engine->command_structs.at(currentFrame).transfer_command_pool->get_command_pool(), transferQueue);
     }
 
     VkCommandBuffer beginSingleTimeCommands(VkCommandPool commandPool) {
@@ -1751,7 +1747,7 @@ private:
     }
 
     void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) {
-        VkCommandBuffer commandBuffer = beginSingleTimeCommands(engine->command_data.at(currentFrame).graphics_command_pool->get_command_pool());
+        VkCommandBuffer commandBuffer = beginSingleTimeCommands(engine->command_structs.at(currentFrame).graphics_command_pool->get_command_pool());
 
         VkImageMemoryBarrier barrier{};
         barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -1811,11 +1807,11 @@ private:
             1, &barrier
         );
 
-        endSingleTimeCommands(commandBuffer, engine->command_data.at(currentFrame).graphics_command_pool->get_command_pool(), graphicsQueue);
+        endSingleTimeCommands(commandBuffer, engine->command_structs.at(currentFrame).graphics_command_pool->get_command_pool(), graphicsQueue);
     }
 
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height) {
-        VkCommandBuffer commandBuffer = beginSingleTimeCommands(engine->command_data.at(currentFrame).graphics_command_pool->get_command_pool());
+        VkCommandBuffer commandBuffer = beginSingleTimeCommands(engine->command_structs.at(currentFrame).graphics_command_pool->get_command_pool());
 
         VkBufferImageCopy region{};
         region.bufferOffset = 0;
@@ -1836,7 +1832,7 @@ private:
         // we assume image already in VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL format
         vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
         
-        endSingleTimeCommands(commandBuffer, engine->command_data.at(currentFrame).graphics_command_pool->get_command_pool(), graphicsQueue);
+        endSingleTimeCommands(commandBuffer, engine->command_structs.at(currentFrame).graphics_command_pool->get_command_pool(), graphicsQueue);
     }
 
     VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) {

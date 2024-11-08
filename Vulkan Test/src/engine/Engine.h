@@ -11,6 +11,8 @@
 #include "vk_wrap/VKW_CommandPool.h"
 #include "vk_wrap/VKW_CommandBuffer.h"
 
+#include "vk_wrap/VKW_Buffer.h"
+
 #include "CameraController.h"
 
 void glfm_mouse_move_callback(GLFWwindow* window, double pos_x, double pos_y);
@@ -18,10 +20,15 @@ void glfw_window_resize_callback(GLFWwindow* window, int width, int height);
 
 constexpr unsigned int MAX_FRAMES_IN_FLIGHT = 2;
 
-struct CommandData {
+struct CommandStructs {
 	std::shared_ptr<VKW_CommandPool> graphics_command_pool;
 	std::shared_ptr<VKW_CommandPool> transfer_command_pool;
 	std::shared_ptr<VKW_CommandBuffer> graphics_command_buffer;
+};
+
+struct SyncStructs {
+	VkSemaphore swapchain_semaphore, render_semaphore;
+	VkFence render_fence;
 };
 
 class Engine
@@ -35,6 +42,7 @@ private:
 	unsigned int res_x, res_y;
 
 public:  // TODO: remove public
+	unsigned int current_frame;
 	void update();
 	void draw();
 	void late_update(); // executed after draw
@@ -57,7 +65,9 @@ public: // TODO: remove public
 	void recreate_swapchain();
 	void destroy_swapchain();
 private:
-	void create_command_data(); // creates command pools and buffers
+	void create_command_structs(); // creates command pools and buffers
+	void create_sync_structs(); // create fences and semaphores
+	bool aquire_image(); // aquires new image from swapchain, can fail if swapchain is out of date
 
 	std::vector<const char*> get_required_instance_extensions();
 	std::vector<const char*> get_required_device_extensions();
@@ -74,7 +84,10 @@ public: // TODO: remove public
 
 	std::shared_ptr<VKW_Swapchain> swapchain;
 
-	std::array<CommandData, MAX_FRAMES_IN_FLIGHT> command_data;
+	std::array<CommandStructs, MAX_FRAMES_IN_FLIGHT> command_structs;
+	std::array<SyncStructs, MAX_FRAMES_IN_FLIGHT> sync_structs;
+
+	unsigned int current_swapchain_image_idx;
 private:
 
 
