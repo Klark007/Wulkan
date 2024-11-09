@@ -1767,7 +1767,12 @@ private:
     }
 
     void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) {
-        VkCommandBuffer commandBuffer = beginSingleTimeCommands(engine->command_structs.at(currentFrame).graphics_command_pool->get_command_pool());
+        VKW_CommandBuffer command_buffer{
+            engine->device,
+            engine->command_structs.at(currentFrame).graphics_command_pool,
+            true
+        };
+        command_buffer.begin_single_use();
 
         VkImageMemoryBarrier barrier{};
         barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -1819,7 +1824,7 @@ private:
             throw std::invalid_argument("unsupported layout transition!");
         }
 
-        vkCmdPipelineBarrier(commandBuffer,
+        vkCmdPipelineBarrier(command_buffer.get_command_buffer(),
             sourceStage, destinationStage,
             0, // is it per region barrier
             0, nullptr,
@@ -1827,11 +1832,16 @@ private:
             1, &barrier
         );
 
-        endSingleTimeCommands(commandBuffer, engine->command_structs.at(currentFrame).graphics_command_pool->get_command_pool(), graphicsQueue);
+        command_buffer.submit_single_use();
     }
 
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height) {
-        VkCommandBuffer commandBuffer = beginSingleTimeCommands(engine->command_structs.at(currentFrame).graphics_command_pool->get_command_pool());
+        VKW_CommandBuffer command_buffer{
+            engine->device,
+            engine->command_structs.at(currentFrame).graphics_command_pool,
+            true
+        };
+        command_buffer.begin_single_use();
 
         VkBufferImageCopy region{};
         region.bufferOffset = 0;
@@ -1850,9 +1860,9 @@ private:
         };
 
         // we assume image already in VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL format
-        vkCmdCopyBufferToImage(commandBuffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+        vkCmdCopyBufferToImage(command_buffer.get_command_buffer(), buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
         
-        endSingleTimeCommands(commandBuffer, engine->command_structs.at(currentFrame).graphics_command_pool->get_command_pool(), graphicsQueue);
+        command_buffer.submit_single_use();
     }
 
     VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) {
