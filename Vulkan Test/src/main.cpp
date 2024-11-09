@@ -228,13 +228,10 @@ private:
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> renderFinishedSemaphores;
     std::vector<VkFence> inFlightFences;
-
-    VkBuffer vertexBuffer;
-    VkDeviceMemory vertexBufferMemory;
-
-    VkBuffer indexBuffer;
-    VkDeviceMemory indexBufferMemory;
-
+    
+    std::shared_ptr<VKW_Buffer> vertex_buffer;
+    std::shared_ptr<VKW_Buffer> index_buffer;
+    
     std::vector<VkBuffer> uniformBuffers;
     std::vector<VkDeviceMemory> uniformBuffersMemory;
     std::vector<void*> uniformBuffersMapped;
@@ -973,6 +970,7 @@ private:
             imageSize,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            {VK_SHARING_MODE_CONCURRENT, {engine->graphics_queue->get_queue_family(), engine->transfer_queue->get_queue_family()}},
             true
         };
         stagingBuffer = buffer.get_buffer();
@@ -1026,40 +1024,61 @@ private:
     void createVertexBuffer() {
         VkDeviceSize bufferSize = sizeof(model_vertices[0]) * model_vertices.size();
         
-        VKW_Buffer buffer{
+        std::shared_ptr<VKW_Buffer> staging_buffer = std::make_shared<VKW_Buffer>(
             engine->device,
-            bufferSize, 
-            VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
+            bufferSize,
+            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            sharing_exlusive(),
             true
+        );
+
+        staging_buffer->copy(model_vertices.data());
+
+        SharingInfo sharingInfoC{
+            VK_SHARING_MODE_CONCURRENT,
+            {engine->graphics_queue->get_queue_family(), engine->transfer_queue->get_queue_family()}
         };
-        VkBuffer stagingBuffer = buffer.get_buffer();
-
-        buffer.copy(model_vertices.data());
-
-        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer, vertexBufferMemory);
-
-        copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
+        vertex_buffer = std::make_shared<VKW_Buffer>(
+            engine->device,
+            bufferSize,
+            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+            sharingInfoC,
+            false
+        );
+        
+        copyBuffer(staging_buffer, vertex_buffer);
     }
 
     void createIndexBuffer() {
         VkDeviceSize bufferSize = sizeof(model_indices[0]) * model_indices.size();
 
-        VKW_Buffer buffer{
+        std::shared_ptr<VKW_Buffer> staging_buffer = std::make_shared<VKW_Buffer>(
             engine->device,
             bufferSize,
             VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            sharing_exlusive(),
             true
+        );
+
+        staging_buffer->copy(model_indices.data());
+
+        SharingInfo sharingInfoC{
+            VK_SHARING_MODE_CONCURRENT,
+            {engine->graphics_queue->get_queue_family(), engine->transfer_queue->get_queue_family()}
         };
+        index_buffer = std::make_shared<VKW_Buffer>(
+            engine->device,
+            bufferSize,
+            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+            sharingInfoC,
+            false
+        );
 
-        VkBuffer stagingBuffer = buffer.get_buffer();
-        
-        buffer.copy(model_indices.data());
-
-        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer, indexBufferMemory);
-
-        copyBuffer(stagingBuffer, indexBuffer, bufferSize);
+        copyBuffer(staging_buffer, index_buffer);
     }
 
     void createUniformBuffers() {
@@ -1589,10 +1608,10 @@ private:
         vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
             vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
-            VkBuffer vertexBuffers[] = { vertexBuffer };
+            VkBuffer vertexBuffers[] = { vertex_buffer->get_buffer() };
             VkDeviceSize offsets[] = { 0 };
             vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-            vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+            vkCmdBindIndexBuffer(commandBuffer, index_buffer->get_buffer(), 0, VK_INDEX_TYPE_UINT16);
 
             VkViewport viewport{};
             viewport.x = 0.0f;
@@ -1633,16 +1652,17 @@ private:
         throw std::runtime_error("Failed to find suitable memory type");
     }
 
-    void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
-        VkCommandBuffer commandBuffer = beginSingleTimeCommands(engine->command_structs.at(currentFrame).transfer_command_pool->get_command_pool());
+    void copyBuffer(std::shared_ptr<VKW_Buffer> src_buffer, std::shared_ptr<VKW_Buffer> dst_buffer) {
+        std::shared_ptr<VKW_CommandBuffer> command_buffer = std::make_shared<VKW_CommandBuffer>(
+            engine->device,
+            engine->command_structs.at(currentFrame).transfer_command_pool,
+            true
+        );
+        command_buffer->begin_single_use();
 
-        VkBufferCopy copyRegion{};
-        copyRegion.srcOffset = 0;
-        copyRegion.dstOffset = 0;
-        copyRegion.size = size;
-        vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
+        src_buffer->copy(command_buffer, dst_buffer);
 
-        endSingleTimeCommands(commandBuffer, engine->command_structs.at(currentFrame).transfer_command_pool->get_command_pool(), transferQueue);
+        command_buffer->submit_single_use();
     }
 
     VkCommandBuffer beginSingleTimeCommands(VkCommandPool commandPool) {
@@ -1926,11 +1946,8 @@ private:
 
         VK_DESTROY(descriptorSetLayout, vkDestroyDescriptorSetLayout, device, descriptorSetLayout);
 
-        VK_DESTROY(vertexBuffer, vkDestroyBuffer, device, vertexBuffer);
-        VK_DESTROY(vertexBufferMemory, vkFreeMemory, device, vertexBufferMemory);
-
-        VK_DESTROY(indexBuffer, vkDestroyBuffer, device, indexBuffer);
-        VK_DESTROY(indexBufferMemory, vkFreeMemory, device, indexBufferMemory);
+        vertex_buffer.reset();
+        index_buffer.reset();
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             if (imageAvailableSemaphores[i]) {

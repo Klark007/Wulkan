@@ -1,5 +1,12 @@
 #pragma once
 
+
+/* BIG TODO's:
+ 
+	Implicit casts from VKW objects to their vulkan internals
+	Disable safety checks if compiled in Release mode
+*/
+
 // Consider adding implicit conversions from Wrapped object to their vulkan base struct
 #include "vk_wrap/VKW_Instance.h"
 #include "vk_wrap/VKW_Surface.h"

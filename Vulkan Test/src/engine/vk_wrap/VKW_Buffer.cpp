@@ -1,12 +1,16 @@
 #include "VKW_Buffer.h"
 
-VKW_Buffer::VKW_Buffer(std::shared_ptr<VKW_Device> device, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, bool mappable)
+VKW_Buffer::VKW_Buffer(std::shared_ptr<VKW_Device> device, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, SharingInfo sharing_info, bool mappable)
 	: allocator{device->get_allocator()}, mappable{mappable}, size {(size_t) size}
 {
 	VkBufferCreateInfo buffer_info = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
 	buffer_info.size = size;
 	buffer_info.usage = usage;
-	// TODO: Sharing mode with queue families, currently: implicit
+	buffer_info.sharingMode = sharing_info.mode;
+	if (buffer_info.sharingMode == VK_SHARING_MODE_CONCURRENT) {
+		buffer_info.pQueueFamilyIndices = sharing_info.queue_families.data();
+		buffer_info.queueFamilyIndexCount = sharing_info.queue_families.size();
+	}
 
 	VmaAllocationCreateInfo alloc_create_info{};
 	alloc_create_info.usage = VMA_MEMORY_USAGE_AUTO;
@@ -38,6 +42,20 @@ void VKW_Buffer::copy(const void* data)
 	unmap();
 }
 
+void VKW_Buffer::copy(std::shared_ptr<VKW_CommandBuffer> command_buffer, const std::shared_ptr<VKW_Buffer> other_buffer)
+{
+	if (size != other_buffer->get_size()) {
+		throw RuntimeException("Tried to copy from a buffer with different size as source buffer", __FILE__, __LINE__);
+	}
+
+	VkBufferCopy copyRegion{};
+	copyRegion.srcOffset = 0;
+	copyRegion.dstOffset = 0;
+	copyRegion.size = size;
+
+	vkCmdCopyBuffer(command_buffer->get_command_buffer(), buffer, other_buffer->get_buffer(), 1, &copyRegion);
+}
+
 // maps whole buffer to adress and returns address
 void* VKW_Buffer::map()
 {
@@ -47,9 +65,7 @@ void* VKW_Buffer::map()
 
 	void* data;
 
-	if (vmaMapMemory(allocator, allocation, &data)) {
-		throw RuntimeException("Failed to map buffer to memory", __FILE__, __LINE__);
-	}
+	VK_CHECK_ET(vmaMapMemory(allocator, allocation, &data), RuntimeException, "Failed to map buffer to memory");
 	
 	return data;
 }

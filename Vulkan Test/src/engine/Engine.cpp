@@ -155,7 +155,7 @@ void Engine::create_command_structs()
 		command_structs.at(i) = {
 			graphics_pool,
 			std::make_shared<VKW_CommandPool>(device, transfer_queue, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT),
-			std::make_shared<VKW_CommandBuffer>(device, graphics_pool)
+			std::make_shared<VKW_CommandBuffer>(device, graphics_pool, false)
 		};
 	}
 }

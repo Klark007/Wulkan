@@ -40,8 +40,9 @@ VKW_Instance::VKW_Instance(const std::string& app_name, std::vector<const char*>
 
 	if (enable_validation_layers) {
 		builder.enable_validation_layers();
-
-		builder.add_debug_messenger_severity(VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT 
+		
+		builder.add_debug_messenger_severity(
+			VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT 
 			| VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT
 		);
 
