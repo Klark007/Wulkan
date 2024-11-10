@@ -1,7 +1,7 @@
 #include "VKW_Buffer.h"
 
 VKW_Buffer::VKW_Buffer(std::shared_ptr<VKW_Device> device, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, SharingInfo sharing_info, bool mappable)
-	: allocator{device->get_allocator()}, mappable{mappable}, size {(size_t) size}
+	: allocator{device->get_allocator()}, mappable{mappable}, length{(size_t) size}
 {
 	VkBufferCreateInfo buffer_info = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
 	buffer_info.size = size;
@@ -38,20 +38,20 @@ VKW_Buffer::~VKW_Buffer()
 void VKW_Buffer::copy(const void* data)
 {
 	void* addr = map();
-	memcpy(addr, data, size);
+	memcpy(addr, data, size());
 	unmap();
 }
 
 void VKW_Buffer::copy(std::shared_ptr<VKW_CommandBuffer> command_buffer, const std::shared_ptr<VKW_Buffer> other_buffer)
 {
-	if (size != other_buffer->get_size()) {
+	if (size() != other_buffer->size()) {
 		throw RuntimeException("Tried to copy from a buffer with different size as source buffer", __FILE__, __LINE__);
 	}
 
 	VkBufferCopy copyRegion{};
 	copyRegion.srcOffset = 0;
 	copyRegion.dstOffset = 0;
-	copyRegion.size = size;
+	copyRegion.size = size();
 
 	vkCmdCopyBuffer(*command_buffer, buffer, *other_buffer, 1, &copyRegion);
 }

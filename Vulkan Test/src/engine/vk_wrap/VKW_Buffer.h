@@ -25,7 +25,7 @@ private:
 	VmaAllocator allocator;
 
 	VkBuffer buffer;
-	size_t size;
+	size_t length;
 	VmaAllocation allocation; // dont peek inside, treat as opaque
 	VkDeviceMemory memory;
 
@@ -33,7 +33,7 @@ private:
 public:
 	inline VkBuffer get_buffer() const { return buffer; };
 	inline operator VkBuffer() const { return buffer; };
-	inline size_t size() const { return size; };
+	inline size_t size() const { return length; };
 };
 
 inline constexpr SharingInfo sharing_exlusive() {
