@@ -9,9 +9,6 @@ struct SharingInfo {
 	VkSharingMode mode;
 	std::vector<uint32_t> queue_families;
 };
-inline constexpr SharingInfo sharing_exlusive() {
-	return { VK_SHARING_MODE_EXCLUSIVE, {} };
-};
 
 class VKW_Buffer
 {
@@ -38,3 +35,8 @@ public:
 	inline size_t get_size() const { return size; };
 };
 
+inline constexpr SharingInfo sharing_exlusive() {
+	return { VK_SHARING_MODE_EXCLUSIVE, {} };
+};
+
+std::shared_ptr<VKW_Buffer> create_staging_buffer(std::shared_ptr<VKW_Device> device, void* data, VkDeviceSize size);

@@ -78,3 +78,19 @@ void VKW_Buffer::unmap()
 
 	vmaUnmapMemory(allocator, allocation);
 }
+
+std::shared_ptr<VKW_Buffer> create_staging_buffer(std::shared_ptr<VKW_Device> device, void* data, VkDeviceSize size)
+{
+	std::shared_ptr<VKW_Buffer> staging_buffer = std::make_shared<VKW_Buffer>(
+		device,
+		size,
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		sharing_exlusive(),
+		true
+	);
+
+	staging_buffer->copy(data);
+
+	return staging_buffer;
+}

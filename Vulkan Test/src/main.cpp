@@ -232,8 +232,7 @@ private:
     std::shared_ptr<VKW_Buffer> vertex_buffer;
     std::shared_ptr<VKW_Buffer> index_buffer;
     
-    std::vector<VkBuffer> uniformBuffers;
-    std::vector<VkDeviceMemory> uniformBuffersMemory;
+    std::vector<std::shared_ptr<VKW_Buffer>> uniform_buffers;
     std::vector<void*> uniformBuffersMapped;
 
     VkDescriptorPool descriptorPool;
@@ -963,26 +962,14 @@ private:
         }
 
         // create staging buffer for image
-        VkBuffer stagingBuffer;
-
-        VKW_Buffer buffer{
-            engine->device,
-            imageSize,
-            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-            {VK_SHARING_MODE_CONCURRENT, {engine->graphics_queue->get_queue_family(), engine->transfer_queue->get_queue_family()}},
-            true
-        };
-        stagingBuffer = buffer.get_buffer();
-
-        buffer.copy(pixels);
+        std::shared_ptr<VKW_Buffer> staging_buffer = create_staging_buffer(engine->device, pixels, imageSize);
 
         stbi_image_free(pixels);
 
         createImage(texWidth, texHeight, VK_FORMAT_R8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, textureImageMemory);
 
         transitionImageLayout(textureImage, VK_FORMAT_R8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-        copyBufferToImage(stagingBuffer, textureImage, texWidth, texHeight);
+        copyBufferToImage(staging_buffer->get_buffer(), textureImage, texWidth, texHeight);
 
         transitionImageLayout(textureImage, VK_FORMAT_R8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     }
@@ -1024,16 +1011,7 @@ private:
     void createVertexBuffer() {
         VkDeviceSize bufferSize = sizeof(model_vertices[0]) * model_vertices.size();
         
-        std::shared_ptr<VKW_Buffer> staging_buffer = std::make_shared<VKW_Buffer>(
-            engine->device,
-            bufferSize,
-            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-            sharing_exlusive(),
-            true
-        );
-
-        staging_buffer->copy(model_vertices.data());
+        std::shared_ptr<VKW_Buffer> staging_buffer = create_staging_buffer(engine->device, model_vertices.data(), bufferSize);
 
         SharingInfo sharingInfoC{
             VK_SHARING_MODE_CONCURRENT,
@@ -1054,17 +1032,8 @@ private:
     void createIndexBuffer() {
         VkDeviceSize bufferSize = sizeof(model_indices[0]) * model_indices.size();
 
-        std::shared_ptr<VKW_Buffer> staging_buffer = std::make_shared<VKW_Buffer>(
-            engine->device,
-            bufferSize,
-            VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-            sharing_exlusive(),
-            true
-        );
-
-        staging_buffer->copy(model_indices.data());
-
+        std::shared_ptr<VKW_Buffer> staging_buffer = create_staging_buffer(engine->device, model_indices.data(), bufferSize);
+        
         SharingInfo sharingInfoC{
             VK_SHARING_MODE_CONCURRENT,
             {engine->graphics_queue->get_queue_family(), engine->transfer_queue->get_queue_family()}
@@ -1084,16 +1053,20 @@ private:
     void createUniformBuffers() {
         VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 
-        uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-        uniformBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
+        uniform_buffers.resize(MAX_FRAMES_IN_FLIGHT);
         uniformBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, uniformBuffers[i], uniformBuffersMemory[i]);
+            uniform_buffers.at(i) = std::make_shared<VKW_Buffer>(
+                engine->device,
+                bufferSize, 
+                VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
+                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                sharing_exlusive(),
+                true
+            );
 
-            if (vkMapMemory(device, uniformBuffersMemory[i], 0, bufferSize, 0, &uniformBuffersMapped[i]) != VK_SUCCESS) {
-                throw std::runtime_error("Failed to map uniform buffer");
-            }
+            uniformBuffersMapped.at(i) = uniform_buffers.at(i)->map();
         }
     }
 
@@ -1133,7 +1106,7 @@ private:
         // configure descriptors
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             VkDescriptorBufferInfo bufferInfo{};
-            bufferInfo.buffer = uniformBuffers[i];
+            bufferInfo.buffer = uniform_buffers[i]->get_buffer();
             bufferInfo.offset = 0;
             bufferInfo.range = sizeof(UniformBufferObject);
 
@@ -1950,8 +1923,8 @@ private:
         VK_DESTROY(descriptorPool, vkDestroyDescriptorPool, device, descriptorPool);
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            VK_DESTROY(uniformBuffers[i], vkDestroyBuffer, device, uniformBuffers[i]);
-            VK_DESTROY(uniformBuffersMemory[i], vkFreeMemory, device, uniformBuffersMemory[i]);
+            uniform_buffers[i]->unmap();
+            uniform_buffers[i].reset();
         }
 
         VK_DESTROY(descriptorSetLayout, vkDestroyDescriptorSetLayout, device, descriptorSetLayout);
