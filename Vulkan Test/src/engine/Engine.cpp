@@ -21,9 +21,9 @@ Engine::Engine(unsigned int res_x, unsigned int res_y, std::shared_ptr<Camera> c
 Engine::~Engine()
 {
 	for (unsigned int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-		VK_DESTROY(sync_structs.at(i).swapchain_semaphore, vkDestroySemaphore, device->get_device(), sync_structs.at(i).swapchain_semaphore);
-		VK_DESTROY(sync_structs.at(i).render_semaphore, vkDestroySemaphore, device->get_device(), sync_structs.at(i).render_semaphore);
-		VK_DESTROY(sync_structs.at(i).render_fence, vkDestroyFence, device->get_device(), sync_structs.at(i).render_fence);
+		VK_DESTROY(sync_structs.at(i).swapchain_semaphore, vkDestroySemaphore, *device, sync_structs.at(i).swapchain_semaphore);
+		VK_DESTROY(sync_structs.at(i).render_semaphore, vkDestroySemaphore, *device, sync_structs.at(i).render_semaphore);
+		VK_DESTROY(sync_structs.at(i).render_fence, vkDestroyFence, *device, sync_structs.at(i).render_fence);
 	}
 
 	for (unsigned int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
@@ -172,19 +172,19 @@ void Engine::create_sync_structs()
 
 	for (unsigned int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 		sync_structs.at(i) = {};
-		VK_CHECK_E(vkCreateSemaphore(device->get_device(), &semaphore_create_info, nullptr, &sync_structs.at(i).swapchain_semaphore), SetupException);
-		VK_CHECK_E(vkCreateSemaphore(device->get_device(), &semaphore_create_info, nullptr, &sync_structs.at(i).render_semaphore), SetupException);
-		VK_CHECK_E(vkCreateFence(device->get_device(), &fence_create_info, nullptr, &sync_structs.at(i).render_fence), SetupException);
+		VK_CHECK_E(vkCreateSemaphore(*device, &semaphore_create_info, nullptr, &sync_structs.at(i).swapchain_semaphore), SetupException);
+		VK_CHECK_E(vkCreateSemaphore(*device, &semaphore_create_info, nullptr, &sync_structs.at(i).render_semaphore), SetupException);
+		VK_CHECK_E(vkCreateFence(*device, &fence_create_info, nullptr, &sync_structs.at(i).render_fence), SetupException);
 	}
 }
 
 bool Engine::aquire_image()
 {
-	VK_CHECK_E(vkWaitForFences(device->get_device(), 1, &sync_structs.at(current_frame).render_fence, VK_TRUE, UINT64_MAX), RuntimeException);
+	VK_CHECK_E(vkWaitForFences(*device, 1, &sync_structs.at(current_frame).render_fence, VK_TRUE, UINT64_MAX), RuntimeException);
 	
 	VkResult aquire_image_result = vkAcquireNextImageKHR(
-		device->get_device(), 
-		swapchain->get_swapchain(),
+		*device, 
+		*swapchain,
 		UINT64_MAX, 
 		sync_structs.at(current_frame).swapchain_semaphore, 
 		VK_NULL_HANDLE, 
@@ -199,7 +199,7 @@ bool Engine::aquire_image()
 	
 	
 	// we have successfully aquired image, can reset fence
-	VK_CHECK_E(vkResetFences(device->get_device(), 1, &sync_structs.at(current_frame).render_fence), RuntimeException);
+	VK_CHECK_E(vkResetFences(*device, 1, &sync_structs.at(current_frame).render_fence), RuntimeException);
 	return false;
 }
 

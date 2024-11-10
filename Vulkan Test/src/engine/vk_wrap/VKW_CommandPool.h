@@ -17,6 +17,7 @@ private:
 	VkCommandPool command_pool;
 public:
 	inline VkCommandPool get_command_pool() const { return command_pool; };
+	inline operator VkCommandPool() const { return command_pool; };
 	inline std::shared_ptr<VKW_Queue> get_queue() const { return queue; };
 };
 

@@ -5,7 +5,7 @@ VKW_Device::VKW_Device(std::shared_ptr<VKW_Instance> instance, std::shared_ptr<V
 	instance->get_vkb_instance()
 }
 {
-	selector.set_surface(surface->get_surface())
+	selector.set_surface(*surface)
 		.add_required_extensions(device_extensions)
 		.set_required_features(required_features.rf)
 		.set_required_features_11(required_features.rf11)
@@ -43,7 +43,7 @@ void VKW_Device::init_allocator()
 	allocator_info.vulkanApiVersion = VK_API_VERSION_1_3;
 	allocator_info.physicalDevice = get_physical_device();
 	allocator_info.device = get_device();
-	allocator_info.instance = instance->get_instance();
+	allocator_info.instance = *instance;
 	allocator_info.pVulkanFunctions = &vulkan_functions;
 
 	VK_CHECK_ET(vmaCreateAllocator(&allocator_info, &allocator), SetupException, "Failed to create VMA Allocator");

@@ -53,7 +53,7 @@ void VKW_Buffer::copy(std::shared_ptr<VKW_CommandBuffer> command_buffer, const s
 	copyRegion.dstOffset = 0;
 	copyRegion.size = size;
 
-	vkCmdCopyBuffer(command_buffer->get_command_buffer(), buffer, other_buffer->get_buffer(), 1, &copyRegion);
+	vkCmdCopyBuffer(*command_buffer, buffer, *other_buffer, 1, &copyRegion);
 }
 
 // maps whole buffer to adress and returns address

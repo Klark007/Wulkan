@@ -12,5 +12,6 @@ private:
 public:
 	inline vkb::Instance get_vkb_instance() const { return vkb_instance; };
 	inline VkInstance get_instance() const { return vkb_instance.instance; };
+	inline operator VkInstance() const { return vkb_instance.instance; };
 };
 

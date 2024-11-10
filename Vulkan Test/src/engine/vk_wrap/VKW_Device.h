@@ -41,6 +41,7 @@ public:
 
 	inline vkb::Device get_vkb_device() const { return device; };
 	inline VkDevice get_device() const { return device.device; };
+	inline operator VkDevice() const { return device.device; };
 	inline vkb::PhysicalDevice get_vkb_physical_device() const { return physical_device; };
 	inline VkPhysicalDevice get_physical_device() const { return physical_device.physical_device; };
 

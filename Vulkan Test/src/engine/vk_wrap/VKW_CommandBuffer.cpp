@@ -5,11 +5,11 @@ VKW_CommandBuffer::VKW_CommandBuffer(std::shared_ptr<VKW_Device> vkw_device, std
 {
 	VkCommandBufferAllocateInfo alloc_info{};
 	alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	alloc_info.commandPool = command_pool->get_command_pool();
+	alloc_info.commandPool = *command_pool;
 	alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;  // can be submitted directly to queue but not called from other command buffers
 	alloc_info.commandBufferCount = 1;
 
-	VK_CHECK_ET(vkAllocateCommandBuffers(device->get_device(), &alloc_info, &command_buffer), SetupException, "Failed to create Command buffer");
+	VK_CHECK_ET(vkAllocateCommandBuffers(*device, &alloc_info, &command_buffer), SetupException, "Failed to create Command buffer");
 }
 
 void VKW_CommandBuffer::begin_single_use()
@@ -38,8 +38,8 @@ void VKW_CommandBuffer::submit_single_use()
 	submit_info.pCommandBuffers = &command_buffer;
 	submit_info.commandBufferCount = 1;
 
-	VK_CHECK_ET(vkQueueSubmit(queue->get_queue(), 1, &submit_info, VK_NULL_HANDLE), RuntimeException, "Failed to submit one time command buffer");
-	vkQueueWaitIdle(queue->get_queue());
+	VK_CHECK_ET(vkQueueSubmit(*queue, 1, &submit_info, VK_NULL_HANDLE), RuntimeException, "Failed to submit one time command buffer");
+	vkQueueWaitIdle(*queue);
 
-	VK_DESTROY_FROM(command_buffer, vkFreeCommandBuffers, device->get_device(), command_pool->get_command_pool(), 1, &command_buffer);
+	VK_DESTROY_FROM(command_buffer, vkFreeCommandBuffers, *device, *command_pool, 1, &command_buffer);
 }

@@ -284,18 +284,18 @@ private:
         //setupDebugMessenger();
         //createSurface();
 
-        instance = engine->instance->get_instance();
+        instance = *engine->instance;
 
-        surface = engine->surface->get_surface();
+        surface = *engine->surface;
 
         physicalDevice = engine->device->get_physical_device();
-        device = engine->device->get_device();
+        device = *engine->device;
 
         graphicsQueueFamily = engine->graphics_queue->get_queue_family();
         std::cout << "Chosen queues" << engine->graphics_queue->get_queue_family() << "," << engine->present_queue->get_queue_family() << "," << engine->transfer_queue->get_queue_family() << std::endl;
-        graphicsQueue = engine->graphics_queue->get_queue();
-        presentQueue  = engine->present_queue->get_queue();
-        transferQueue = engine->transfer_queue->get_queue();
+        graphicsQueue = *engine->graphics_queue;
+        presentQueue = *engine->present_queue;
+        transferQueue = *engine->transfer_queue;
 
         /*
         QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
@@ -623,7 +623,7 @@ private:
             throw std::runtime_error("failed to create swapchain");
         }
         */
-        swapChain = engine->swapchain->get_swapchain();
+        swapChain = *engine->swapchain;
         
         // TODO: Remove temp variables
         swapChainImageFormat = engine->swapchain->get_format();
@@ -969,7 +969,7 @@ private:
         createImage(texWidth, texHeight, VK_FORMAT_R8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, textureImageMemory);
 
         transitionImageLayout(textureImage, VK_FORMAT_R8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-        copyBufferToImage(staging_buffer->get_buffer(), textureImage, texWidth, texHeight);
+        copyBufferToImage(*staging_buffer, textureImage, texWidth, texHeight);
 
         transitionImageLayout(textureImage, VK_FORMAT_R8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     }
@@ -1106,7 +1106,7 @@ private:
         // configure descriptors
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             VkDescriptorBufferInfo bufferInfo{};
-            bufferInfo.buffer = uniform_buffers[i]->get_buffer();
+            bufferInfo.buffer = *uniform_buffers[i];
             bufferInfo.offset = 0;
             bufferInfo.range = sizeof(UniformBufferObject);
 
@@ -1229,9 +1229,9 @@ private:
 
         updateUniformBuffer(currentFrame);
 
-        vkResetCommandBuffer(engine->command_structs.at(currentFrame).graphics_command_buffer->get_command_buffer(), 0);
+        vkResetCommandBuffer(*engine->command_structs.at(currentFrame).graphics_command_buffer, 0);
 
-        recordCommand(engine->command_structs.at(currentFrame).graphics_command_buffer->get_command_buffer(), imageIndex, drawImGui());
+        recordCommand(*engine->command_structs.at(currentFrame).graphics_command_buffer, imageIndex, drawImGui());
 
 
         // submit command buffer
@@ -1245,7 +1245,7 @@ private:
         submitInfo.pWaitDstStageMask = waitStages;
 
         submitInfo.commandBufferCount = 1;
-        VkCommandBuffer command_buffer = engine->command_structs.at(currentFrame).graphics_command_buffer->get_command_buffer();
+        VkCommandBuffer command_buffer = *engine->command_structs.at(currentFrame).graphics_command_buffer;
         submitInfo.pCommandBuffers = &command_buffer;
 
         VkSemaphore signalSemaphores[] = { renderFinishedSemaphores[currentFrame] };
@@ -1581,10 +1581,10 @@ private:
         vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
             vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
-            VkBuffer vertexBuffers[] = { vertex_buffer->get_buffer() };
+            VkBuffer vertexBuffers[] = { *vertex_buffer };
             VkDeviceSize offsets[] = { 0 };
             vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-            vkCmdBindIndexBuffer(commandBuffer, index_buffer->get_buffer(), 0, VK_INDEX_TYPE_UINT16);
+            vkCmdBindIndexBuffer(commandBuffer, *index_buffer, 0, VK_INDEX_TYPE_UINT16);
 
             VkViewport viewport{};
             viewport.x = 0.0f;
@@ -1797,7 +1797,7 @@ private:
             throw std::invalid_argument("unsupported layout transition!");
         }
 
-        vkCmdPipelineBarrier(command_buffer.get_command_buffer(),
+        vkCmdPipelineBarrier(command_buffer,
             sourceStage, destinationStage,
             0, // is it per region barrier
             0, nullptr,
@@ -1833,7 +1833,7 @@ private:
         };
 
         // we assume image already in VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL format
-        vkCmdCopyBufferToImage(command_buffer.get_command_buffer(), buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+        vkCmdCopyBufferToImage(command_buffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
         
         command_buffer.submit_single_use();
     }

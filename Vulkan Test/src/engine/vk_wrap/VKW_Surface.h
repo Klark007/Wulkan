@@ -12,4 +12,5 @@ private:
 	VkSurfaceKHR surface;
 public:
 	inline VkSurfaceKHR get_surface() const { return surface; };
+	inline operator VkSurfaceKHR() const { return surface; };
 };

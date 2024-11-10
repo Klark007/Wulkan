@@ -18,6 +18,8 @@ private:
   std::vector<VkImageView> get_image_views();
 public:
   inline VkSwapchainKHR get_swapchain() const { return swapchain.swapchain; };
+  inline operator VkSwapchainKHR() const { return swapchain.swapchain; };
+
   inline size_t size() const { return swapchain.image_count; };
   inline const VkImageView& at(size_t i) const { return image_views.at(i); };
 

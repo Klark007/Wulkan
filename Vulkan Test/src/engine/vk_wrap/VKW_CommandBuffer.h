@@ -21,5 +21,6 @@ private:
 	bool single_use;
 public:
 	inline VkCommandBuffer get_command_buffer() const { return command_buffer; };
+	inline operator VkCommandBuffer() const { return command_buffer; };
 };
 

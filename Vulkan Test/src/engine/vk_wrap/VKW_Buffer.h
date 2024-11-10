@@ -32,7 +32,8 @@ private:
 	bool mappable;
 public:
 	inline VkBuffer get_buffer() const { return buffer; };
-	inline size_t get_size() const { return size; };
+	inline operator VkBuffer() const { return buffer; };
+	inline size_t size() const { return size; };
 };
 
 inline constexpr SharingInfo sharing_exlusive() {

@@ -17,6 +17,7 @@ private:
 	uint32_t family_idx;
 public:
 	inline VkQueue get_queue() const { return queue; };
+	inline operator VkQueue() const { return queue; };
 	inline uint32_t get_queue_family() const { return family_idx; };
 };
 
