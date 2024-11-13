@@ -14,7 +14,7 @@ class VKW_Buffer
 {
 public:
 	// treating properties as required
-	VKW_Buffer(std::shared_ptr<VKW_Device> device, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, SharingInfo info, bool mappable);
+	VKW_Buffer(std::shared_ptr<VKW_Device> device, VkDeviceSize size, VkBufferUsageFlags usage, SharingInfo info, bool mappable);
 	~VKW_Buffer();
 	
 	void copy(const void* data); // copies data into VKW_Buffer

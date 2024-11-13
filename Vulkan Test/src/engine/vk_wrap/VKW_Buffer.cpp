@@ -1,20 +1,19 @@
 #include "VKW_Buffer.h"
 
-VKW_Buffer::VKW_Buffer(std::shared_ptr<VKW_Device> device, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, SharingInfo sharing_info, bool mappable)
+VKW_Buffer::VKW_Buffer(std::shared_ptr<VKW_Device> device, VkDeviceSize size, VkBufferUsageFlags usage, SharingInfo sharing_info, bool mappable)
 	: allocator{device->get_allocator()}, mappable{mappable}, length{(size_t) size}
 {
 	VkBufferCreateInfo buffer_info = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
 	buffer_info.size = size;
 	buffer_info.usage = usage;
 	buffer_info.sharingMode = sharing_info.mode;
-	if (buffer_info.sharingMode == VK_SHARING_MODE_CONCURRENT) {
+	if (buffer_info.sharingMode & VK_SHARING_MODE_CONCURRENT) {
 		buffer_info.pQueueFamilyIndices = sharing_info.queue_families.data();
 		buffer_info.queueFamilyIndexCount = sharing_info.queue_families.size();
 	}
 
 	VmaAllocationCreateInfo alloc_create_info{};
 	alloc_create_info.usage = VMA_MEMORY_USAGE_AUTO;
-	alloc_create_info.requiredFlags = properties;
 	if (mappable) {
 		// does sequential access as mapped memory should be written to using memcpy
 		alloc_create_info.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
@@ -85,7 +84,6 @@ std::shared_ptr<VKW_Buffer> create_staging_buffer(std::shared_ptr<VKW_Device> de
 		device,
 		size,
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 		sharing_exlusive(),
 		true
 	);
