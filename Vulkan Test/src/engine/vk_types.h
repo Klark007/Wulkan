@@ -19,6 +19,16 @@
 #include <map>
 
 
+struct SharingInfo {
+    VkSharingMode mode;
+    std::vector<uint32_t> queue_families;
+};
+
+inline constexpr SharingInfo sharing_exlusive() {
+    return { VK_SHARING_MODE_EXCLUSIVE, {} };
+};
+
+
 #ifdef NDEBUG
 const bool enable_validation_layers = false;
 #else

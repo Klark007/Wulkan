@@ -9,9 +9,6 @@
 
 #include <glm/gtc/matrix_transform.hpp>
 
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
-
 #include "engine/Engine.h"
 #include "engine/Camera.h"
 
@@ -33,8 +30,10 @@
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 
+std::shared_ptr<Camera> camera = std::make_shared<Camera>(glm::vec3(0.0, 12.0, 8.0), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0), WIDTH, HEIGHT, glm::radians(45.0f), 0.01f, 100.0f);
+
+Engine e{ WIDTH, HEIGHT, camera };
 Engine* engine = nullptr;
-std::shared_ptr<Camera> camera = std::make_shared<Camera>(glm::vec3(0.0, 12.0, 8.0), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0),  WIDTH, HEIGHT, glm::radians(45.0f), 0.01f, 100.0f);
 
 void glfm_mouse_move_callback(GLFWwindow* window, double pos_x, double pos_y);
 
@@ -163,7 +162,6 @@ public:
     void run() {
         initModel();
 
-        Engine e{ WIDTH, HEIGHT, camera };
         engine = &e;
         window = engine->get_window();
 
@@ -201,15 +199,10 @@ private:
     VkQueue transferQueue;
 
     VkSwapchainKHR swapChain;
-    //std::vector<VkImage> swapChainImages;
     VkFormat swapChainImageFormat;
     VkExtent2D swapChainExtent;
 
-    //std::vector<VkImageView> swapChainImageViews;
-
-    VkImage depthImage;
-    VkDeviceMemory depthImageMemory;
-    VkImageView depthImageView;
+    std::shared_ptr<Texture> depth_texture;
 
     VkRenderPass renderPass;
     VkDescriptorSetLayout descriptorSetLayout;
@@ -224,10 +217,6 @@ private:
     std::vector<VkCommandBuffer> commandBuffers;
 
     VkCommandPool transferCommandPool;
-
-    std::vector<VkSemaphore> imageAvailableSemaphores;
-    std::vector<VkSemaphore> renderFinishedSemaphores;
-    std::vector<VkFence> inFlightFences;
     
     std::shared_ptr<VKW_Buffer> vertex_buffer;
     std::shared_ptr<VKW_Buffer> index_buffer;
@@ -238,10 +227,7 @@ private:
     VkDescriptorPool descriptorPool;
     std::vector<VkDescriptorSet> descriptorSets;
 
-    VkImage textureImage;
-    VkDeviceMemory textureImageMemory;
-
-    VkImageView textureImageView;
+    std::shared_ptr<Texture> height_map;
     VkSampler textureSampler;
 
     VkDebugUtilsMessengerEXT debugMessenger;
@@ -305,7 +291,6 @@ private:
         createFrameBuffers(); // needs depth texture
         
         createTextureImage();
-        createTextureImageView();
         createTextureSampler();
         
         createVertexBuffer();
@@ -314,8 +299,6 @@ private:
         
         createDescriptorPool();
         createDescriptorSets();
-        
-        createSyncObjects();
     }
 
     void initImGui() {
@@ -585,7 +568,7 @@ private:
         for (size_t i = 0; i < engine->swapchain->size(); i++) {
             std::array<VkImageView,2> attachments = {
                 engine->swapchain->at(i),
-                depthImageView
+                depth_texture->get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT)
             };
 
             VkFramebufferCreateInfo frameBufferInfo{};
@@ -609,10 +592,6 @@ private:
         bufferInfo.size = size;
         bufferInfo.usage = usage;
 
-        /*
-        QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
-        uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.transferFamily.value() };
-        */
         uint32_t queueFamilyIndices[] = { engine->graphics_queue->get_queue_family(), engine->transfer_queue->get_queue_family() };
 
 
@@ -646,35 +625,35 @@ private:
     void createDepthResources() {
         VkFormat depthFormat = findDepthFormat();
 
-        createImage(swapChainExtent.width, swapChainExtent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage, depthImageMemory);
-        depthImageView = createImageView(depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+        depth_texture = std::make_shared<Texture>(
+            engine->device,
+            swapChainExtent.width, swapChainExtent.height,
+            depthFormat,
+            VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+            sharing_exlusive()
+        );
     }
 
     void createTextureImage() {
-        int texWidth, texHeight, texChannels;
-        stbi_uc* pixels = stbi_load("textures/perlinNoise.png", &texWidth, &texHeight, &texChannels, STBI_grey); // force rgba for texture STBI_grey
-        VkDeviceSize imageSize = texWidth * texHeight;
-        
-        if (!pixels) {
-            throw std::runtime_error("Failed to load texture image");
+        SharingInfo sharingInfoC{
+            VK_SHARING_MODE_CONCURRENT,
+            {engine->graphics_queue->get_queue_family(), engine->transfer_queue->get_queue_family()}
+        };
+
+        auto pair = create_texture_from_path(
+            engine->device,
+            "textures/perlinNoise.png",
+            Texture_Type::Tex_R,
+            sharingInfoC
+        );
+        height_map = pair.first;
+        std::shared_ptr<VKW_Buffer> staging_buffer = pair.second;
+
+        transitionImageLayout(height_map->image, VK_FORMAT_R8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        copyBufferToImage(*staging_buffer, height_map->image, height_map->width, height_map->height);
+
+        transitionImageLayout(height_map->image, VK_FORMAT_R8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         }
-
-        // create staging buffer for image
-        std::shared_ptr<VKW_Buffer> staging_buffer = create_staging_buffer(engine->device, pixels, imageSize);
-
-        stbi_image_free(pixels);
-
-        createImage(texWidth, texHeight, VK_FORMAT_R8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, textureImageMemory);
-
-        transitionImageLayout(textureImage, VK_FORMAT_R8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-        copyBufferToImage(*staging_buffer, textureImage, texWidth, texHeight);
-
-        transitionImageLayout(textureImage, VK_FORMAT_R8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-    }
-
-    void createTextureImageView() {
-        textureImageView = createImageView(textureImage, VK_FORMAT_R8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
-    }
 
     void createTextureSampler() {
         VkSamplerCreateInfo samplerInfo{};
@@ -808,7 +787,7 @@ private:
             VkDescriptorImageInfo imageInfo{};
             imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             imageInfo.sampler = textureSampler;
-            imageInfo.imageView = textureImageView; 
+            imageInfo.imageView = height_map->get_image_view(VK_IMAGE_ASPECT_COLOR_BIT);
 
             std::array<VkWriteDescriptorSet,2> descriptorWrites{};
             descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -870,27 +849,6 @@ private:
         }
     }
 
-    void createSyncObjects() {
-        imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-        renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-        inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
-
-        VkSemaphoreCreateInfo semaphoreInfo{};
-        semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-
-        VkFenceCreateInfo fenceInfo{};
-        fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-        fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
-        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) ||
-                vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) ||
-                vkCreateFence(device, &fenceInfo, nullptr, &inFlightFences[i])) {
-                throw std::runtime_error("Failed to create semaphores and fences");
-            }
-        }
-    }
-
     void mainLoop() {
 
         while (!glfwWindowShouldClose(window)) {
@@ -943,7 +901,7 @@ private:
         VkCommandBuffer command_buffer = *engine->command_structs.at(currentFrame).graphics_command_buffer;
         submitInfo.pCommandBuffers = &command_buffer;
 
-        VkSemaphore signalSemaphores[] = { renderFinishedSemaphores[currentFrame] };
+        VkSemaphore signalSemaphores[] = { engine->sync_structs.at(engine->current_frame).render_semaphore };
         submitInfo.signalSemaphoreCount = 1;
         submitInfo.pSignalSemaphores = signalSemaphores;
 
@@ -1000,22 +958,8 @@ private:
             }
         }
         
-        /*
-        for (auto imageView : swapChainImageViews) {
-            vkDestroyImageView(device, imageView, nullptr);
-        }
-        */
-
-        VK_DESTROY(depthImageView, vkDestroyImageView, device, depthImageView);
-        VK_DESTROY(depthImage, vkDestroyImage, device, depthImage);
-        VK_DESTROY(depthImageMemory , vkFreeMemory, device, depthImageMemory);
-
-        /*
-        if (swapChain) {
-            vkDestroySwapchainKHR(device, swapChain, nullptr);
-            swapChain = VK_NULL_HANDLE;
-        }
-        */
+        depth_texture.reset();
+        
         engine->destroy_swapchain();
     }
 
@@ -1245,65 +1189,6 @@ private:
         VK_DESTROY_FROM(commandBuffer, vkFreeCommandBuffers, device, commandPool, 1, &commandBuffer);
     }
 
-    void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory) {
-        VkImageCreateInfo imageInfo{};
-        imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-        imageInfo.imageType = VK_IMAGE_TYPE_2D;
-        imageInfo.extent.width = width;
-        imageInfo.extent.height = height;
-        imageInfo.extent.depth = 1;
-        imageInfo.mipLevels = 1;
-        imageInfo.arrayLayers = 1;
-        imageInfo.format = format;
-        imageInfo.tiling = tiling;
-        imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        imageInfo.usage = usage;
-        imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-        imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-        if (vkCreateImage(device, &imageInfo, nullptr, &image)) {
-            throw std::runtime_error("Failed to create texture image");
-        }
-
-        VkMemoryRequirements memRequirements;
-        vkGetImageMemoryRequirements(device, image, &memRequirements);
-
-        VkMemoryAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-        allocInfo.allocationSize = memRequirements.size;
-        allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
-
-        if (vkAllocateMemory(device, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to allocate texture image memory");
-        }
-
-        if (vkBindImageMemory(device, image, imageMemory, 0) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to bind vertex texture image memory");
-        }
-    }
-
-    VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlag) {
-        VkImageViewCreateInfo viewInfo{};
-        viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        viewInfo.image = image;
-        viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        viewInfo.format = format;
-        viewInfo.subresourceRange.aspectMask = aspectFlag;
-        viewInfo.subresourceRange.baseMipLevel = 0;
-        viewInfo.subresourceRange.levelCount = 1;
-        viewInfo.subresourceRange.baseArrayLayer = 0;
-        viewInfo.subresourceRange.layerCount = 1;
-
-        // swizzle color channels using components but is instantiated as identity (VK_COMPONENT_SWIZZLE_IDENTITY)
-        
-        VkImageView imageView;
-        if (vkCreateImageView(device, &viewInfo, nullptr, &imageView) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to create image view");
-        }
-
-        return imageView;
-    }
-
     void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) {
         VKW_CommandBuffer command_buffer{
             engine->device,
@@ -1481,9 +1366,7 @@ private:
         cleanupImGui();
         
         VK_DESTROY(textureSampler, vkDestroySampler, device, textureSampler);
-        VK_DESTROY(textureImageView, vkDestroyImageView, device, textureImageView);
-        VK_DESTROY(textureImage, vkDestroyImage, device, textureImage);
-        VK_DESTROY(textureImageMemory, vkFreeMemory, device, textureImageMemory);
+        height_map.reset();
 
         VK_DESTROY(descriptorPool, vkDestroyDescriptorPool, device, descriptorPool);
 
@@ -1496,21 +1379,6 @@ private:
 
         vertex_buffer.reset();
         index_buffer.reset();
-
-        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            if (imageAvailableSemaphores[i]) {
-                vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
-                imageAvailableSemaphores[i] = VK_NULL_HANDLE;
-            }
-            if (renderFinishedSemaphores[i]) {
-                vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
-                renderFinishedSemaphores[i] = VK_NULL_HANDLE;
-            }
-            if (inFlightFences[i]) {
-                vkDestroyFence(device, inFlightFences[i], nullptr);
-                inFlightFences[i] = VK_NULL_HANDLE;
-            }
-        }
 
         if (pipelineLayout) {
             vkDestroyPipelineLayout(device, pipelineLayout, nullptr);

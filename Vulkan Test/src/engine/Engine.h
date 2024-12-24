@@ -20,6 +20,8 @@
 
 #include "vk_wrap/VKW_Buffer.h"
 
+#include "Texture.h"
+
 #include "CameraController.h"
 
 void glfm_mouse_move_callback(GLFWwindow* window, double pos_x, double pos_y);
