@@ -14,10 +14,12 @@ public:
 	~VKW_Buffer();
 	
 	void copy(const void* data); // copies data into VKW_Buffer
-	void copy(std::shared_ptr<VKW_CommandBuffer> command_buffer, const std::shared_ptr<VKW_Buffer> other_buffer); // copies other buffer into this one, expects them to be the same size, needs to be in command buffer session 
+	void copy(std::shared_ptr<VKW_CommandPool> command_pool, const std::shared_ptr<VKW_Buffer> other_buffer); // copies other buffer into this one, creates and submits single use command buffer
 	void* map(); // maps buffer into cpu accessible memory and returns pointer to it 
 	void unmap();
 private:
+	std::shared_ptr<VKW_Device> device;
+
 	VmaAllocator allocator;
 
 	VkBuffer buffer;

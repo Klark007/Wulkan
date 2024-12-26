@@ -1,7 +1,7 @@
 #include "VKW_Buffer.h"
 
-VKW_Buffer::VKW_Buffer(std::shared_ptr<VKW_Device> device, VkDeviceSize size, VkBufferUsageFlags usage, SharingInfo sharing_info, bool mappable)
-	: allocator{device->get_allocator()}, mappable{mappable}, length{(size_t) size}
+VKW_Buffer::VKW_Buffer(std::shared_ptr<VKW_Device> d, VkDeviceSize size, VkBufferUsageFlags usage, SharingInfo sharing_info, bool mappable)
+	: device {d}, allocator{d->get_allocator()}, mappable{mappable}, length{(size_t) size}
 {
 	VkBufferCreateInfo buffer_info = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
 	buffer_info.size = size;
@@ -41,18 +41,29 @@ void VKW_Buffer::copy(const void* data)
 	unmap();
 }
 
-void VKW_Buffer::copy(std::shared_ptr<VKW_CommandBuffer> command_buffer, const std::shared_ptr<VKW_Buffer> other_buffer)
+void VKW_Buffer::copy(std::shared_ptr<VKW_CommandPool> command_pool, const std::shared_ptr<VKW_Buffer> other_buffer)
 {
 	if (size() != other_buffer->size()) {
 		throw RuntimeException("Tried to copy from a buffer with different size as source buffer", __FILE__, __LINE__);
 	}
+	
+	VKW_CommandBuffer command_buffer {
+		device,
+		command_pool,
+		true
+	};
+	command_buffer.begin_single_use();
+
 
 	VkBufferCopy copyRegion{};
 	copyRegion.srcOffset = 0;
 	copyRegion.dstOffset = 0;
 	copyRegion.size = size();
 
-	vkCmdCopyBuffer(*command_buffer, buffer, *other_buffer, 1, &copyRegion);
+	// copy into self
+	vkCmdCopyBuffer(command_buffer, *other_buffer, buffer, 1, &copyRegion);
+
+	command_buffer.submit_single_use();
 }
 
 // maps whole buffer to adress and returns address

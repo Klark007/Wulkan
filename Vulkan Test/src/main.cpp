@@ -213,7 +213,6 @@ private:
     std::vector<VkFramebuffer> swapChainFramebuffers;
 
     VkCommandPool graphicsCommandPool;
-    uint32_t currentFrame = 0;
     std::vector<VkCommandBuffer> commandBuffers;
 
     VkCommandPool transferCommandPool;
@@ -586,42 +585,6 @@ private:
         }
     }
 
-    void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory) {
-        VkBufferCreateInfo bufferInfo{};
-        bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-        bufferInfo.size = size;
-        bufferInfo.usage = usage;
-
-        uint32_t queueFamilyIndices[] = { engine->graphics_queue->get_queue_family(), engine->transfer_queue->get_queue_family() };
-
-
-        // TODO: is this guaranteed?
-        bufferInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
-        bufferInfo.queueFamilyIndexCount = sizeof(queueFamilyIndices) / sizeof(queueFamilyIndices[0]);
-        bufferInfo.pQueueFamilyIndices = queueFamilyIndices;
-
-
-        if (vkCreateBuffer(device, &bufferInfo, nullptr, &buffer) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to create vertex buffer");
-        }
-
-        VkMemoryRequirements memRequirements;
-        vkGetBufferMemoryRequirements(device, buffer, &memRequirements);
-
-        VkMemoryAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-        allocInfo.allocationSize = memRequirements.size;
-        allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
-
-        if (vkAllocateMemory(device, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to allocate vertex buffer memory");
-        }
-
-        if (vkBindBufferMemory(device, buffer, bufferMemory, 0) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to bind vertex buffer memory to buffer");
-        }
-    }
-
     void createDepthResources() {
         VkFormat depthFormat = findDepthFormat();
 
@@ -635,25 +598,13 @@ private:
     }
 
     void createTextureImage() {
-        SharingInfo sharingInfoC{
-            VK_SHARING_MODE_CONCURRENT,
-            {engine->graphics_queue->get_queue_family(), engine->transfer_queue->get_queue_family()}
-        };
-
-        auto pair = create_texture_from_path(
+        height_map = create_texture_from_path(
             engine->device,
+            engine->get_current_graphics_pool(),
             "textures/perlinNoise.png",
-            Texture_Type::Tex_R,
-            sharingInfoC
+            Texture_Type::Tex_R
         );
-        height_map = pair.first;
-        std::shared_ptr<VKW_Buffer> staging_buffer = pair.second;
-
-        transitionImageLayout(height_map->image, VK_FORMAT_R8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-        copyBufferToImage(*staging_buffer, height_map->image, height_map->width, height_map->height);
-
-        transitionImageLayout(height_map->image, VK_FORMAT_R8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-        }
+    }
 
     void createTextureSampler() {
         VkSamplerCreateInfo samplerInfo{};
@@ -702,7 +653,7 @@ private:
             false
         );
         
-        copyBuffer(staging_buffer, vertex_buffer);
+        vertex_buffer->copy(engine->get_current_transfer_pool(), staging_buffer);
     }
 
     void createIndexBuffer() {
@@ -722,7 +673,7 @@ private:
             false
         );
 
-        copyBuffer(staging_buffer, index_buffer);
+        index_buffer->copy(engine->get_current_transfer_pool(), staging_buffer);
     }
 
     void createUniformBuffers() {
@@ -880,32 +831,32 @@ private:
         */
         uint32_t imageIndex = engine->current_swapchain_image_idx; 
 
-        updateUniformBuffer(currentFrame);
+        updateUniformBuffer(engine->current_frame);
 
-        vkResetCommandBuffer(*engine->command_structs.at(currentFrame).graphics_command_buffer, 0);
+        vkResetCommandBuffer(*engine->command_structs.at(engine->current_frame).graphics_command_buffer, 0);
 
-        recordCommand(*engine->command_structs.at(currentFrame).graphics_command_buffer, imageIndex, drawImGui());
+        recordCommand(*engine->command_structs.at(engine->current_frame).graphics_command_buffer, imageIndex, drawImGui());
 
 
         // submit command buffer
         VkSubmitInfo submitInfo{};
         submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-        VkSemaphore waitSemaphores[] = { engine->sync_structs.at(engine->current_frame).swapchain_semaphore};
+        VkSemaphore waitSemaphores[] = { engine->get_current_swapchain_semaphore()};
         VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT}; // wait with writing colors until image available
         submitInfo.waitSemaphoreCount = 1;
         submitInfo.pWaitSemaphores = waitSemaphores;
         submitInfo.pWaitDstStageMask = waitStages;
 
         submitInfo.commandBufferCount = 1;
-        VkCommandBuffer command_buffer = *engine->command_structs.at(currentFrame).graphics_command_buffer;
+        VkCommandBuffer command_buffer = *engine->command_structs.at(engine->current_frame).graphics_command_buffer;
         submitInfo.pCommandBuffers = &command_buffer;
 
-        VkSemaphore signalSemaphores[] = { engine->sync_structs.at(engine->current_frame).render_semaphore };
+        VkSemaphore signalSemaphores[] = { engine->get_current_render_semaphore() };
         submitInfo.signalSemaphoreCount = 1;
         submitInfo.pSignalSemaphores = signalSemaphores;
 
-        if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, engine->sync_structs.at(engine->current_frame).render_fence) != VK_SUCCESS) {
+        if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, engine->get_current_render_fence()) != VK_SUCCESS) {
             throw std::runtime_error("Failed to submit draw commandbuffer");
         }
 
@@ -929,8 +880,6 @@ private:
         else if (result) {
             throw std::runtime_error(std::string(string_VkResult(result)) + ":Failed to present swap chain image");
         }
-
-        currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
     }
 
     ImDrawData* drawImGui() {
@@ -1109,7 +1058,7 @@ private:
             scissor.extent = swapChainExtent;
             vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[engine->current_frame], 0, nullptr);
             vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(model_indices.size()), 1, 0, 0, 0);
 
             ImGui_ImplVulkan_RenderDrawData(imgui_data, commandBuffer);
@@ -1132,160 +1081,6 @@ private:
         }
 
         throw std::runtime_error("Failed to find suitable memory type");
-    }
-
-    void copyBuffer(std::shared_ptr<VKW_Buffer> src_buffer, std::shared_ptr<VKW_Buffer> dst_buffer) {
-        std::shared_ptr<VKW_CommandBuffer> command_buffer = std::make_shared<VKW_CommandBuffer>(
-            engine->device,
-            engine->command_structs.at(currentFrame).transfer_command_pool,
-            true
-        );
-        command_buffer->begin_single_use();
-
-        src_buffer->copy(command_buffer, dst_buffer);
-
-        command_buffer->submit_single_use();
-    }
-
-    VkCommandBuffer beginSingleTimeCommands(VkCommandPool commandPool) {
-        // could create seperate command pool for short lived buffers for optimizations
-        VkCommandBufferAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        allocInfo.commandPool = commandPool;
-        allocInfo.commandBufferCount = 1;
-
-        VkCommandBuffer commandBuffer;
-        if (vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to allocate command buffer!");
-        }
-
-        VkCommandBufferBeginInfo beginInfo{};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-        if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to begin command buffer");
-        }
-
-        return commandBuffer;
-    }
-
-    void endSingleTimeCommands(VkCommandBuffer commandBuffer, VkCommandPool commandPool, VkQueue queue) {
-        if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to end command buffer");
-        }
-
-        VkSubmitInfo submitInfo{};
-        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &commandBuffer;
-
-        if (vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to submit copy commandbuffer");
-        }
-        vkQueueWaitIdle(queue);
-
-        VK_DESTROY_FROM(commandBuffer, vkFreeCommandBuffers, device, commandPool, 1, &commandBuffer);
-    }
-
-    void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) {
-        VKW_CommandBuffer command_buffer{
-            engine->device,
-            engine->command_structs.at(currentFrame).graphics_command_pool,
-            true
-        };
-        command_buffer.begin_single_use();
-
-        VkImageMemoryBarrier barrier{};
-        barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-        barrier.oldLayout = oldLayout;
-        barrier.newLayout = newLayout;
-
-        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED; // don't transfer queue ownership
-        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-
-        barrier.image = image;
-        if (newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
-            barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-
-            if (hasStencilComponent(format)) {
-                barrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
-            }
-        }
-        else {
-            barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        }
-        barrier.subresourceRange.baseMipLevel = 0;
-        barrier.subresourceRange.levelCount = 1;
-        barrier.subresourceRange.baseArrayLayer = 0;
-        barrier.subresourceRange.layerCount = 1;
-
-        VkPipelineStageFlags sourceStage;
-        VkPipelineStageFlags destinationStage;
-
-        if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
-            barrier.srcAccessMask = 0;
-            barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-
-            sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-            destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-        } else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
-            barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-            barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-            sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-            destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-        } else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
-            barrier.srcAccessMask = 0;
-            barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-
-            sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-            destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-        }
-        else {
-            throw std::invalid_argument("unsupported layout transition!");
-        }
-
-        vkCmdPipelineBarrier(command_buffer,
-            sourceStage, destinationStage,
-            0, // is it per region barrier
-            0, nullptr,
-            0, nullptr,
-            1, &barrier
-        );
-
-        command_buffer.submit_single_use();
-    }
-
-    void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height) {
-        VKW_CommandBuffer command_buffer{
-            engine->device,
-            engine->command_structs.at(currentFrame).graphics_command_pool,
-            true
-        };
-        command_buffer.begin_single_use();
-
-        VkBufferImageCopy region{};
-        region.bufferOffset = 0;
-        region.bufferRowLength = 0; // tightly packed
-        region.bufferImageHeight = 0;
-
-        region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        region.imageSubresource.baseArrayLayer = 0;
-        region.imageSubresource.layerCount = 1;
-
-        region.imageOffset = { 0,0,0 };
-        region.imageExtent = {
-            width,
-            height,
-            1
-        };
-
-        // we assume image already in VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL format
-        vkCmdCopyBufferToImage(command_buffer, buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
-        
-        command_buffer.submit_single_use();
     }
 
     VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) {

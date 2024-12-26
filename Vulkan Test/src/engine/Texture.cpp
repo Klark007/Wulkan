@@ -83,3 +83,90 @@ VkImageView Texture::get_image_view(VkImageAspectFlags aspect_flag)
 		return image_view;
 	}
 }
+
+void Texture::transition_layout(std::shared_ptr<VKW_CommandPool> command_pool, VkImageLayout initial_layout, VkImageLayout new_layout, uint32_t old_ownership, uint32_t new_ownership)
+{
+	VKW_CommandBuffer command_buffer {
+		device,
+		command_pool,
+		true
+	};
+	command_buffer.begin_single_use();
+
+	VkImageMemoryBarrier2 barrier{};
+	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
+
+	barrier.image = image;
+	barrier.oldLayout = initial_layout;
+	barrier.newLayout = new_layout;
+
+	// potentially change ownership
+	barrier.srcQueueFamilyIndex = old_ownership;
+	barrier.dstQueueFamilyIndex = new_ownership;
+
+	// change for whole image
+	barrier.subresourceRange.baseMipLevel = 0;
+	barrier.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
+	barrier.subresourceRange.baseArrayLayer = 0;
+	barrier.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
+
+	VkImageAspectFlags aspect = 0;
+	if (new_layout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL) {
+		aspect = VK_IMAGE_ASPECT_DEPTH_BIT;
+	}
+	else if (new_layout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
+		aspect = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+	}
+	else {
+		aspect = VK_IMAGE_ASPECT_COLOR_BIT;
+	}
+	barrier.subresourceRange.aspectMask = aspect;
+
+	// todo: cases to support:
+	
+	// for textures:
+	// transition from undefined to transfer dst
+	// transition from transfer dst to read only
+	
+	// for images as render targets:
+	// transition from undefined to color attachement
+	// transition from color attachement to read only
+	
+	// for depth and or stencil:
+	// transition from undefined to depth/stencil attachment
+	// from depth/stencil to read only (if we do z pre pass)
+
+	if (initial_layout == VK_IMAGE_LAYOUT_UNDEFINED && new_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+		barrier.srcStageMask = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT;
+		barrier.dstStageMask = VK_PIPELINE_STAGE_2_ALL_TRANSFER_BIT_KHR; // needs to be in new layout before transfer stage
+
+		barrier.srcAccessMask = VK_ACCESS_2_NONE; // nothing from before as data is undefined
+		barrier.dstAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
+	}
+	else if (initial_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && new_layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+		barrier.srcStageMask = VK_PIPELINE_STAGE_2_ALL_TRANSFER_BIT_KHR;
+		barrier.dstStageMask = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT 
+			| VK_PIPELINE_STAGE_2_TESSELLATION_CONTROL_SHADER_BIT 
+			| VK_PIPELINE_STAGE_2_TESSELLATION_EVALUATION_SHADER_BIT; // textures can be read in fragment and tesselation shaders
+
+		barrier.srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
+		barrier.dstAccessMask = VK_ACCESS_2_SHADER_READ_BIT;
+	} else {
+		// does a full stop
+		barrier.srcStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+		barrier.dstStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+
+		barrier.srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT;
+		barrier.dstAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT | VK_ACCESS_2_MEMORY_READ_BIT;
+	}
+
+	VkDependencyInfo depency_info{};
+	depency_info.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+
+	depency_info.pImageMemoryBarriers = &barrier;
+	depency_info.imageMemoryBarrierCount = 1;
+
+	vkCmdPipelineBarrier2(command_buffer, &depency_info);
+
+	command_buffer.submit_single_use();
+}

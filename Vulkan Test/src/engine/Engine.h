@@ -36,7 +36,10 @@ struct CommandStructs {
 };
 
 struct SyncStructs {
+	// swapchain_semaphore signaled once an image is available to be rendered into
+	// render_semapohore is signaled once the rendering is done and the image is availabe to be presented
 	VkSemaphore swapchain_semaphore, render_semaphore;
+	// render fence is signaled once the image has finished rendering
 	VkFence render_fence;
 };
 
@@ -96,6 +99,12 @@ public: // TODO: remove public
 	std::array<CommandStructs, MAX_FRAMES_IN_FLIGHT> command_structs;
 	std::array<SyncStructs, MAX_FRAMES_IN_FLIGHT> sync_structs;
 
+	inline std::shared_ptr<VKW_CommandPool> get_current_graphics_pool() const;
+	inline std::shared_ptr<VKW_CommandPool> get_current_transfer_pool() const;
+	inline VkSemaphore get_current_swapchain_semaphore() const;
+	inline VkSemaphore get_current_render_semaphore() const;
+	inline VkFence get_current_render_fence() const;
+
 	unsigned int current_swapchain_image_idx;
 private:
 
@@ -107,6 +116,31 @@ public:
 	inline void resize_callback(unsigned int new_x, unsigned int new_y);
 	struct GLFWwindow* get_window() const { return window; };
 };
+
+inline std::shared_ptr<VKW_CommandPool> Engine::get_current_graphics_pool() const
+{
+	return command_structs[current_frame].graphics_command_pool;
+}
+
+inline std::shared_ptr<VKW_CommandPool> Engine::get_current_transfer_pool() const
+{
+	return command_structs[current_frame].transfer_command_pool;
+}
+
+inline VkSemaphore Engine::get_current_swapchain_semaphore() const
+{
+	return sync_structs[current_frame].swapchain_semaphore;
+}
+
+inline VkSemaphore Engine::get_current_render_semaphore() const
+{
+	return sync_structs[current_frame].render_semaphore;
+}
+
+inline VkFence Engine::get_current_render_fence() const
+{
+	return sync_structs[current_frame].render_fence;
+}
 
 // TODO: check if resize_callback could call resize directly
 inline void Engine::resize_callback(unsigned int new_x, unsigned int new_y)

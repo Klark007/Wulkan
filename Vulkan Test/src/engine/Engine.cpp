@@ -180,13 +180,14 @@ void Engine::create_sync_structs()
 
 bool Engine::aquire_image()
 {
-	VK_CHECK_E(vkWaitForFences(*device, 1, &sync_structs.at(current_frame).render_fence, VK_TRUE, UINT64_MAX), RuntimeException);
+	VkFence render_fence = get_current_render_fence();
+	VK_CHECK_E(vkWaitForFences(*device, 1, &render_fence, VK_TRUE, UINT64_MAX), RuntimeException);
 	
 	VkResult aquire_image_result = vkAcquireNextImageKHR(
 		*device, 
 		*swapchain,
 		UINT64_MAX, 
-		sync_structs.at(current_frame).swapchain_semaphore, 
+		get_current_swapchain_semaphore(),
 		VK_NULL_HANDLE, 
 		&current_swapchain_image_idx
 	);
@@ -199,7 +200,7 @@ bool Engine::aquire_image()
 	
 	
 	// we have successfully aquired image, can reset fence
-	VK_CHECK_E(vkResetFences(*device, 1, &sync_structs.at(current_frame).render_fence), RuntimeException);
+	VK_CHECK_E(vkResetFences(*device, 1, &render_fence), RuntimeException);
 	return false;
 }
 
@@ -250,6 +251,7 @@ void Engine::update()
 void Engine::draw()
 {
 	if (!aquire_image()) {
+		// todo: throw exception?
 		return;
 	}
 }
