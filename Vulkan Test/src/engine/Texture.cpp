@@ -5,9 +5,14 @@
 #include <format>
 
 
-Texture::Texture(std::shared_ptr<VKW_Device> d, unsigned int w, unsigned int h, VkFormat f, VkImageUsageFlags usage, SharingInfo sharing_info)
-	: device {d}, allocator{device->get_allocator()}, width {w}, height {h}, format {f}
+void Texture::init(const VKW_Device* vkw_device, unsigned int w, unsigned int h, VkFormat f, VkImageUsageFlags usage, SharingInfo sharing_info)
 {
+	device = vkw_device;
+	allocator = device->get_allocator();
+	width = w;
+	height = h;
+	format = f;
+
 	VkImageCreateInfo image_info{};
 	image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 	image_info.imageType = VK_IMAGE_TYPE_2D;
@@ -42,7 +47,7 @@ Texture::Texture(std::shared_ptr<VKW_Device> d, unsigned int w, unsigned int h, 
 	memory = alloc_info.deviceMemory;
 }
 
-Texture::~Texture()
+void Texture::del()
 {
 	for (auto& [_, view] : image_views) {
 		VK_DESTROY(view, vkDestroyImageView, *device, view);
@@ -84,13 +89,14 @@ VkImageView Texture::get_image_view(VkImageAspectFlags aspect_flag)
 	}
 }
 
-void Texture::transition_layout(std::shared_ptr<VKW_CommandPool> command_pool, VkImageLayout initial_layout, VkImageLayout new_layout, uint32_t old_ownership, uint32_t new_ownership)
+void Texture::transition_layout(const VKW_CommandPool* command_pool, VkImageLayout initial_layout, VkImageLayout new_layout, uint32_t old_ownership, uint32_t new_ownership)
 {
-	VKW_CommandBuffer command_buffer {
+	VKW_CommandBuffer command_buffer{};
+	command_buffer.init(
 		device,
 		command_pool,
 		true
-	};
+	);
 	command_buffer.begin_single_use();
 
 	VkImageMemoryBarrier2 barrier{};

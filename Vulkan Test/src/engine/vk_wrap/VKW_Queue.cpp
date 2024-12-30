@@ -1,8 +1,8 @@
 #include "VKW_Queue.h"
 
-VKW_Queue::VKW_Queue(std::shared_ptr<VKW_Device> device, vkb::QueueType type)
+void VKW_Queue::init(const VKW_Device& device, vkb::QueueType type)
 {
-	vkb::Device vkb_device = device->get_vkb_device();
+	vkb::Device vkb_device = device.get_vkb_device();
 	vkb::Result<VkQueue> queue_result {{}};
 	vkb::Result<uint32_t> idx_result {{}};
 

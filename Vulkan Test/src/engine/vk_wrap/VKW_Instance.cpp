@@ -2,7 +2,7 @@
 
 // set_debug_callback, ...
 
-VKW_Instance::VKW_Instance(const std::string& app_name, std::vector<const char*> instance_extensions, std::vector<const char*> instance_layers)
+void VKW_Instance::init(const std::string& app_name, std::vector<const char*> instance_extensions, std::vector<const char*> instance_layers)
 {
 	auto system_info_ret = vkb::SystemInfo::get_system_info();
 	if (!system_info_ret) {
@@ -63,7 +63,7 @@ VKW_Instance::VKW_Instance(const std::string& app_name, std::vector<const char*>
 	vkb_instance = build_result.value();
 }
 
-VKW_Instance::~VKW_Instance()
+void VKW_Instance::del()
 {
 	vkb::destroy_instance(vkb_instance);
 }

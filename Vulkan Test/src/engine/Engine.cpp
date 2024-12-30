@@ -21,21 +21,22 @@ Engine::Engine(unsigned int res_x, unsigned int res_y, std::shared_ptr<Camera> c
 Engine::~Engine()
 {
 	for (unsigned int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-		VK_DESTROY(sync_structs.at(i).swapchain_semaphore, vkDestroySemaphore, *device, sync_structs.at(i).swapchain_semaphore);
-		VK_DESTROY(sync_structs.at(i).render_semaphore, vkDestroySemaphore, *device, sync_structs.at(i).render_semaphore);
-		VK_DESTROY(sync_structs.at(i).render_fence, vkDestroyFence, *device, sync_structs.at(i).render_fence);
+		VK_DESTROY(sync_structs.at(i).swapchain_semaphore, vkDestroySemaphore, device, sync_structs.at(i).swapchain_semaphore);
+		VK_DESTROY(sync_structs.at(i).render_semaphore, vkDestroySemaphore, device, sync_structs.at(i).render_semaphore);
+		VK_DESTROY(sync_structs.at(i).render_fence, vkDestroyFence, device, sync_structs.at(i).render_fence);
 	}
 
 	for (unsigned int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-		command_structs.at(i).graphics_command_pool.reset();
-		command_structs.at(i).transfer_command_pool.reset();
+		command_structs.at(i).graphics_command_pool.del();
+		command_structs.at(i).transfer_command_pool.del();
 	}
 
 	destroy_swapchain();
 
-	device.reset();
-	surface.reset();
-	instance.reset();
+	// TODO CLEAN UP
+	//device.reset();
+	//surface.reset();
+	//instance.deletion_function()();
 
 	glfwDestroyWindow(window);
 	glfwTerminate();
@@ -97,36 +98,36 @@ void Engine::init_vulkan()
 
 void Engine::init_instance()
 {
-	instance = std::make_shared<VKW_Instance>("VK Study", get_required_instance_extensions(), std::vector<const char*>());
+	instance.init("VK Study", get_required_instance_extensions(), std::vector<const char*>());
 }
 
 void Engine::create_surface()
 {
-	surface = std::make_shared<VKW_Surface>(window, instance);
+	surface.init(window, &instance);
 }
 
 void Engine::create_device()
 {
 	Required_Device_Features required_features = get_required_device_features();
 
-	device = std::make_shared<VKW_Device>(instance, surface, get_required_device_extensions(), required_features);;
+	device.init(&instance, surface, get_required_device_extensions(), required_features);;
 	
 	VkPhysicalDeviceProperties deviceProperties;
-	vkGetPhysicalDeviceProperties(device->get_physical_device(), &deviceProperties);
+	vkGetPhysicalDeviceProperties(device.get_physical_device(), &deviceProperties);
 	std::cout << "Selected GPU:" << deviceProperties.deviceName << std::endl;
 	std::cout << "Tesselation limit:" << deviceProperties.limits.maxTessellationGenerationLevel << std::endl;
 }
 
 void Engine::create_queues()
 {
-	graphics_queue = std::make_shared<VKW_Queue>(device, vkb::QueueType::graphics);
-	present_queue  = std::make_shared<VKW_Queue>(device, vkb::QueueType::present);
-	transfer_queue = std::make_shared<VKW_Queue>(device, vkb::QueueType::transfer);
+	graphics_queue.init(device, vkb::QueueType::graphics);
+	present_queue.init(device, vkb::QueueType::present);
+	transfer_queue.init(device, vkb::QueueType::transfer);
 }
 
 void Engine::create_swapchain()
 {
-	swapchain = std::make_shared<VKW_Swapchain>(window, device);
+	swapchain.init(window, device);
 }
 
 void Engine::recreate_swapchain()
@@ -143,20 +144,22 @@ void Engine::destroy_swapchain()
 	// Destroys images, image views and framebuffers associated with the swapchain
 	// TODO: reset images etc.
 
-	swapchain.reset();
+	swapchain.del();
 }
 
 void Engine::create_command_structs()
 {
 	// Use 1 command pool with one buffer per thread and image in flight
-
 	for (unsigned int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-		std::shared_ptr<VKW_CommandPool> graphics_pool = std::make_shared<VKW_CommandPool>(device, graphics_queue, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 		command_structs.at(i) = {
-			graphics_pool,
-			std::make_shared<VKW_CommandPool>(device, transfer_queue, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT),
-			std::make_shared<VKW_CommandBuffer>(device, graphics_pool, false)
+			{},
+			{},
+			{},
 		};
+
+		command_structs.at(i).graphics_command_pool.init(&device, &graphics_queue, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+		command_structs.at(i).transfer_command_pool.init(&device, &transfer_queue, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
+		command_structs.at(i).graphics_command_buffer.init(&device, &command_structs.at(i).graphics_command_pool, false);
 	}
 }
 
@@ -172,20 +175,20 @@ void Engine::create_sync_structs()
 
 	for (unsigned int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 		sync_structs.at(i) = {};
-		VK_CHECK_E(vkCreateSemaphore(*device, &semaphore_create_info, nullptr, &sync_structs.at(i).swapchain_semaphore), SetupException);
-		VK_CHECK_E(vkCreateSemaphore(*device, &semaphore_create_info, nullptr, &sync_structs.at(i).render_semaphore), SetupException);
-		VK_CHECK_E(vkCreateFence(*device, &fence_create_info, nullptr, &sync_structs.at(i).render_fence), SetupException);
+		VK_CHECK_E(vkCreateSemaphore(device, &semaphore_create_info, nullptr, &sync_structs.at(i).swapchain_semaphore), SetupException);
+		VK_CHECK_E(vkCreateSemaphore(device, &semaphore_create_info, nullptr, &sync_structs.at(i).render_semaphore), SetupException);
+		VK_CHECK_E(vkCreateFence(device, &fence_create_info, nullptr, &sync_structs.at(i).render_fence), SetupException);
 	}
 }
 
 bool Engine::aquire_image()
 {
 	VkFence render_fence = get_current_render_fence();
-	VK_CHECK_E(vkWaitForFences(*device, 1, &render_fence, VK_TRUE, UINT64_MAX), RuntimeException);
+	VK_CHECK_E(vkWaitForFences(device, 1, &render_fence, VK_TRUE, UINT64_MAX), RuntimeException);
 	
 	VkResult aquire_image_result = vkAcquireNextImageKHR(
-		*device, 
-		*swapchain,
+		device, 
+		swapchain,
 		UINT64_MAX, 
 		get_current_swapchain_semaphore(),
 		VK_NULL_HANDLE, 
@@ -200,7 +203,7 @@ bool Engine::aquire_image()
 	
 	
 	// we have successfully aquired image, can reset fence
-	VK_CHECK_E(vkResetFences(*device, 1, &render_fence), RuntimeException);
+	VK_CHECK_E(vkResetFences(device, 1, &render_fence), RuntimeException);
 	return false;
 }
 

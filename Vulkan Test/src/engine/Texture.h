@@ -3,6 +3,7 @@
 #include "vk_types.h"
 
 #include <stb_image.h>
+#include "vk_wrap/VKW_Object.h"
 
 #include "vk_wrap/VKW_Device.h"
 #include "vk_wrap/VKW_Buffer.h"
@@ -19,15 +20,16 @@ enum Texture_Type
 
 // Texture with managing VkImage, VkImageView and Memory
 // TODO: If necessary split VkImage and VkImage view into its own class stored with smart pointer
-class Texture
+class Texture : public VKW_Object
 {
 public:
+	Texture() = default;
 	// create an image (and memory) but not load it (to be used as attachment), if we want to load an image, use create_texture_from_path
-	Texture(std::shared_ptr<VKW_Device> device, unsigned int width, unsigned int height, VkFormat format, VkImageUsageFlags usage, SharingInfo sharing_info);
-	
-	~Texture();
+	void init(const VKW_Device* vkw_device, unsigned int width, unsigned int height, VkFormat format, VkImageUsageFlags usage, SharingInfo sharing_info);
+	void del() override;
+
 private:
-	std::shared_ptr<VKW_Device> device;
+	const VKW_Device* device;
 	VmaAllocator allocator;
 	VmaAllocation allocation;
 	
@@ -43,9 +45,9 @@ private:
 	inline static VkFormatFeatureFlags required_format_features(Texture_Type type);
 public:
 	// transitions the layout. Can also be used to change ownership to a new queue
-	void transition_layout(std::shared_ptr<VKW_CommandPool> command_pool, VkImageLayout initial_layout, VkImageLayout new_layout, uint32_t old_ownership = VK_QUEUE_FAMILY_IGNORED, uint32_t new_ownership = VK_QUEUE_FAMILY_IGNORED);
+	void transition_layout(const VKW_CommandPool* command_pool, VkImageLayout initial_layout, VkImageLayout new_layout, uint32_t old_ownership = VK_QUEUE_FAMILY_IGNORED, uint32_t new_ownership = VK_QUEUE_FAMILY_IGNORED);
 
-	inline static VkFormat find_format(std::shared_ptr<VKW_Device> device, Texture_Type type);
+	inline static VkFormat find_format(const VKW_Device& device, Texture_Type type);
 	inline static int get_stbi_channels(Texture_Type type);
 
 	inline VkImage get_image() const { return image; };
@@ -54,7 +56,7 @@ public:
 };
 
 // creates a texture from a path, needs graphics command pool as input argument as we are waiting on a stage not present supported in transfer queues (in transition_layout)
-inline std::shared_ptr<Texture> create_texture_from_path(std::shared_ptr<VKW_Device> device, std::shared_ptr<VKW_CommandPool> command_pool, std::string path, Texture_Type type) {
+inline Texture create_texture_from_path(const VKW_Device* device, const VKW_CommandPool* command_pool, std::string path, Texture_Type type) {
 	int desired_channels = Texture::get_stbi_channels(type);
 
 	int width, height, channels;
@@ -67,12 +69,13 @@ inline std::shared_ptr<Texture> create_texture_from_path(std::shared_ptr<VKW_Dev
 
 	VkDeviceSize image_size = width * height * desired_channels;
 	// todo make staging buffer local to constructor
-	std::shared_ptr<VKW_Buffer> staging_buffer = create_staging_buffer(device, pixels, image_size);
+	VKW_Buffer staging_buffer = create_staging_buffer(device, pixels, image_size);
 
 	stbi_image_free(pixels);
 
-	VkFormat format = Texture::find_format(device, type);
-	std::shared_ptr<Texture> texture = std::make_shared<Texture>(
+	VkFormat format = Texture::find_format(*device, type);
+	Texture texture{};
+	texture.init(
 		device, 
 		width, height, 
 		format, 
@@ -81,17 +84,18 @@ inline std::shared_ptr<Texture> create_texture_from_path(std::shared_ptr<VKW_Dev
 	);
 
 	// transfer layout 1
-	texture->transition_layout(command_pool,
+	texture.transition_layout(command_pool,
 		VK_IMAGE_LAYOUT_UNDEFINED, 
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
 	);
 
 	// copying
-	VKW_CommandBuffer command_buffer{
+	VKW_CommandBuffer command_buffer{};
+	command_buffer.init(
 		device,
 		command_pool,
 		true
-	};
+	);
 	command_buffer.begin_single_use();
 
 	VkBufferImageCopy image_copy{};
@@ -107,24 +111,26 @@ inline std::shared_ptr<Texture> create_texture_from_path(std::shared_ptr<VKW_Dev
 	image_copy.imageOffset = { 0,0,0 };
 	image_copy.imageExtent = { (unsigned int) width, (unsigned int) height, 1 };
 
-	vkCmdCopyBufferToImage(command_buffer, *staging_buffer, *texture, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &image_copy);
+	vkCmdCopyBufferToImage(command_buffer, staging_buffer, texture, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &image_copy);
 	command_buffer.submit_single_use();
 
 	// transfer layout 2
-	texture->transition_layout(command_pool,
+	texture.transition_layout(command_pool,
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
 	);
+	
+	staging_buffer.del();
 
 	return texture;
 }
 
-inline VkFormat Texture::find_format(std::shared_ptr<VKW_Device> device, Texture_Type type)
+inline VkFormat Texture::find_format(const VKW_Device& device, Texture_Type type)
 {
 	VkFormatFeatureFlags format_features = required_format_features(type);
 	std::vector<VkFormat> candidates = potential_formats(type);
 
-	VkPhysicalDevice p_device = device->get_physical_device();
+	VkPhysicalDevice p_device = device.get_physical_device();
 
 	for (VkFormat format : candidates) {
 		VkFormatProperties props;

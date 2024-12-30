@@ -1,14 +1,17 @@
 #pragma once
 
-#include "VKW_Instance.h"
 #include "../vk_types.h"
+#include "VKW_Object.h"
+#include "VKW_Instance.h"
 
-class VKW_Surface {
+
+class VKW_Surface : public VKW_Object {
 public:
-	VKW_Surface(struct GLFWwindow* window, std::shared_ptr<VKW_Instance> instance);
-	~VKW_Surface();
+	VKW_Surface() = default;
+	void init(struct GLFWwindow* window, const VKW_Instance* vkw_instance);
+	void del() override;
 private:
-	std::shared_ptr<VKW_Instance> instance;
+	const VKW_Instance* instance;
 	VkSurfaceKHR surface;
 public:
 	inline VkSurfaceKHR get_surface() const { return surface; };

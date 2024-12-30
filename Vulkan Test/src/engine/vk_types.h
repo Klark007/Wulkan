@@ -17,6 +17,7 @@
 #include <array>
 #include <set>
 #include <map>
+#include <functional>
 
 
 struct SharingInfo {

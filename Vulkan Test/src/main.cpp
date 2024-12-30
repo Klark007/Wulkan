@@ -202,7 +202,7 @@ private:
     VkFormat swapChainImageFormat;
     VkExtent2D swapChainExtent;
 
-    std::shared_ptr<Texture> depth_texture;
+    Texture depth_texture;
 
     VkRenderPass renderPass;
     VkDescriptorSetLayout descriptorSetLayout;
@@ -217,16 +217,16 @@ private:
 
     VkCommandPool transferCommandPool;
     
-    std::shared_ptr<VKW_Buffer> vertex_buffer;
-    std::shared_ptr<VKW_Buffer> index_buffer;
+    VKW_Buffer vertex_buffer;
+    VKW_Buffer index_buffer;
     
-    std::vector<std::shared_ptr<VKW_Buffer>> uniform_buffers;
+    std::vector<VKW_Buffer> uniform_buffers;
     std::vector<void*> uniformBuffersMapped;
 
     VkDescriptorPool descriptorPool;
     std::vector<VkDescriptorSet> descriptorSets;
 
-    std::shared_ptr<Texture> height_map;
+    Texture height_map;
     VkSampler textureSampler;
 
     VkDebugUtilsMessengerEXT debugMessenger;
@@ -265,18 +265,18 @@ private:
     }
 
     void initVulkan() {
-        instance = *engine->instance;
+        instance = engine->instance;
 
-        surface = *engine->surface;
+        surface = engine->surface;
 
-        physicalDevice = engine->device->get_physical_device();
-        device = *engine->device;
+        physicalDevice = engine->device.get_physical_device();
+        device = engine->device;
 
-        graphicsQueueFamily = engine->graphics_queue->get_queue_family();
-        std::cout << "Chosen queues" << engine->graphics_queue->get_queue_family() << "," << engine->present_queue->get_queue_family() << "," << engine->transfer_queue->get_queue_family() << std::endl;
-        graphicsQueue = *engine->graphics_queue;
-        presentQueue = *engine->present_queue;
-        transferQueue = *engine->transfer_queue;
+        graphicsQueueFamily = engine->graphics_queue.get_queue_family();
+        std::cout << "Chosen queues" << engine->graphics_queue.get_queue_family() << "," << engine->present_queue.get_queue_family() << "," << engine->transfer_queue.get_queue_family() << std::endl;
+        graphicsQueue = engine->graphics_queue;
+        presentQueue = engine->present_queue;
+        transferQueue = engine->transfer_queue;
 
         
         createSwapChain();
@@ -320,17 +320,17 @@ private:
         init_info.DescriptorPool = descriptorPool;
         init_info.RenderPass = renderPass;
         init_info.Subpass = 0;
-        init_info.MinImageCount = engine->swapchain->size();
-        init_info.ImageCount = engine->swapchain->size();
+        init_info.MinImageCount = engine->swapchain.size();
+        init_info.ImageCount = engine->swapchain.size();
         init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
         init_info.CheckVkResultFn = check_vk_result;
         ImGui_ImplVulkan_Init(&init_info);
     }
 
     void createSwapChain() {
-        swapChain = *engine->swapchain;
-        swapChainImageFormat = engine->swapchain->get_format();
-        swapChainExtent = engine->swapchain->get_extent();
+        swapChain = engine->swapchain;
+        swapChainImageFormat = engine->swapchain.get_format();
+        swapChainExtent = engine->swapchain.get_extent();
     }
 
     void createRenderPass() {
@@ -562,12 +562,12 @@ private:
     }
 
     void createFrameBuffers() {
-        swapChainFramebuffers.resize(engine->swapchain->size());
+        swapChainFramebuffers.resize(engine->swapchain.size());
 
-        for (size_t i = 0; i < engine->swapchain->size(); i++) {
+        for (size_t i = 0; i < engine->swapchain.size(); i++) {
             std::array<VkImageView,2> attachments = {
-                engine->swapchain->at(i),
-                depth_texture->get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT)
+                engine->swapchain.at(i),
+                depth_texture.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT)
             };
 
             VkFramebufferCreateInfo frameBufferInfo{};
@@ -588,8 +588,8 @@ private:
     void createDepthResources() {
         VkFormat depthFormat = findDepthFormat();
 
-        depth_texture = std::make_shared<Texture>(
-            engine->device,
+        depth_texture.init(
+            &engine->device,
             swapChainExtent.width, swapChainExtent.height,
             depthFormat,
             VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
@@ -599,8 +599,8 @@ private:
 
     void createTextureImage() {
         height_map = create_texture_from_path(
-            engine->device,
-            engine->get_current_graphics_pool(),
+            &engine->device,
+            &engine->get_current_graphics_pool(),
             "textures/perlinNoise.png",
             Texture_Type::Tex_R
         );
@@ -639,41 +639,45 @@ private:
     void createVertexBuffer() {
         VkDeviceSize bufferSize = sizeof(model_vertices[0]) * model_vertices.size();
         
-        std::shared_ptr<VKW_Buffer> staging_buffer = create_staging_buffer(engine->device, model_vertices.data(), bufferSize);
+        VKW_Buffer staging_buffer = create_staging_buffer(&engine->device, model_vertices.data(), bufferSize);
 
         SharingInfo sharingInfoC{
             VK_SHARING_MODE_CONCURRENT,
-            {engine->graphics_queue->get_queue_family(), engine->transfer_queue->get_queue_family()}
+            {engine->graphics_queue.get_queue_family(), engine->transfer_queue.get_queue_family()}
         };
-        vertex_buffer = std::make_shared<VKW_Buffer>(
-            engine->device,
+        vertex_buffer.init(
+            &engine->device,
             bufferSize,
             VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 
             sharingInfoC,
             false
         );
         
-        vertex_buffer->copy(engine->get_current_transfer_pool(), staging_buffer);
+        vertex_buffer.copy(&engine->get_current_transfer_pool(), staging_buffer);
+        
+        staging_buffer.del();
     }
 
     void createIndexBuffer() {
         VkDeviceSize bufferSize = sizeof(model_indices[0]) * model_indices.size();
 
-        std::shared_ptr<VKW_Buffer> staging_buffer = create_staging_buffer(engine->device, model_indices.data(), bufferSize);
+        VKW_Buffer staging_buffer = create_staging_buffer(&engine->device, model_indices.data(), bufferSize);
         
         SharingInfo sharingInfoC{
             VK_SHARING_MODE_CONCURRENT,
-            {engine->graphics_queue->get_queue_family(), engine->transfer_queue->get_queue_family()}
+            {engine->graphics_queue.get_queue_family(), engine->transfer_queue.get_queue_family()}
         };
-        index_buffer = std::make_shared<VKW_Buffer>(
-            engine->device,
+        index_buffer.init(
+            &engine->device,
             bufferSize,
             VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
             sharingInfoC,
             false
         );
 
-        index_buffer->copy(engine->get_current_transfer_pool(), staging_buffer);
+        index_buffer.copy(&engine->get_current_transfer_pool(), staging_buffer);
+
+        staging_buffer.del();
     }
 
     void createUniformBuffers() {
@@ -683,15 +687,15 @@ private:
         uniformBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            uniform_buffers.at(i) = std::make_shared<VKW_Buffer>(
-                engine->device,
+            uniform_buffers.at(i).init(
+                &engine->device,
                 bufferSize, 
                 VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
                 sharing_exlusive(),
                 true
             );
 
-            uniformBuffersMapped.at(i) = uniform_buffers.at(i)->map();
+            uniformBuffersMapped.at(i) = uniform_buffers.at(i).map();
         }
     }
 
@@ -731,14 +735,14 @@ private:
         // configure descriptors
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             VkDescriptorBufferInfo bufferInfo{};
-            bufferInfo.buffer = *uniform_buffers[i];
+            bufferInfo.buffer = uniform_buffers[i];
             bufferInfo.offset = 0;
             bufferInfo.range = sizeof(UniformBufferObject);
 
             VkDescriptorImageInfo imageInfo{};
             imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             imageInfo.sampler = textureSampler;
-            imageInfo.imageView = height_map->get_image_view(VK_IMAGE_ASPECT_COLOR_BIT);
+            imageInfo.imageView = height_map.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT);
 
             std::array<VkWriteDescriptorSet,2> descriptorWrites{};
             descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -760,43 +764,6 @@ private:
             descriptorWrites[1].pImageInfo = &imageInfo;
 
             vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-        }
-    }
-
-    void createCommandPool() {
-        // manages memory for command buffers
-        // QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice);
-
-        VkCommandPoolCreateInfo graphicsPoolInfo{};
-        graphicsPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        graphicsPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-        graphicsPoolInfo.queueFamilyIndex = engine->graphics_queue->get_queue_family();
-
-        if (vkCreateCommandPool(device, &graphicsPoolInfo, nullptr, &graphicsCommandPool) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to create graphics command pool!");
-        }
-
-        VkCommandPoolCreateInfo transferPoolInfo{};
-        transferPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        transferPoolInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT; // short lived buffers
-        transferPoolInfo.queueFamilyIndex = engine->transfer_queue->get_queue_family();
-
-        if (vkCreateCommandPool(device, &transferPoolInfo, nullptr, &transferCommandPool) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to create transfer command pool!");
-        }
-    }
-
-    void createCommandBuffers() {
-        commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-
-        VkCommandBufferAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        allocInfo.commandPool = graphicsCommandPool;
-        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY; // can be submitted but not called from other command buffers
-        allocInfo.commandBufferCount = (uint32_t)commandBuffers.size();
-
-        if (vkAllocateCommandBuffers(device, &allocInfo, commandBuffers.data()) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to allocate command buffer!");
         }
     }
 
@@ -833,9 +800,9 @@ private:
 
         updateUniformBuffer(engine->current_frame);
 
-        vkResetCommandBuffer(*engine->command_structs.at(engine->current_frame).graphics_command_buffer, 0);
+        vkResetCommandBuffer(engine->command_structs.at(engine->current_frame).graphics_command_buffer, 0);
 
-        recordCommand(*engine->command_structs.at(engine->current_frame).graphics_command_buffer, imageIndex, drawImGui());
+        recordCommand(engine->command_structs.at(engine->current_frame).graphics_command_buffer, imageIndex, drawImGui());
 
 
         // submit command buffer
@@ -849,7 +816,7 @@ private:
         submitInfo.pWaitDstStageMask = waitStages;
 
         submitInfo.commandBufferCount = 1;
-        VkCommandBuffer command_buffer = *engine->command_structs.at(engine->current_frame).graphics_command_buffer;
+        VkCommandBuffer command_buffer = engine->command_structs.at(engine->current_frame).graphics_command_buffer;
         submitInfo.pCommandBuffers = &command_buffer;
 
         VkSemaphore signalSemaphores[] = { engine->get_current_render_semaphore() };
@@ -907,9 +874,7 @@ private:
             }
         }
         
-        depth_texture.reset();
-        
-        engine->destroy_swapchain();
+        depth_texture.del();
     }
 
     void cleanupImGui() {
@@ -1039,10 +1004,10 @@ private:
         vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
             vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
-            VkBuffer vertexBuffers[] = { *vertex_buffer };
+            VkBuffer vertexBuffers[] = { vertex_buffer };
             VkDeviceSize offsets[] = { 0 };
             vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-            vkCmdBindIndexBuffer(commandBuffer, *index_buffer, 0, VK_INDEX_TYPE_UINT16);
+            vkCmdBindIndexBuffer(commandBuffer, index_buffer, 0, VK_INDEX_TYPE_UINT16);
 
             VkViewport viewport{};
             viewport.x = 0.0f;
@@ -1161,19 +1126,19 @@ private:
         cleanupImGui();
         
         VK_DESTROY(textureSampler, vkDestroySampler, device, textureSampler);
-        height_map.reset();
+        height_map.del();
 
         VK_DESTROY(descriptorPool, vkDestroyDescriptorPool, device, descriptorPool);
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            uniform_buffers[i]->unmap();
-            uniform_buffers[i].reset();
+            uniform_buffers[i].unmap();
+            uniform_buffers[i].del();
         }
 
         VK_DESTROY(descriptorSetLayout, vkDestroyDescriptorSetLayout, device, descriptorSetLayout);
 
-        vertex_buffer.reset();
-        index_buffer.reset();
+        vertex_buffer.del();
+        index_buffer.del();
 
         if (pipelineLayout) {
             vkDestroyPipelineLayout(device, pipelineLayout, nullptr);

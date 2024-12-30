@@ -158,6 +158,8 @@
     <ClCompile Include="src\engine\vk_wrap\VKW_CommandBuffer.cpp" />
     <ClCompile Include="src\engine\Texture.cpp" />
     <ClCompile Include="src\engine\vk_wrap\VKW_Buffer.cpp" />
+    <ClCompile Include="src\engine\vk_wrap\VKW_DescriptorSet.cpp" />
+    <ClCompile Include="src\engine\vk_wrap\VKW_DescriptorPool.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\compile.bat" />
@@ -165,6 +167,7 @@
     <None Include="shaders\shader.vert" />
     <None Include="shaders\terrain.tesc" />
     <None Include="shaders\terrain.tese" />
+    <None Include="src\engine\vk_wrap\README.md" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="external\vk-bootstrap\VkBootstrap.h" />
@@ -183,6 +186,7 @@
     <ClInclude Include="external\imgui\misc\cpp\imgui_stdlib.h" />
     <ClInclude Include="src\engine\Camera.h" />
     <ClInclude Include="src\engine\vk_types.h" />
+    <ClInclude Include="src\engine\vk_wrap\VKW_Object.h" />
     <ClInclude Include="src\engine\vk_wrap\VKW_Instance.h" />
     <ClInclude Include="src\engine\vk_wrap\VKW_Surface.h" />
     <ClInclude Include="src\engine\vk_wrap\VKW_Device.h" />
@@ -192,6 +196,8 @@
     <ClInclude Include="src\engine\vk_wrap\VKW_CommandBuffer.h" />
     <ClInclude Include="src\engine\Texture.h" />
     <ClInclude Include="src\engine\vk_wrap\VKW_Buffer.h" />
+    <ClInclude Include="src\engine\vk_wrap\VKW_DescriptorSet.h" />
+    <ClInclude Include="src\engine\vk_wrap\VKW_DescriptorPool.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="shaders\terrain.txt" />

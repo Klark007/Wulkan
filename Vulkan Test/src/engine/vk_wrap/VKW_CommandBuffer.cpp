@@ -1,8 +1,12 @@
 #include "VKW_CommandBuffer.h"
 
-VKW_CommandBuffer::VKW_CommandBuffer(std::shared_ptr<VKW_Device> vkw_device, std::shared_ptr<VKW_CommandPool> vkw_command_pool, bool single_use)
-	: device{ vkw_device }, command_pool { vkw_command_pool }, queue{ vkw_command_pool->get_queue() }, single_use{ single_use }
+void VKW_CommandBuffer::init(const VKW_Device* vkw_device, const VKW_CommandPool* vkw_command_pool, bool su)
 {
+	device = vkw_device;
+	command_pool = vkw_command_pool;
+	queue = vkw_command_pool->get_queue();
+	single_use = su;
+
 	VkCommandBufferAllocateInfo alloc_info{};
 	alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	alloc_info.commandPool = *command_pool;

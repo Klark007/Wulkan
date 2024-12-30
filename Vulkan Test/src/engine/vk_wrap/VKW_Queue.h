@@ -11,7 +11,8 @@
 class VKW_Queue
 {
 public:
-	VKW_Queue(std::shared_ptr<VKW_Device> device, vkb::QueueType type);
+	VKW_Queue() = default;
+	void init(const VKW_Device& device, vkb::QueueType type);
 private:
 	VkQueue queue;
 	uint32_t family_idx;

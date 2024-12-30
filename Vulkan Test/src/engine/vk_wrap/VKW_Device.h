@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../vk_types.h"
+#include "VKW_Object.h"
 
 #include "VKW_Instance.h"
 #include "VKW_Surface.h"
@@ -16,20 +17,21 @@ struct Required_Device_Features {
 	VkPhysicalDeviceVulkan13Features rf13;
 };
 
-class VKW_Device
+class VKW_Device : public VKW_Object
 {
 public:
+	VKW_Device() = default;
 	// if we want to require extension features, we need to set build to false and call build before using the VKW_Device
 	// get_dedicated_queue vs get_queue  if no dedicated one was found
-	VKW_Device(std::shared_ptr<VKW_Instance> instance, std::shared_ptr<VKW_Surface> surface, std::vector<const char*> device_extensions, Required_Device_Features required_features, bool build=true);
-	~VKW_Device();
+	void init(VKW_Instance* vkw_instance, const VKW_Surface& surface, std::vector<const char*> device_extensions, Required_Device_Features required_features, bool build=true);
+	void del() override;
 private:
-	std::shared_ptr<VKW_Instance> instance;
+	VKW_Instance* instance;
 
 	vkb::PhysicalDevice physical_device;
 	vkb::Device device;
 
-	vkb::PhysicalDeviceSelector selector;
+	std::unique_ptr<vkb::PhysicalDeviceSelector> selector;
 
 	VmaAllocator allocator;
 	void init_allocator();
@@ -52,5 +54,5 @@ public:
 template<class T>
 inline void VKW_Device::add_extension_features(T features)
 {
-	selector.add_required_extension_features(features);
+	selector->add_required_extension_features(features);
 }

@@ -1,8 +1,12 @@
 #include "VKW_Buffer.h"
 
-VKW_Buffer::VKW_Buffer(std::shared_ptr<VKW_Device> d, VkDeviceSize size, VkBufferUsageFlags usage, SharingInfo sharing_info, bool mappable)
-	: device {d}, allocator{d->get_allocator()}, mappable{mappable}, length{(size_t) size}
+void VKW_Buffer::init(const VKW_Device* vkw_device, VkDeviceSize size, VkBufferUsageFlags usage, SharingInfo sharing_info, bool m)
 {
+	device = vkw_device;
+	allocator = device->get_allocator();
+	mappable = m;
+	length = (size_t) size;
+
 	VkBufferCreateInfo buffer_info = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
 	buffer_info.size = size;
 	buffer_info.usage = usage;
@@ -24,7 +28,7 @@ VKW_Buffer::VKW_Buffer(std::shared_ptr<VKW_Device> d, VkDeviceSize size, VkBuffe
 	memory = alloc_info.deviceMemory;
 }
 
-VKW_Buffer::~VKW_Buffer()
+void VKW_Buffer::del()
 {
 	if (buffer && allocation && memory) {
 		vmaDestroyBuffer(allocator, buffer, allocation);
@@ -41,17 +45,18 @@ void VKW_Buffer::copy(const void* data)
 	unmap();
 }
 
-void VKW_Buffer::copy(std::shared_ptr<VKW_CommandPool> command_pool, const std::shared_ptr<VKW_Buffer> other_buffer)
+void VKW_Buffer::copy(const VKW_CommandPool* command_pool, const VKW_Buffer& other_buffer)
 {
-	if (size() != other_buffer->size()) {
+	if (size() != other_buffer.size()) {
 		throw RuntimeException("Tried to copy from a buffer with different size as source buffer", __FILE__, __LINE__);
 	}
 	
-	VKW_CommandBuffer command_buffer {
+	VKW_CommandBuffer command_buffer{};
+	command_buffer.init(
 		device,
 		command_pool,
 		true
-	};
+	);
 	command_buffer.begin_single_use();
 
 
@@ -61,7 +66,7 @@ void VKW_Buffer::copy(std::shared_ptr<VKW_CommandPool> command_pool, const std::
 	copyRegion.size = size();
 
 	// copy into self
-	vkCmdCopyBuffer(command_buffer, *other_buffer, buffer, 1, &copyRegion);
+	vkCmdCopyBuffer(command_buffer, other_buffer, buffer, 1, &copyRegion);
 
 	command_buffer.submit_single_use();
 }
@@ -89,9 +94,10 @@ void VKW_Buffer::unmap()
 	vmaUnmapMemory(allocator, allocation);
 }
 
-std::shared_ptr<VKW_Buffer> create_staging_buffer(std::shared_ptr<VKW_Device> device, void* data, VkDeviceSize size)
+VKW_Buffer create_staging_buffer(const VKW_Device* device, void* data, VkDeviceSize size)
 {
-	std::shared_ptr<VKW_Buffer> staging_buffer = std::make_shared<VKW_Buffer>(
+	VKW_Buffer staging_buffer = {};
+	staging_buffer.init(
 		device,
 		size,
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
@@ -99,7 +105,7 @@ std::shared_ptr<VKW_Buffer> create_staging_buffer(std::shared_ptr<VKW_Device> de
 		true
 	);
 
-	staging_buffer->copy(data);
+	staging_buffer.copy(data);
 
 	return staging_buffer;
 }

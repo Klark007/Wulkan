@@ -30,15 +30,16 @@ void glfw_window_resize_callback(GLFWwindow* window, int width, int height);
 constexpr unsigned int MAX_FRAMES_IN_FLIGHT = 2;
 
 struct CommandStructs {
-	std::shared_ptr<VKW_CommandPool> graphics_command_pool;
-	std::shared_ptr<VKW_CommandPool> transfer_command_pool;
-	std::shared_ptr<VKW_CommandBuffer> graphics_command_buffer;
+	VKW_CommandPool graphics_command_pool;
+	VKW_CommandPool transfer_command_pool;
+	VKW_CommandBuffer graphics_command_buffer;
 };
 
 struct SyncStructs {
 	// swapchain_semaphore signaled once an image is available to be rendered into
+	VkSemaphore swapchain_semaphore;
 	// render_semapohore is signaled once the rendering is done and the image is availabe to be presented
-	VkSemaphore swapchain_semaphore, render_semaphore;
+	VkSemaphore render_semaphore;
 	// render fence is signaled once the image has finished rendering
 	VkFence render_fence;
 };
@@ -86,21 +87,21 @@ private:
 	Required_Device_Features get_required_device_features();
 
 public: // TODO: remove public
-	std::shared_ptr<VKW_Instance> instance;
-	std::shared_ptr<VKW_Surface> surface;
-	std::shared_ptr<VKW_Device> device;
+	VKW_Instance instance;
+	VKW_Surface surface;
+	VKW_Device device;
 
-	std::shared_ptr<VKW_Queue> graphics_queue;
-	std::shared_ptr<VKW_Queue> present_queue;
-	std::shared_ptr<VKW_Queue> transfer_queue;
+	VKW_Queue graphics_queue;
+	VKW_Queue present_queue;
+	VKW_Queue transfer_queue;
 
-	std::shared_ptr<VKW_Swapchain> swapchain;
+	VKW_Swapchain swapchain;
 
 	std::array<CommandStructs, MAX_FRAMES_IN_FLIGHT> command_structs;
 	std::array<SyncStructs, MAX_FRAMES_IN_FLIGHT> sync_structs;
 
-	inline std::shared_ptr<VKW_CommandPool> get_current_graphics_pool() const;
-	inline std::shared_ptr<VKW_CommandPool> get_current_transfer_pool() const;
+	inline const VKW_CommandPool& get_current_graphics_pool() const;
+	inline const VKW_CommandPool& get_current_transfer_pool() const;
 	inline VkSemaphore get_current_swapchain_semaphore() const;
 	inline VkSemaphore get_current_render_semaphore() const;
 	inline VkFence get_current_render_fence() const;
@@ -117,12 +118,12 @@ public:
 	struct GLFWwindow* get_window() const { return window; };
 };
 
-inline std::shared_ptr<VKW_CommandPool> Engine::get_current_graphics_pool() const
+inline const VKW_CommandPool& Engine::get_current_graphics_pool() const
 {
 	return command_structs[current_frame].graphics_command_pool;
 }
 
-inline std::shared_ptr<VKW_CommandPool> Engine::get_current_transfer_pool() const
+inline const VKW_CommandPool& Engine::get_current_transfer_pool() const
 {
 	return command_structs[current_frame].transfer_command_pool;
 }

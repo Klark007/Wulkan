@@ -5,13 +5,13 @@
 #define GLFW_INCLUDE_NONE
 #include "GLFW/glfw3.h"
 
-VKW_Surface::VKW_Surface(GLFWwindow* window, std::shared_ptr<VKW_Instance> instance)
-    : instance { instance }
+void VKW_Surface::init(GLFWwindow* window, const VKW_Instance* vkw_instance)
 {
+    instance = vkw_instance;
     VK_CHECK_ET(glfwCreateWindowSurface(*instance, window, nullptr, &surface), SetupException, "Failed to create window surface");
 }
 
-VKW_Surface::~VKW_Surface()
+void VKW_Surface::del()
 {
     VK_DESTROY(surface, vkDestroySurfaceKHR, *instance, surface);
 }
