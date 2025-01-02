@@ -21,6 +21,7 @@
 #include "vk_wrap/VKW_Buffer.h"
 
 #include "Texture.h"
+#include "vk_wrap/VKW_Shader.h"
 
 #include "CameraController.h"
 

@@ -37,25 +37,6 @@ Engine* engine = nullptr;
 
 void glfm_mouse_move_callback(GLFWwindow* window, double pos_x, double pos_y);
 
-static std::vector<char> readFile(const std::string& filename) {
-    // start at end of file to compute buffer size
-    std::ifstream file(filename, std::ios::ate | std::ios::binary);
-
-    if (!file.is_open()) {
-        throw std::runtime_error("Failed to open file:" + filename);
-    }
-
-    size_t fileSize = static_cast<size_t>(file.tellg());
-    std::vector<char> buffer(fileSize);
-
-    file.seekg(0);
-    file.read(buffer.data(), fileSize);
-
-    file.close();
-
-    return buffer;
-}
-
 VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
     auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
     if (func != nullptr) {
@@ -421,41 +402,19 @@ private:
     }
 
     void createGraphicsPipeline() {
-        auto vertShaderCode = readFile("shaders/vert.spv");
-        auto fragShaderCode = readFile("shaders/frag.spv");
-        auto tessCtrlShaderCode = readFile("shaders/terrain_tcs.spv");
-        auto tessEvalShaderCode = readFile("shaders/terrain_tes.spv");
+        VKW_Shader vert_shader{};
+        vert_shader.init(&engine->device, "shaders/vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
 
-        VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
-        VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
-        VkShaderModule tessCtrlShaderModule = createShaderModule(tessCtrlShaderCode);
-        VkShaderModule tessEvalShaderModule = createShaderModule(tessEvalShaderCode);
+        VKW_Shader frag_shader{};
+        frag_shader.init(&engine->device, "shaders/frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 
-        VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
-        vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-        vertShaderStageInfo.module = vertShaderModule;
-        vertShaderStageInfo.pName = "main";
+        VKW_Shader tess_ctrl_shader{};
+        tess_ctrl_shader.init(&engine->device, "shaders/terrain_tcs.spv", VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT);
 
-        VkPipelineShaderStageCreateInfo fragShaderStageInfo{};
-        fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-        fragShaderStageInfo.module = fragShaderModule;
-        fragShaderStageInfo.pName = "main";
+        VKW_Shader tess_eval_shader{};
+        tess_eval_shader.init(&engine->device, "shaders/terrain_tes.spv", VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT);
 
-        VkPipelineShaderStageCreateInfo tessCtrlShaderStageInfo{};
-        tessCtrlShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        tessCtrlShaderStageInfo.stage = VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
-        tessCtrlShaderStageInfo.module = tessCtrlShaderModule;
-        tessCtrlShaderStageInfo.pName = "main";
-
-        VkPipelineShaderStageCreateInfo tessEvalShaderStageInfo{};
-        tessEvalShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        tessEvalShaderStageInfo.stage = VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
-        tessEvalShaderStageInfo.module = tessEvalShaderModule;
-        tessEvalShaderStageInfo.pName = "main";
-
-        std::vector<VkPipelineShaderStageCreateInfo> shaderStages = { vertShaderStageInfo, fragShaderStageInfo, tessCtrlShaderStageInfo, tessEvalShaderStageInfo};
+        std::vector<VkPipelineShaderStageCreateInfo> shaderStages = { vert_shader.get_info(), frag_shader.get_info(), tess_ctrl_shader.get_info(), tess_eval_shader.get_info()};
 
 
         VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
@@ -555,10 +514,10 @@ private:
 
         VK_CHECK_T(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline), "Failed to create graphics pipeline");
 
-        vkDestroyShaderModule(device, vertShaderModule, nullptr);
-        vkDestroyShaderModule(device, fragShaderModule, nullptr);
-        vkDestroyShaderModule(device, tessCtrlShaderModule, nullptr);
-        vkDestroyShaderModule(device, tessEvalShaderModule, nullptr);
+        vert_shader.del();
+        frag_shader.del();
+        tess_ctrl_shader.del();
+        tess_eval_shader.del();
     }
 
     void createFrameBuffers() {
@@ -961,20 +920,6 @@ private:
             }
         }
         return true;
-    }
-
-    VkShaderModule createShaderModule(const std::vector<char>& code) {
-        VkShaderModuleCreateInfo createInfo{};
-        createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-        createInfo.codeSize = code.size();
-        createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
-
-        VkShaderModule shaderModule;
-        if (vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to create shader module");
-        }
-
-        return shaderModule;
     }
 
     void recordCommand(VkCommandBuffer commandBuffer, uint32_t imageIndex, ImDrawData* imgui_data) {

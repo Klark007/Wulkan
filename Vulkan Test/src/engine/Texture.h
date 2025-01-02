@@ -56,7 +56,7 @@ public:
 };
 
 // creates a texture from a path, needs graphics command pool as input argument as we are waiting on a stage not present supported in transfer queues (in transition_layout)
-inline Texture create_texture_from_path(const VKW_Device* device, const VKW_CommandPool* command_pool, std::string path, Texture_Type type) {
+inline Texture create_texture_from_path(const VKW_Device* device, const VKW_CommandPool* command_pool, const std::string& path, Texture_Type type) {
 	int desired_channels = Texture::get_stbi_channels(type);
 
 	int width, height, channels;
