@@ -22,13 +22,16 @@
 
 #include "Texture.h"
 #include "vk_wrap/VKW_Shader.h"
+#include "vk_wrap/VKW_DescriptorPool.h"
+#include "vk_wrap/VKW_DescriptorSet.h"
+#include "vk_wrap/VKW_Sampler.h"
 
 #include "CameraController.h"
 
 void glfm_mouse_move_callback(GLFWwindow* window, double pos_x, double pos_y);
 void glfw_window_resize_callback(GLFWwindow* window, int width, int height);
 
-constexpr unsigned int MAX_FRAMES_IN_FLIGHT = 2;
+constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 2;
 
 struct CommandStructs {
 	VKW_CommandPool graphics_command_pool;

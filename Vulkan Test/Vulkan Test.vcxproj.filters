@@ -93,6 +93,9 @@
     <ClCompile Include="src\engine\vk_wrap\VKW_Shader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\engine\vk_wrap\VKW_Sampler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\shader.vert" />
@@ -190,6 +193,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\engine\vk_wrap\VKW_Shader.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\engine\vk_wrap\VKW_Sampler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -33,6 +33,7 @@ private:
 public:
 	inline VkBuffer get_buffer() const { return buffer; };
 	inline operator VkBuffer() const { return buffer; };
+	// size of underlying VkBuffer in bytes
 	inline size_t size() const { return length; };
 };
 
