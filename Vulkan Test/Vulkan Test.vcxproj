@@ -162,6 +162,7 @@
     <ClCompile Include="src\engine\vk_wrap\VKW_DescriptorPool.cpp" />
     <ClCompile Include="src\engine\vk_wrap\VKW_Shader.cpp" />
     <ClCompile Include="src\engine\vk_wrap\VKW_Sampler.cpp" />
+    <ClCompile Include="src\engine\vk_wrap\VKW_GraphicsPipeline.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\compile.bat" />
@@ -202,6 +203,7 @@
     <ClInclude Include="src\engine\vk_wrap\VKW_DescriptorPool.h" />
     <ClInclude Include="src\engine\vk_wrap\VKW_Shader.h" />
     <ClInclude Include="src\engine\vk_wrap\VKW_Sampler.h" />
+    <ClInclude Include="src\engine\vk_wrap\VKW_GraphicsPipeline.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="shaders\terrain.txt" />

@@ -37,6 +37,7 @@ void VKW_Swapchain::init(GLFWwindow* window, const VKW_Device& device)
 
     vkb_swapchain = build_result.value();
     swapchain = vkb_swapchain.swapchain;
+    images = get_images();
     image_views = get_image_views();
 }
 

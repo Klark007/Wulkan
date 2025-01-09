@@ -99,6 +99,13 @@ void Texture::transition_layout(const VKW_CommandPool* command_pool, VkImageLayo
 	);
 	command_buffer.begin_single_use();
 
+	transition_layout(command_buffer, image, initial_layout, new_layout, old_ownership, new_ownership);
+
+	command_buffer.submit_single_use();
+}
+
+void Texture::transition_layout(const VKW_CommandBuffer& command_buffer, VkImage image, VkImageLayout initial_layout, VkImageLayout new_layout, uint32_t old_ownership, uint32_t new_ownership)
+{
 	VkImageMemoryBarrier2 barrier{};
 	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
 
@@ -129,15 +136,15 @@ void Texture::transition_layout(const VKW_CommandPool* command_pool, VkImageLayo
 	barrier.subresourceRange.aspectMask = aspect;
 
 	// todo: cases to support:
-	
+
 	// for textures:
 	// transition from undefined to transfer dst
 	// transition from transfer dst to read only
-	
+
 	// for images as render targets:
 	// transition from undefined to color attachement
 	// transition from color attachement to read only
-	
+
 	// for depth and or stencil:
 	// transition from undefined to depth/stencil attachment
 	// from depth/stencil to read only (if we do z pre pass)
@@ -151,13 +158,14 @@ void Texture::transition_layout(const VKW_CommandPool* command_pool, VkImageLayo
 	}
 	else if (initial_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && new_layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
 		barrier.srcStageMask = VK_PIPELINE_STAGE_2_ALL_TRANSFER_BIT_KHR;
-		barrier.dstStageMask = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT 
-			| VK_PIPELINE_STAGE_2_TESSELLATION_CONTROL_SHADER_BIT 
+		barrier.dstStageMask = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT
+			| VK_PIPELINE_STAGE_2_TESSELLATION_CONTROL_SHADER_BIT
 			| VK_PIPELINE_STAGE_2_TESSELLATION_EVALUATION_SHADER_BIT; // textures can be read in fragment and tesselation shaders
 
 		barrier.srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
 		barrier.dstAccessMask = VK_ACCESS_2_SHADER_READ_BIT;
-	} else {
+	}
+	else {
 		// does a full stop
 		barrier.srcStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
 		barrier.dstStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
@@ -174,5 +182,4 @@ void Texture::transition_layout(const VKW_CommandPool* command_pool, VkImageLayo
 
 	vkCmdPipelineBarrier2(command_buffer, &depency_info);
 
-	command_buffer.submit_single_use();
 }

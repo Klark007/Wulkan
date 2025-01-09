@@ -17,6 +17,7 @@ public:
 private:
 	VkSwapchainKHR swapchain;
 	vkb::Swapchain vkb_swapchain;
+	std::vector<VkImage> images;
 	std::vector<VkImageView> image_views;
 
 	std::vector<VkImage> get_images();
@@ -26,7 +27,8 @@ public:
 	inline operator VkSwapchainKHR() const { return swapchain; };
 
 	inline size_t size() const { return vkb_swapchain.image_count; };
-	inline const VkImageView& at(size_t i) const { return image_views.at(i); };
+	inline const VkImage& images_at(size_t i) const { return images.at(i); };
+	inline const VkImageView& image_views_at(size_t i) const { return image_views.at(i); };
 
 	inline VkExtent2D get_extent() const { return vkb_swapchain.extent; };
 	inline VkFormat get_format() const { return vkb_swapchain.image_format; };
