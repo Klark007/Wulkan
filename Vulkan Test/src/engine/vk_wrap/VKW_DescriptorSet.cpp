@@ -49,7 +49,7 @@ void VKW_DescriptorSet::init(VKW_Device* vkw_device, const VKW_DescriptorPool* v
 	}
 }
 
-void VKW_DescriptorSet::bind(VkCommandBuffer command_buffer, VkPipelineBindPoint bind_point, VkPipelineLayout layout) const
+void VKW_DescriptorSet::bind(const VKW_CommandBuffer& command_buffer, VkPipelineBindPoint bind_point, VkPipelineLayout layout) const
 {
 	vkCmdBindDescriptorSets(command_buffer, bind_point, layout, 0, 1, &descriptor_set, 0, VK_NULL_HANDLE);
 }

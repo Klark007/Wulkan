@@ -6,6 +6,7 @@
 #include "VKW_Device.h"
 #include "VKW_Shader.h"
 #include "VKW_DescriptorSet.h"
+#include "VKW_PushConstants.h"
 
 class VKW_GraphicsPipeline : public VKW_Object {
 public:
@@ -34,6 +35,7 @@ private:
 
 	VkPipelineLayoutCreateInfo pipeline_layout_info; // layout for descriptor sets and push constants to be used in the pipeline
 	std::vector<VkDescriptorSetLayout> descriptor_set_layouts;
+	VkPushConstantRange push_const_range;
 public:
 	// set topology to be rendered (or input into the tesselation stage if enabled
 	inline void set_topology(VkPrimitiveTopology topology);
@@ -66,7 +68,9 @@ public:
 	// adds Descriptorset to the pipeline
 	void add_descriptor_sets(const std::vector<VKW_DescriptorSetLayout> layouts);
 
-	// todo add push constants
+	// adds a pushconstant to the pipeline
+	template <class T>
+	inline void add_push_constant(VKW_PushConstants<T> push_const);
 
 	inline operator VkPipeline() const { return graphics_pipeline; };
 	inline VkPipeline get_pipeline() const { return graphics_pipeline; };
@@ -128,4 +132,12 @@ inline void VKW_GraphicsPipeline::set_depth_attachment_format(VkFormat format)
 {
 	render_info.depthAttachmentFormat = format;
 	render_info.stencilAttachmentFormat = format; // TODO: Temp
+}
+
+template<class T>
+inline void VKW_GraphicsPipeline::add_push_constant(VKW_PushConstants<T> push_const)
+{
+	push_const_range = push_const.get_range();
+	pipeline_layout_info.pPushConstantRanges = &push_const_range;
+	pipeline_layout_info.pushConstantRangeCount = 1;
 }

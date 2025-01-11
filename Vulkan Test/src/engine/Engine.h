@@ -24,6 +24,7 @@
 #include "vk_wrap/VKW_Shader.h"
 #include "vk_wrap/VKW_DescriptorPool.h"
 #include "vk_wrap/VKW_DescriptorSet.h"
+#include "vk_wrap/VKW_PushConstants.h"
 #include "vk_wrap/VKW_Sampler.h"
 #include "vk_wrap/VKW_GraphicsPipeline.h"
 

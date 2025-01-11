@@ -60,6 +60,10 @@ struct SwapChainSupportDetails {
     std::vector<VkPresentModeKHR> presentModes;
 };
 
+struct PushConstData {
+    glm::vec2 offset;
+};
+
 struct Vertex {
     glm::vec3 pos;
     glm::vec3 color;
@@ -191,6 +195,8 @@ private:
     VKW_DescriptorPool descriptor_pool;
     std::vector<VKW_DescriptorSet> descriptor_sets;
     VKW_DescriptorSetLayout descriptor_set_layout;
+
+    VKW_PushConstants<PushConstData> push_constants;
 
     Texture height_map;
     VKW_Sampler texture_sampler;
@@ -346,6 +352,7 @@ private:
         //graphics_pipeline.add_shader_stages({vert_shader, frag_shader, tess_ctrl_shader, tess_eval_shader});
         graphics_pipeline.add_shader_stages({vert_shader, frag_shader});
         graphics_pipeline.add_descriptor_sets({descriptor_set_layout});
+        graphics_pipeline.add_push_constant(push_constants);
 
         graphics_pipeline.set_color_attachment_format(color_texture.get_format());
         graphics_pipeline.set_depth_attachment_format(depth_texture.get_format());
@@ -477,6 +484,8 @@ private:
             descriptor_sets[i].update(0, uniform_buffers[i]);
             descriptor_sets[i].update(1, height_map, texture_sampler, VK_IMAGE_ASPECT_COLOR_BIT);
         }
+
+        push_constants.init(VK_SHADER_STAGE_VERTEX_BIT);
     }
 
     void mainLoop() {
@@ -680,11 +689,11 @@ private:
             vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
             descriptor_sets[engine->current_frame].bind(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline.get_layout());
+            push_constants.update({ glm::vec2(1,0) });
+            push_constants.push(commandBuffer, graphics_pipeline.get_layout());
 
             vkCmdDraw(commandBuffer, 3, 1, 0, 0);
             //vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(model_indices.size()), 1, 0, 0, 0);
-
-            //ImGui_ImplVulkan_RenderDrawData(imgui_data, commandBuffer);
 
         vkCmdEndRendering(commandBuffer);
 
@@ -695,6 +704,7 @@ private:
 
         VkExtent2D extend{ swapChainExtent.width, swapChainExtent.height };
         copy_image_to_image(commandBuffer, color_texture, engine->swapchain.images_at(imageIndex), extend, extend);
+
 
         // imgui draws directly into the swapchain image (don't care about post it in post processing)
         Texture::transition_layout(commandBuffer, engine->swapchain.images_at(imageIndex), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
@@ -718,8 +728,8 @@ private:
 
         vkCmdEndRendering(commandBuffer);
 
-        Texture::transition_layout(commandBuffer, engine->swapchain.images_at(imageIndex), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
+        Texture::transition_layout(commandBuffer, engine->swapchain.images_at(imageIndex), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
         if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
             throw std::runtime_error("Failed to record command buffer");

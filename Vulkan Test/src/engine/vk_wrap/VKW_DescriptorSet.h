@@ -37,8 +37,7 @@ public:
 
 	void init(VKW_Device* device, const VKW_DescriptorPool* pool, VKW_DescriptorSetLayout layout);
 	// bind descriptor set to bind point, assumes to be recording commands into the above command buffer
-	// TODO: Replace with VKW_PipelineLayout and VKW_CommandBuffer
-	void bind(VkCommandBuffer command_buffer, VkPipelineBindPoint bind_point, VkPipelineLayout layout) const;
+	void bind(const VKW_CommandBuffer& command_buffer, VkPipelineBindPoint bind_point, VkPipelineLayout layout) const;
 	void del() override;
 private:
 	const VKW_Device* device;

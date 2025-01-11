@@ -170,6 +170,8 @@
     <None Include="shaders\shader.vert" />
     <None Include="shaders\terrain.tesc" />
     <None Include="shaders\terrain.tese" />
+    <None Include="shaders\triangle.frag" />
+    <None Include="shaders\triangle.vert" />
     <None Include="src\engine\vk_wrap\README.md" />
   </ItemGroup>
   <ItemGroup>
@@ -204,6 +206,7 @@
     <ClInclude Include="src\engine\vk_wrap\VKW_Shader.h" />
     <ClInclude Include="src\engine\vk_wrap\VKW_Sampler.h" />
     <ClInclude Include="src\engine\vk_wrap\VKW_GraphicsPipeline.h" />
+    <ClInclude Include="src\engine\vk_wrap\VKW_PushConstants.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="shaders\terrain.txt" />

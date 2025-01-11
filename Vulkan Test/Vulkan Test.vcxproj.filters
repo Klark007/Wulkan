@@ -109,6 +109,8 @@
     <None Include="shaders\terrain.tesc" />
     <None Include="shaders\terrain.tese" />
     <None Include="src\engine\vk_wrap\README.md" />
+    <None Include="shaders\triangle.vert" />
+    <None Include="shaders\triangle.frag" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\engine\CameraController.h">
@@ -202,6 +204,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\engine\vk_wrap\VKW_GraphicsPipeline.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\engine\vk_wrap\VKW_PushConstants.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
