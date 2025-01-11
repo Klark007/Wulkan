@@ -99,6 +99,9 @@
     <ClCompile Include="src\engine\vk_wrap\VKW_GraphicsPipeline.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\engine\Mesh.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\shader.vert" />
@@ -207,6 +210,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\engine\vk_wrap\VKW_PushConstants.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\engine\Mesh.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

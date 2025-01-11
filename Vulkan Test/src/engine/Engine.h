@@ -21,6 +21,8 @@
 #include "vk_wrap/VKW_Buffer.h"
 
 #include "Texture.h"
+#include "Mesh.h"
+
 #include "vk_wrap/VKW_Shader.h"
 #include "vk_wrap/VKW_DescriptorPool.h"
 #include "vk_wrap/VKW_DescriptorSet.h"

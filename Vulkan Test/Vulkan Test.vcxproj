@@ -136,6 +136,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="external\vk-bootstrap\VkBootstrap.cpp" />
+    <ClCompile Include="src\engine\Mesh.cpp" />
     <ClCompile Include="src\engine\CameraController.cpp" />
     <ClCompile Include="src\engine\Engine.cpp" />
     <ClCompile Include="src\engine\Exception.cpp" />
@@ -177,6 +178,7 @@
   <ItemGroup>
     <ClInclude Include="external\vk-bootstrap\VkBootstrap.h" />
     <ClInclude Include="external\vk-bootstrap\VkBootstrapDispatch.h" />
+    <ClInclude Include="src\engine\Mesh.h" />
     <ClInclude Include="src\engine\CameraController.h" />
     <ClInclude Include="src\engine\Engine.h" />
     <ClInclude Include="src\engine\Exception.h" />

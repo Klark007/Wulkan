@@ -46,58 +46,9 @@ static void check_vk_result(VkResult err)
         abort();
 }
 
-struct QueueFamilyIndices {
-    std::optional<uint32_t> graphicsFamily;
-    std::optional<uint32_t> presentFamily;
-    std::optional<uint32_t> transferFamily;
-
-    bool isComplete() { return graphicsFamily.has_value() && presentFamily.has_value() && transferFamily.has_value(); };
-};
-
-struct SwapChainSupportDetails {
-    VkSurfaceCapabilitiesKHR capabilities;
-    std::vector<VkSurfaceFormatKHR> formats;
-    std::vector<VkPresentModeKHR> presentModes;
-};
-
 struct PushConstData {
+    VkDeviceAddress vertex_buffer;
     glm::vec2 offset;
-};
-
-struct Vertex {
-    glm::vec3 pos;
-    glm::vec3 color;
-    glm::vec2 texCoord;
-
-    static VkVertexInputBindingDescription getBindingDescription() {
-        VkVertexInputBindingDescription bindingDescription{};
-
-        bindingDescription.binding = 0;
-        bindingDescription.stride = sizeof(Vertex);
-        bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-        return bindingDescription;
-    };
-    static std::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions() {
-        std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions{};
-
-        attributeDescriptions[0].binding  = 0;
-        attributeDescriptions[0].location = 0;
-        attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-        attributeDescriptions[0].offset = offsetof(Vertex, pos);
-
-        attributeDescriptions[1].binding = 0;
-        attributeDescriptions[1].location = 1;
-        attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-        attributeDescriptions[1].offset = offsetof(Vertex, color);
-
-        attributeDescriptions[2].binding = 0;
-        attributeDescriptions[2].location = 2;
-        attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
-        attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
-
-        return attributeDescriptions;
-    };
 };
 
 // TODO: use #define to enable / disable virtualView, add specialization constant to choose view matrix used
@@ -110,26 +61,9 @@ struct UniformBufferObject {
     alignas(4) float heightScale;
 };
 
-/*
-const std::vector<Vertex> vertices = {
-    {{-0.5f, 0.0, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-    {{0.5f, 0.0f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-    {{0.5f, 0.0f, 0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-    {{-0.5f, 0.0f, 0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
-};
-
-const std::vector<uint16_t> indices = {
-    0, 1, 2, 3
-};
-*/
-
 class HelloTriangleApplication {
 public:
-
-
     void run() {
-        initModel();
-
         engine = &e;
         window = engine->get_window();
 
@@ -173,10 +107,6 @@ private:
     Texture color_texture;
     Texture depth_texture;
 
-    //VkRenderPass renderPass;
-    //VkPipelineLayout pipelineLayout;
-    //VkPipeline graphicsPipeline;
-
     VKW_GraphicsPipeline graphics_pipeline;
 
     std::vector<VkFramebuffer> swapChainFramebuffers;
@@ -185,9 +115,6 @@ private:
     std::vector<VkCommandBuffer> commandBuffers;
 
     VkCommandPool transferCommandPool;
-    
-    VKW_Buffer vertex_buffer;
-    VKW_Buffer index_buffer;
     
     std::vector<VKW_Buffer> uniform_buffers;
     std::vector<void*> uniformBuffersMapped;
@@ -201,14 +128,18 @@ private:
     Texture height_map;
     VKW_Sampler texture_sampler;
 
-    std::vector<Vertex> model_vertices;
-    std::vector<uint16_t> model_indices;
+    Mesh mesh;
 
     UniformBufferObject ubo{};
 
     void initModel() {
-        model_vertices = std::vector<Vertex>();
+        std::vector<Vertex> model_vertices{};
 
+        model_vertices.push_back({ { 1,1,0 }, 0.0f, { 0,1,0 }, 0.0f, { 1,0,1,1 } });
+        model_vertices.push_back({ { -1,1,0 }, 0.0f, { 0,1,0 }, 0.0f, { 1,0,1,1 } });
+        model_vertices.push_back({ { 0,-1,0 }, 0.0f, { 0,1,0 }, 0.0f, { 0,1,0,1 } });
+
+        /*
         const uint32_t mesh_res = 32;
         
         for (uint32_t iy = 0; iy < mesh_res; iy++) {
@@ -218,12 +149,16 @@ private:
                 float pos_x = (u - 0.5) * 2;
                 float pos_z = (v - 0.5) * 2;
 
-                model_vertices.push_back({ {pos_x,0,pos_z}, {0,0,0}, {u,v} });
+                model_vertices.push_back({ {pos_x,0,pos_z}, u, {0,1,0}, v, {1,0,0,1} });
             }
         }
+        */
 
-        model_indices = std::vector<uint16_t>();
-
+        std::vector<uint32_t> model_indices{};
+        model_indices.push_back(0);
+        model_indices.push_back(1);
+        model_indices.push_back(2);
+        /*
         for (uint32_t iy = 0; iy < mesh_res-1; iy++) {
             for (uint32_t ix = 0; ix < mesh_res-1; ix++) {
                 model_indices.push_back(ix + iy * mesh_res);
@@ -232,6 +167,10 @@ private:
                 model_indices.push_back(ix + (iy+1) * mesh_res);
             }
         }
+        */
+
+        mesh.init(engine->device, engine->get_current_transfer_pool(), model_vertices, model_indices);
+        
     }
 
     void initVulkan() {
@@ -248,6 +187,7 @@ private:
         presentQueue = engine->present_queue;
         transferQueue = engine->transfer_queue;
 
+        initModel();
         
         createSwapChain();
         
@@ -257,9 +197,7 @@ private:
         
         createTextureImage();
         createTextureSampler();
-        
-        createVertexBuffer();
-        createIndexBuffer();
+
         createUniformBuffers();
         
         createDescriptorPool();
@@ -399,50 +337,6 @@ private:
 
     void createTextureSampler() {
         texture_sampler.init(&engine->device);
-    }
-
-    void createVertexBuffer() {
-        VkDeviceSize bufferSize = sizeof(model_vertices[0]) * model_vertices.size();
-        
-        VKW_Buffer staging_buffer = create_staging_buffer(&engine->device, model_vertices.data(), bufferSize);
-
-        SharingInfo sharingInfoC{
-            VK_SHARING_MODE_CONCURRENT,
-            {engine->graphics_queue.get_queue_family(), engine->transfer_queue.get_queue_family()}
-        };
-        vertex_buffer.init(
-            &engine->device,
-            bufferSize,
-            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 
-            sharingInfoC,
-            false
-        );
-        
-        vertex_buffer.copy(&engine->get_current_transfer_pool(), staging_buffer);
-        
-        staging_buffer.del();
-    }
-
-    void createIndexBuffer() {
-        VkDeviceSize bufferSize = sizeof(model_indices[0]) * model_indices.size();
-
-        VKW_Buffer staging_buffer = create_staging_buffer(&engine->device, model_indices.data(), bufferSize);
-        
-        SharingInfo sharingInfoC{
-            VK_SHARING_MODE_CONCURRENT,
-            {engine->graphics_queue.get_queue_family(), engine->transfer_queue.get_queue_family()}
-        };
-        index_buffer.init(
-            &engine->device,
-            bufferSize,
-            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-            sharingInfoC,
-            false
-        );
-
-        index_buffer.copy(&engine->get_current_transfer_pool(), staging_buffer);
-
-        staging_buffer.del();
     }
 
     void createUniformBuffers() {
@@ -667,13 +561,6 @@ private:
 
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline);
 
-            /*
-            VkBuffer vertexBuffers[] = { vertex_buffer };
-            VkDeviceSize offsets[] = { 0 };
-            vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-            vkCmdBindIndexBuffer(commandBuffer, index_buffer, 0, VK_INDEX_TYPE_UINT16);
-            */
-
             VkViewport viewport{};
             viewport.x = 0.0f;
             viewport.y = 0.0f;
@@ -689,12 +576,11 @@ private:
             vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
             descriptor_sets[engine->current_frame].bind(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline.get_layout());
-            push_constants.update({ glm::vec2(1,0) });
+            push_constants.update({ mesh.get_vertex_address(), glm::vec2(1,0) });
             push_constants.push(commandBuffer, graphics_pipeline.get_layout());
 
-            vkCmdDraw(commandBuffer, 3, 1, 0, 0);
-            //vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(model_indices.size()), 1, 0, 0, 0);
-
+            mesh.draw(commandBuffer);
+            
         vkCmdEndRendering(commandBuffer);
 
  
@@ -787,26 +673,12 @@ private:
         vkCmdBlitImage2(cmd, &blitInfo);
     }
 
-    bool hasStencilComponent(VkFormat format) {
-        return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
-    }
-
     VkFormat findDepthFormat() {
         return findSupportedFormat(
             { VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT },
             VK_IMAGE_TILING_OPTIMAL,
             VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
         );
-    }
-
-    static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
-        VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-        VkDebugUtilsMessageTypeFlagsEXT messageType,
-        const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-        void* pUserData) {
-        std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
-
-        return VK_FALSE;
     }
 
     void updateUniformBuffer(uint32_t currentFrame) {
@@ -846,25 +718,7 @@ private:
         
         descriptor_set_layout.del();
 
-        vertex_buffer.del();
-        index_buffer.del();
-
-        /*
-        if (pipelineLayout) {
-            vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
-            pipelineLayout = VK_NULL_HANDLE;
-        }
-
-        if (renderPass) {
-            vkDestroyRenderPass(device, renderPass, nullptr);
-            renderPass = VK_NULL_HANDLE;
-        }
-
-        if (graphicsPipeline) {
-            vkDestroyPipeline(device, graphicsPipeline, nullptr);
-            graphicsPipeline = VK_NULL_HANDLE;
-        }
-        */
+        mesh.del();
 
         graphics_pipeline.del();
     }

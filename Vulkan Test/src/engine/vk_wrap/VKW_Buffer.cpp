@@ -20,7 +20,10 @@ void VKW_Buffer::init(const VKW_Device* vkw_device, VkDeviceSize size, VkBufferU
 	alloc_create_info.usage = VMA_MEMORY_USAGE_AUTO;
 	if (mappable) {
 		// does sequential access as mapped memory should be written to using memcpy
-		alloc_create_info.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
+		alloc_create_info.flags |= VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
+	}
+	if (buffer_info.usage & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) {
+		alloc_create_info.flags |= VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
 	}
 
 	VmaAllocationInfo alloc_info;
@@ -94,7 +97,7 @@ void VKW_Buffer::unmap()
 	vmaUnmapMemory(allocator, allocation);
 }
 
-VKW_Buffer create_staging_buffer(const VKW_Device* device, void* data, VkDeviceSize size)
+VKW_Buffer create_staging_buffer(const VKW_Device* device, const void* data, VkDeviceSize size)
 {
 	VKW_Buffer staging_buffer = {};
 	staging_buffer.init(

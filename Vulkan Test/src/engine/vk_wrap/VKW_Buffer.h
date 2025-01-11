@@ -37,4 +37,4 @@ public:
 	inline size_t size() const { return length; };
 };
 
-VKW_Buffer create_staging_buffer(const VKW_Device* device, void* data, VkDeviceSize size);
+VKW_Buffer create_staging_buffer(const VKW_Device* device, const void* data, VkDeviceSize size);

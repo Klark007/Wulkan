@@ -39,7 +39,8 @@ void VKW_Device::init_allocator()
 	vulkan_functions.vkGetDeviceProcAddr = &vkGetDeviceProcAddr;
 
 	VmaAllocatorCreateInfo allocator_info = {};
-	allocator_info.flags = 0;
+	// needed so that vma allocated buffers can be used for vkGetBufferDeviceAddress
+	allocator_info.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT; 
 	allocator_info.vulkanApiVersion = VK_API_VERSION_1_3;
 	allocator_info.physicalDevice = get_physical_device();
 	allocator_info.device = get_device();
