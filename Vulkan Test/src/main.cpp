@@ -48,7 +48,6 @@ static void check_vk_result(VkResult err)
 
 struct PushConstData {
     VkDeviceAddress vertex_buffer;
-    glm::vec2 offset;
 };
 
 // TODO: use #define to enable / disable virtualView, add specialization constant to choose view matrix used
@@ -135,11 +134,11 @@ private:
     void initModel() {
         std::vector<Vertex> model_vertices{};
 
-        model_vertices.push_back({ { 1,1,0 }, 0.0f, { 0,1,0 }, 0.0f, { 1,0,1,1 } });
-        model_vertices.push_back({ { -1,1,0 }, 0.0f, { 0,1,0 }, 0.0f, { 1,0,1,1 } });
-        model_vertices.push_back({ { 0,-1,0 }, 0.0f, { 0,1,0 }, 0.0f, { 0,1,0,1 } });
+        //model_vertices.push_back({ { 1,1,0 }, 0.0f, { 0,1,0 }, 0.0f, { 1,0,1,1 } });
+        //model_vertices.push_back({ { -1,1,0 }, 0.0f, { 0,1,0 }, 0.0f, { 1,0,1,1 } });
+        //model_vertices.push_back({ { 0,-1,0 }, 0.0f, { 0,1,0 }, 0.0f, { 0,1,0,1 } });
 
-        /*
+        
         const uint32_t mesh_res = 32;
         
         for (uint32_t iy = 0; iy < mesh_res; iy++) {
@@ -152,13 +151,12 @@ private:
                 model_vertices.push_back({ {pos_x,0,pos_z}, u, {0,1,0}, v, {1,0,0,1} });
             }
         }
-        */
 
         std::vector<uint32_t> model_indices{};
-        model_indices.push_back(0);
-        model_indices.push_back(1);
-        model_indices.push_back(2);
-        /*
+        //model_indices.push_back(0);
+        //model_indices.push_back(1);
+        //model_indices.push_back(2);
+        
         for (uint32_t iy = 0; iy < mesh_res-1; iy++) {
             for (uint32_t ix = 0; ix < mesh_res-1; ix++) {
                 model_indices.push_back(ix + iy * mesh_res);
@@ -167,7 +165,6 @@ private:
                 model_indices.push_back(ix + (iy+1) * mesh_res);
             }
         }
-        */
 
         mesh.init(engine->device, engine->get_current_transfer_pool(), model_vertices, model_indices);
         
@@ -262,33 +259,33 @@ private:
 
     void createGraphicsPipeline() {
         VKW_Shader vert_shader{};
-        vert_shader.init(&engine->device, "shaders/triangle_v.spv", VK_SHADER_STAGE_VERTEX_BIT);
-        //vert_shader.init(&engine->device, "shaders/vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+        //vert_shader.init(&engine->device, "shaders/triangle_v.spv", VK_SHADER_STAGE_VERTEX_BIT);
+        vert_shader.init(&engine->device, "shaders/vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
 
         VKW_Shader frag_shader{};
-        frag_shader.init(&engine->device, "shaders/triangle_f.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+        //frag_shader.init(&engine->device, "shaders/triangle_f.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 
-        //frag_shader.init(&engine->device, "shaders/frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+        frag_shader.init(&engine->device, "shaders/frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 
-        //VKW_Shader tess_ctrl_shader{};
-        //tess_ctrl_shader.init(&engine->device, "shaders/terrain_tcs.spv", VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT);
+        VKW_Shader tess_ctrl_shader{};
+        tess_ctrl_shader.init(&engine->device, "shaders/terrain_tcs.spv", VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT);
 
-        //VKW_Shader tess_eval_shader{};
-        //tess_eval_shader.init(&engine->device, "shaders/terrain_tes.spv", VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT);
+        VKW_Shader tess_eval_shader{};
+        tess_eval_shader.init(&engine->device, "shaders/terrain_tes.spv", VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT);
 
         // new
 
-        //graphics_pipeline.set_topology(VK_PRIMITIVE_TOPOLOGY_PATCH_LIST);
-        //graphics_pipeline.set_wireframe_mode();
+        graphics_pipeline.set_topology(VK_PRIMITIVE_TOPOLOGY_PATCH_LIST);
+        graphics_pipeline.set_wireframe_mode();
         graphics_pipeline.set_culling_mode(VK_CULL_MODE_NONE);
-        //graphics_pipeline.enable_depth_test();
-        //graphics_pipeline.enable_depth_write();
+        graphics_pipeline.enable_depth_test();
+        graphics_pipeline.enable_depth_write();
 
-        //graphics_pipeline.enable_tesselation();
-        //graphics_pipeline.set_tesselation_patch_size(4);
+        graphics_pipeline.enable_tesselation();
+        graphics_pipeline.set_tesselation_patch_size(4);
 
-        //graphics_pipeline.add_shader_stages({vert_shader, frag_shader, tess_ctrl_shader, tess_eval_shader});
-        graphics_pipeline.add_shader_stages({vert_shader, frag_shader});
+        graphics_pipeline.add_shader_stages({vert_shader, frag_shader, tess_ctrl_shader, tess_eval_shader});
+        //graphics_pipeline.add_shader_stages({vert_shader, frag_shader});
         graphics_pipeline.add_descriptor_sets({descriptor_set_layout});
         graphics_pipeline.add_push_constant(push_constants);
 
@@ -302,8 +299,8 @@ private:
 
         vert_shader.del();
         frag_shader.del();
-        //tess_ctrl_shader.del();
-        //tess_eval_shader.del();
+        tess_ctrl_shader.del();
+        tess_eval_shader.del();
     }
 
     void createDepthResources() {
@@ -540,7 +537,7 @@ private:
         depth_attachment_info.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
         depth_attachment_info.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
         depth_attachment_info.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-        depth_attachment_info.clearValue.depthStencil.depth = 0.0f;
+        depth_attachment_info.clearValue.depthStencil.depth = 1.0f;
         depth_attachment_info.imageView = depth_texture.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT);
         depth_attachment_info.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
@@ -576,7 +573,7 @@ private:
             vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
             descriptor_sets[engine->current_frame].bind(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline.get_layout());
-            push_constants.update({ mesh.get_vertex_address(), glm::vec2(1,0) });
+            push_constants.update({ mesh.get_vertex_address() });
             push_constants.push(commandBuffer, graphics_pipeline.get_layout());
 
             mesh.draw(commandBuffer);
