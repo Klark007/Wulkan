@@ -98,10 +98,15 @@ void Texture::transition_layout(const VKW_CommandPool* command_pool, VkImageLayo
 		true
 	);
 	command_buffer.begin_single_use();
-
+	
 	transition_layout(command_buffer, image, initial_layout, new_layout, old_ownership, new_ownership);
 
 	command_buffer.submit_single_use();
+}
+
+void Texture::copy(const VKW_CommandBuffer& command_buffer, const Texture& src_texture, VkImageAspectFlags aspect)
+{
+	copy(command_buffer, src_texture.image, image, { src_texture.width, src_texture.height }, { width, height }, aspect);
 }
 
 void Texture::transition_layout(const VKW_CommandBuffer& command_buffer, VkImage image, VkImageLayout initial_layout, VkImageLayout new_layout, uint32_t old_ownership, uint32_t new_ownership)
@@ -182,4 +187,43 @@ void Texture::transition_layout(const VKW_CommandBuffer& command_buffer, VkImage
 
 	vkCmdPipelineBarrier2(command_buffer, &depency_info);
 
+}
+
+void Texture::copy(const VKW_CommandBuffer& command_buffer, VkImage src_texture, VkImage dst_texture, VkExtent2D src_size, VkExtent2D dst_size, VkImageAspectFlags aspect)
+{
+	// Blit is less restrictive than copy image
+	VkBlitImageInfo2 blit_info{};
+	blit_info.sType = VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2;
+
+	blit_info.srcImage = src_texture;
+	blit_info.srcImageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+
+	blit_info.dstImage = dst_texture;
+	blit_info.dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+
+	blit_info.filter = VK_FILTER_LINEAR;
+
+	VkImageBlit2 blit_region{};
+	blit_region.sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2;
+	// bounds of regions, srcOffsets[0] are 0 initialized
+	blit_region.srcOffsets[1].x = src_size.width;
+	blit_region.srcOffsets[1].y = src_size.height;
+	blit_region.srcOffsets[1].z = 1;
+
+	blit_region.dstOffsets[1].x = dst_size.width;
+	blit_region.dstOffsets[1].y = dst_size.height;
+	blit_region.dstOffsets[1].z = 1;
+
+	blit_region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	blit_region.srcSubresource.baseArrayLayer = 0;
+	blit_region.srcSubresource.layerCount = 1;
+	blit_region.srcSubresource.mipLevel = 0;
+
+	blit_region.dstSubresource = blit_region.srcSubresource;
+
+
+	blit_info.pRegions = &blit_region;
+	blit_info.regionCount = 1;
+
+	vkCmdBlitImage2(command_buffer, &blit_info);
 }
