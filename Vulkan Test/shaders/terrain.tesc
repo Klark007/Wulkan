@@ -24,10 +24,10 @@ void main()
 {
     if (gl_InvocationID == 0)
     {
-        float ls0 = local_tesselation_strength(0);
-        float ls1 = local_tesselation_strength(1);
-        float ls2 = local_tesselation_strength(2);
-        float ls3 = local_tesselation_strength(3);
+        float ls0 = 1;//local_tesselation_strength(0);
+        float ls1 = 1;//local_tesselation_strength(1);
+        float ls2 = 1;//local_tesselation_strength(2);
+        float ls3 = 1;//local_tesselation_strength(3);
 
 
         bool all_zero = (ls0 == 0) && (ls1 == 0) && (ls2 == 0) && (ls3 == 0);

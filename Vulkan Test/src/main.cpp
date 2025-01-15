@@ -276,7 +276,7 @@ private:
         // new
 
         graphics_pipeline.set_topology(VK_PRIMITIVE_TOPOLOGY_PATCH_LIST);
-        graphics_pipeline.set_wireframe_mode();
+        //graphics_pipeline.set_wireframe_mode();
         graphics_pipeline.set_culling_mode(VK_CULL_MODE_NONE);
         graphics_pipeline.enable_depth_test();
         graphics_pipeline.enable_depth_write();
@@ -524,53 +524,25 @@ private:
         Texture::transition_layout(commandBuffer, color_texture, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
         Texture::transition_layout(commandBuffer, depth_texture, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
+        
+        graphics_pipeline.set_color_attachment(
+            color_texture.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT),
+            true,
+            { {0.0f, 0.0f, 0.0f, 1.0f} }
+        );
 
-        VkRenderingAttachmentInfo color_attachment_info{};
-        color_attachment_info.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-        color_attachment_info.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        color_attachment_info.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-        color_attachment_info.clearValue.color = { {0.0f, 0.0f, 0.0f, 1.0f} };
-        color_attachment_info.imageView = color_texture.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT);
-        color_attachment_info.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        graphics_pipeline.set_depth_attachment(
+            depth_texture.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT),
+            true,
+            1.0f
+        );
 
-        VkRenderingAttachmentInfo depth_attachment_info{};
-        depth_attachment_info.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-        depth_attachment_info.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        depth_attachment_info.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-        depth_attachment_info.clearValue.depthStencil.depth = 1.0f;
-        depth_attachment_info.imageView = depth_texture.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT);
-        depth_attachment_info.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-
-        VkRenderingInfo render_info{};
-        render_info.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
-
-        render_info.renderArea.offset = { 0, 0 };
-        render_info.renderArea.extent = swapChainExtent;
-        render_info.layerCount = 1;
-
-        render_info.pColorAttachments = &color_attachment_info;
-        render_info.colorAttachmentCount = 1;
-
-        render_info.pDepthAttachment = &depth_attachment_info;
-
-        vkCmdBeginRendering(commandBuffer, &render_info);
-
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline);
-
-            VkViewport viewport{};
-            viewport.x = 0.0f;
-            viewport.y = 0.0f;
-            viewport.width = static_cast<float>(swapChainExtent.width);
-            viewport.height = static_cast<float>(swapChainExtent.height);
-            viewport.minDepth = 0.0f;
-            viewport.maxDepth = 1.0f;
-            vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-
-            VkRect2D scissor{};
-            scissor.offset = { 0, 0 };
-            scissor.extent = swapChainExtent;
-            vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+        graphics_pipeline.set_render_size(swapChainExtent);
+        
+        graphics_pipeline.begin_rendering(commandBuffer);
+        graphics_pipeline.bind(commandBuffer);
+            graphics_pipeline.set_dynamic_viewport(commandBuffer);
+            graphics_pipeline.set_dynamic_scissor(commandBuffer);
 
             descriptor_sets[engine->current_frame].bind(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline.get_layout());
             push_constants.update({ mesh.get_vertex_address() });
@@ -578,8 +550,7 @@ private:
 
             mesh.draw(commandBuffer);
             
-        vkCmdEndRendering(commandBuffer);
-
+        graphics_pipeline.end_rendering(commandBuffer);
  
 
         Texture::transition_layout(commandBuffer, color_texture, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
@@ -591,6 +562,7 @@ private:
         // imgui draws directly into the swapchain image (don't care about post it in post processing)
         Texture::transition_layout(commandBuffer, engine->swapchain.images_at(imageIndex), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
+
         // might have different resolution than aboce
         VkRenderingAttachmentInfo color_attachment_info_imgui{};
         color_attachment_info_imgui.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
@@ -599,12 +571,16 @@ private:
         color_attachment_info_imgui.imageView = engine->swapchain.image_views_at(imageIndex);
         color_attachment_info_imgui.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-        render_info.renderArea.offset = { 0, 0 };
-        render_info.renderArea.extent = swapChainExtent;
-        render_info.pColorAttachments = &color_attachment_info_imgui;
-        render_info.pDepthAttachment = VK_NULL_HANDLE;
+        VkRenderingInfo imgui_render_info{};
+        imgui_render_info.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+        imgui_render_info.renderArea.offset = { 0, 0 };
+        imgui_render_info.renderArea.extent = swapChainExtent;
+        imgui_render_info.layerCount = 1;
+        imgui_render_info.pColorAttachments = &color_attachment_info_imgui;
+        imgui_render_info.colorAttachmentCount = 1;
+        imgui_render_info.pDepthAttachment = VK_NULL_HANDLE;
 
-        vkCmdBeginRendering(commandBuffer, &render_info);
+        vkCmdBeginRendering(commandBuffer, &imgui_render_info);
 
         ImGui_ImplVulkan_RenderDrawData(imgui_data, commandBuffer);
 
