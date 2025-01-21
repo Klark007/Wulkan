@@ -13,8 +13,8 @@ class Camera
 {
 public:
 	Camera() = default;
-	Camera(glm::vec3 pos, glm::vec3 des, glm::vec3 up, unsigned int res_x, unsigned int res_y, float focx, float focy, float near_plane, float far_plane);
-	Camera(glm::vec3 pos, glm::vec3 des, glm::vec3 up, unsigned int res_x, unsigned int res_y, float fov, float near_plane, float far_plane);
+	Camera(glm::vec3 pos, glm::vec3 des, unsigned int res_x, unsigned int res_y, float focx, float focy, float near_plane, float far_plane);
+	Camera(glm::vec3 pos, glm::vec3 des, unsigned int res_x, unsigned int res_y, float fov, float near_plane, float far_plane);
 
 	inline void set_pos(glm::vec3 pos) { position = pos; }
 	inline void look_at(glm::vec3 des) { set_dir(des - position); }
@@ -32,7 +32,6 @@ public:
 private:
 	glm::vec3 position;
 
-	// glm::vec3 direction;
 	float yaw;
 	float pitch;
 
@@ -65,7 +64,7 @@ public:
 	inline unsigned int get_resolution_x() const { return res_x; };
 	inline unsigned int get_resolution_y() const { return res_y; };
 
-	inline bool points_up() const { return get_up().y > 0; };
+	inline bool points_up() const { return get_up().z > 0; };
 	inline float linearize_depth(float d) const;
 };
 
@@ -129,8 +128,10 @@ inline glm::vec3 Camera::get_dir() const
 	glm::vec3 dir;
 
 	dir.x = (float)(cos(yaw) * cos(pitch));
-	dir.y = (float)sin(pitch);
-	dir.z = (float)(sin(yaw) * cos(pitch));
+	//dir.y = (float)sin(pitch);
+	//dir.z = (float)(sin(yaw) * cos(pitch));
+	dir.y = (float)(sin(yaw) * cos(pitch));
+	dir.z = (float)sin(pitch);
 
 	return dir;
 }
@@ -143,8 +144,10 @@ inline glm::vec3 Camera::get_up() const
 	float up_pitch = pitch + (float)M_PI_2;
 
 	up.x = (float)(cos(yaw) * cos(up_pitch));
-	up.y = (float)sin(up_pitch);
-	up.z = (float)(sin(yaw) * cos(up_pitch));
+	//up.y = (float)sin(up_pitch);
+	//up.z = (float)(sin(yaw) * cos(up_pitch));
+	up.y = (float)(sin(yaw) * cos(up_pitch));;
+	up.z = (float)sin(up_pitch);
 
 	return up;
 }

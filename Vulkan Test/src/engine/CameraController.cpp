@@ -1,6 +1,6 @@
 #include "CameraController.h"
 
-CameraController::CameraController(GLFWwindow* window, std::shared_ptr<Camera> camera)
+CameraController::CameraController(GLFWwindow* window, Camera* camera)
 	: active_camera { camera },
 	  window { window } 
 {
@@ -75,7 +75,7 @@ void CameraController::handle_mouse(double pos_x, double pos_y)
 
 	if (dx != 0 || dy != 0) {
 		// update yaw and pitch of camera
-		active_camera->roll_yaw((float)(active_camera->points_up() ? dx : -dx) * rot_strength);
+		active_camera->roll_yaw((float)(active_camera->points_up() ? -dx : dx) * rot_strength);
 		active_camera->roll_pitch((float)(-dy * rot_strength));
 	}
 
