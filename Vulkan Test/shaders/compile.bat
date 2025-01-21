@@ -1,8 +1,28 @@
-C:/VulkanSDK/1.3.268.0/Bin/glslc.exe shader.vert -o vert.spv
-C:/VulkanSDK/1.3.268.0/Bin/glslc.exe shader.frag -o frag.spv
-C:/VulkanSDK/1.3.268.0/Bin/glslc.exe terrain.tesc -o terrain_tcs.spv
-C:/VulkanSDK/1.3.268.0/Bin/glslc.exe terrain.tese -o terrain_tes.spv
+@ECHO OFF
 
-C:/VulkanSDK/1.3.268.0/Bin/glslc.exe triangle.vert -o triangle_v.spv
-C:/VulkanSDK/1.3.268.0/Bin/glslc.exe triangle.frag -o triangle_f.spv
+for %%i in (*.vert) do (
+    echo "Compiling %%i into %%~ni_vert.spv"
+    glslc.exe %%i -o %%~ni_vert.spv
+)
+
+for %%i in (*.frag) do (
+    echo "Compiling %%i into %%~ni_frag.spv"
+    glslc.exe %%i -o %%~ni_frag.spv
+)
+
+for %%i in (*.tese) do (
+    echo "Compiling %%i into %%~ni_tese.spv"
+    glslc.exe %%i -o %%~ni_tese.spv
+)
+
+for %%i in (*.tesc) do (
+    echo "Compiling %%i into %%~ni_tesc.spv"
+    glslc.exe %%i -o %%~ni_tesc.spv
+)
+
+for %%i in (*.comp) do (
+    echo "Compiling %%i into %%~ni_comp.spv"
+    glslc.exe %%i -o %%~ni_comp.spv
+)
+
 pause
