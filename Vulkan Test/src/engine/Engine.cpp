@@ -55,6 +55,8 @@ void Engine::run()
 
 		late_update();
 	}
+
+	vkDeviceWaitIdle(device);
 }
 
 
@@ -79,21 +81,61 @@ void Engine::update()
 void Engine::draw()
 {
 	aquire_image();
-	get_current_command_buffer().reset();
+	const VKW_CommandBuffer& cmd = get_current_command_buffer();
+	cmd.reset();
 
 	// begin command buffer
+	cmd.begin();
+	
 	{
-	}
-	// end command buffer
+		// initial layout transitions
+		Texture::transition_layout(cmd, color_render_target, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+		Texture::transition_layout(cmd, depth_render_target, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
-	/*
-	get_current_command_buffer().submit(
+
+		// draw terrain
+		terrain_pipeline.set_render_size(swapchain.get_extent());
+
+		terrain_pipeline.begin_rendering(cmd);
+		{
+			terrain_pipeline.bind(cmd);
+
+
+			terrain_pipeline.set_dynamic_viewport(cmd);
+			terrain_pipeline.set_dynamic_scissor(cmd);
+			terrain.draw(cmd, current_frame, terrain_pipeline);
+		}
+		terrain_pipeline.end_rendering(cmd);
+
+		
+		// transitions for copy into swapchain images
+		Texture::transition_layout(cmd, color_render_target, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+		Texture::transition_layout(cmd, swapchain.images_at(current_swapchain_image_idx), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+		// copy (both have swapchain extent resolution
+		Texture::copy(cmd, color_render_target, swapchain.images_at(current_swapchain_image_idx), swapchain.get_extent(), swapchain.get_extent());
+
+		
+		// transition for imgui
+		Texture::transition_layout(cmd, swapchain.images_at(current_swapchain_image_idx), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+		// draw imgui
+		gui.draw(cmd, current_swapchain_image_idx);
+
+
+		// transition for present
+		Texture::transition_layout(cmd, swapchain.images_at(current_swapchain_image_idx), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+	}
+	
+	// end and submit command buffer
+
+	cmd.submit(
 		{ get_current_swapchain_semaphore() },
 		{ VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT },
 		{ get_current_render_semaphore() },
 		get_current_render_fence()
 	);
-	*/
+	
 }
 
 void Engine::present()

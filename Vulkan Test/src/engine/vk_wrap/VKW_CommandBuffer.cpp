@@ -48,8 +48,18 @@ void VKW_CommandBuffer::submit_single_use()
 	VK_DESTROY_FROM(command_buffer, vkFreeCommandBuffers, *device, *command_pool, 1, &command_buffer);
 }
 
+void VKW_CommandBuffer::begin() const
+{
+	VkCommandBufferBeginInfo begin_info{};
+	begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+	VK_CHECK_ET(vkBeginCommandBuffer(command_buffer, &begin_info), RuntimeException, "Failed to begin recording command buffer");
+}
+
 void VKW_CommandBuffer::submit(const std::vector<VkSemaphore>& wait_semaphores, const std::vector<VkPipelineStageFlags>& wait_stages, const std::vector<VkSemaphore>& signal_semaphores, VkFence fence) const
 {
+	VK_CHECK_ET(vkEndCommandBuffer(command_buffer), RuntimeException, "Failed to record command buffer");
+
 	VkSubmitInfo submit_info{};
 	submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submit_info.pCommandBuffers = &command_buffer;

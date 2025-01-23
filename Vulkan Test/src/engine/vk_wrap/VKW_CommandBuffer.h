@@ -18,7 +18,10 @@ public:
 	// resets the currently recorded commands
 	inline void reset() const;
 
-	// submits the command buffer (with given signal, wait semaphores and fence)
+	// begins command buffer
+	void begin() const;
+
+	// ends and submits the command buffer (with given signal, wait semaphores and fence)
 	void submit(const std::vector<VkSemaphore>& wait_semaphores, const std::vector<VkPipelineStageFlags>& wait_stages, const std::vector<VkSemaphore>& signal_semaphores, VkFence fence) const;
 private:
 	const VKW_Device* device;
