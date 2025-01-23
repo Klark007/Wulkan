@@ -24,6 +24,8 @@ void Engine::init(unsigned int w, unsigned int h)
 
 	camera = Camera( glm::vec3(0.0, 12.0, 8.0), glm::vec3(0.0, 0.0, 8.0), res_x, res_y, glm::radians(45.0f), 0.01f, 100.0f );
 	camera_controller = CameraController(window, &camera);
+	gui.init(window, instance, device, graphics_queue, imgui_descriptor_pool, &swapchain);
+	cleanup_queue.add(&gui);
 }
 
 Engine::~Engine()
@@ -62,6 +64,14 @@ void Engine::update()
 
 	camera_controller.update_time();
 	camera_controller.handle_keys();
+
+	const GUI_Input& input = gui.get_input();
+
+	camera_controller.set_move_strength(input.camera_movement_speed);
+	camera_controller.set_rotation_strength(input.camera_rotation_speed);
+
+	terrain.set_tesselation_strength(input.terrain_tesselation);
+	terrain.set_height_scale(input.terrain_height_scale);
 
 	update_uniforms();
 }
@@ -114,7 +124,7 @@ void Engine::init_glfw()
 
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-	window = glfwCreateWindow(res_x, res_y, "Vulkan", nullptr, nullptr);
+	window = glfwCreateWindow(res_x, res_y, "Wulkan", nullptr, nullptr);
 
 	if (!window) {
 		glfwTerminate();
@@ -203,43 +213,6 @@ void Engine::init_terrain_data()
 	);
 	terrain.set_descriptor_bindings(uniform_buffers, linear_texture_sampler);
 	cleanup_queue.add(&terrain);
-	/*
-	terrain_height_map = create_texture_from_path(
-		&device,
-		&get_current_graphics_pool(),
-		"textures/perlinNoise.png",
-		Texture_Type::Tex_R
-	);
-	cleanup_queue.add(&terrain_height_map);
-
-
-	const uint32_t mesh_res = 32;
-	std::vector<Vertex> terrain_vertices{};
-	std::vector<uint32_t> terrain_indices{};
-
-	for (uint32_t iy = 0; iy < mesh_res; iy++) {
-		for (uint32_t ix = 0; ix < mesh_res; ix++) {
-			float u = ((float)ix) / mesh_res;
-			float v = ((float)iy) / mesh_res;
-			float pos_x = (u - 0.5) * 2;
-			float pos_y = (v - 0.5) * 2;
-
-			terrain_vertices.push_back({ {pos_x,pos_y,0}, u, {0,0,1}, v, {1,0,0,1} });
-		}
-	}
-
-	for (uint32_t iy = 0; iy < mesh_res - 1; iy++) {
-		for (uint32_t ix = 0; ix < mesh_res - 1; ix++) {
-			terrain_indices.push_back(ix + iy * mesh_res);
-			terrain_indices.push_back(ix + 1 + iy * mesh_res);
-			terrain_indices.push_back(ix + 1 + (iy + 1) * mesh_res);
-			terrain_indices.push_back(ix + (iy + 1) * mesh_res);
-		}
-	}
-
-	terrain_mesh.init(device, get_current_transfer_pool(), terrain_vertices, terrain_indices);
-	cleanup_queue.add(&terrain_mesh);
-	*/
 }
 
 void Engine::create_texture_samplers()
@@ -262,22 +235,6 @@ void Engine::create_descriptor_sets()
 	descriptor_pool.add_layout(shared_terrain_data.get_descriptor_set_layout(), MAX_FRAMES_IN_FLIGHT);
 	descriptor_pool.init(&device, MAX_FRAMES_IN_FLIGHT);
 	cleanup_queue.add(&descriptor_pool);
-
-	/*
-	for (unsigned int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-		VKW_DescriptorSet& set = descriptor_sets.at(i);
-		set.init(&device, &descriptor_pool, descriptor_set_layout);
-
-		// set the bindings
-		set.update(0, uniform_buffers.at(i));
-		set.update(1, terrain_height_map, linear_texture_sampler, VK_IMAGE_ASPECT_COLOR_BIT);
-		
-		cleanup_queue.add(&set);
-	}
-	*/
-
-	//terrain_vertex_push_constants.init(VK_SHADER_STAGE_VERTEX_BIT);
-	//terrain_push_constants.init(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT);
 }
 
 void Engine::create_uniform_buffers()
@@ -322,55 +279,6 @@ void Engine::create_graphics_pipelines()
 {
 	terrain_pipeline = Terrain::create_pipeline(&device, color_render_target, depth_render_target, shared_terrain_data);
 	cleanup_queue.add(&terrain_pipeline);
-	/*
-	VKW_Shader terrain_vert_shader{};
-	terrain_vert_shader.init(&device, "shaders/terrain_vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-
-	VKW_Shader terrain_frag_shader{};
-	terrain_frag_shader.init(&device, "shaders/terrain_frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
-
-	VKW_Shader tess_ctrl_shader{};
-	tess_ctrl_shader.init(&device, "shaders/terrain_tesc.spv", VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT);
-
-	VKW_Shader tess_eval_shader{};
-	tess_eval_shader.init(&device, "shaders/terrain_tese.spv", VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT);
-
-	terrain_pipeline.set_topology(VK_PRIMITIVE_TOPOLOGY_PATCH_LIST);
-	terrain_pipeline.set_culling_mode(VK_CULL_MODE_NONE); // TODO backface culling
-	terrain_pipeline.enable_depth_test();
-	terrain_pipeline.enable_depth_write();
-
-	terrain_pipeline.enable_tesselation();
-	terrain_pipeline.set_tesselation_patch_size(4);
-
-	terrain_pipeline.add_shader_stages({ terrain_vert_shader, terrain_frag_shader, tess_ctrl_shader, tess_eval_shader });
-	terrain_pipeline.add_descriptor_sets({ shared_terrain_data.get_descriptor_set_layout()});
-
-	terrain_pipeline.add_push_constants(shared_terrain_data.get_push_consts_range());
-
-	terrain_pipeline.set_color_attachment_format(color_render_target.get_format());
-	terrain_pipeline.set_depth_attachment_format(depth_render_target.get_format());
-
-	terrain_pipeline.set_color_attachment(
-		color_render_target.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT),
-		true,
-		{ {0.0f, 0.0f, 0.0f, 1.0f} }
-	);
-
-	terrain_pipeline.set_depth_attachment(
-		depth_render_target.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT),
-		true,
-		1.0f
-	);
-
-	terrain_pipeline.init(&device);
-	cleanup_queue.add(&terrain_pipeline);
-
-	terrain_vert_shader.del();
-	terrain_frag_shader.del();
-	tess_ctrl_shader.del();
-	tess_eval_shader.del();
-	*/
 }
 
 void Engine::create_swapchain()

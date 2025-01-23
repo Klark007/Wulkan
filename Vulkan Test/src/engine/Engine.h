@@ -29,6 +29,8 @@
 #include "Mesh.h"
 #include "Terrain.h"
 
+#include "Gui.h"
+
 #include "CameraController.h"
 
 void glfm_mouse_move_callback(GLFWwindow* window, double pos_x, double pos_y);
@@ -161,6 +163,7 @@ public: // TODO: remove public
 	DeletionQueue cleanup_queue;
 
 	CameraController camera_controller;
+	GUI gui;
 	Camera camera;
 private:
 

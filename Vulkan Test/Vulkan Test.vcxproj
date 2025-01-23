@@ -136,6 +136,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="external\vk-bootstrap\VkBootstrap.cpp" />
+    <ClCompile Include="src\engine\Gui.cpp" />
     <ClCompile Include="src\engine\Mesh.cpp" />
     <ClCompile Include="src\engine\CameraController.cpp" />
     <ClCompile Include="src\engine\Engine.cpp" />
@@ -175,6 +176,7 @@
     <None Include="src\engine\vk_wrap\README.md" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\engine\Gui.h" />
     <ClInclude Include="src\engine\DeletionQueue.h" />
     <ClInclude Include="external\vk-bootstrap\VkBootstrap.h" />
     <ClInclude Include="external\vk-bootstrap\VkBootstrapDispatch.h" />

@@ -58,12 +58,18 @@ public:
 public: // TODO remove
 	Mesh mesh;
 	Texture height_map;
+
 private: // TODO remove
+	float tesselation_strength;
+	float height_scale;
 
 	std::array<VKW_DescriptorSet, MAX_FRAMES_IN_FLIGHT> descriptor_sets;
 	SharedTerrainData* shared_data;
 public:
 	static VKW_GraphicsPipeline create_pipeline(const VKW_Device* device, Texture& color_rt, Texture& depth_rt, const SharedTerrainData& shared_terrain_data);
+	
+	inline void set_tesselation_strength(float strength) { tesselation_strength = strength; };
+	inline void set_height_scale(float scale) { height_scale = scale; };
 };
 
 inline void Terrain::draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame, const VKW_GraphicsPipeline& pipeline)
@@ -72,8 +78,8 @@ inline void Terrain::draw(const VKW_CommandBuffer& command_buffer, uint32_t curr
 
 	shared_data->get_pc().update({
 		glm::scale(glm::mat4(1), glm::vec3(25.0,25.0,1.0)),
-		24,
-		0.6f * 25
+		tesselation_strength,
+		height_scale * 25
 	});
 	shared_data->get_pc().push(command_buffer, pipeline.get_layout());
 

@@ -36,6 +36,6 @@ public:
 	inline const VkImageView& image_views_at(size_t i) const { return image_views.at(i); };
 
 	inline VkExtent2D get_extent() const { return vkb_swapchain.extent; };
-	inline VkFormat get_format() const { return vkb_swapchain.image_format; };
+	inline const VkFormat& get_format() const { return vkb_swapchain.image_format; };
 };
 
