@@ -164,18 +164,18 @@
     <ClCompile Include="src\engine\vk_wrap\VKW_Shader.cpp" />
     <ClCompile Include="src\engine\vk_wrap\VKW_Sampler.cpp" />
     <ClCompile Include="src\engine\vk_wrap\VKW_GraphicsPipeline.cpp" />
+    <ClCompile Include="src\engine\Terrain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\compile.bat" />
-    <None Include="shaders\shader.frag" />
-    <None Include="shaders\shader.vert" />
+    <None Include="shaders\terrain.frag" />
     <None Include="shaders\terrain.tesc" />
     <None Include="shaders\terrain.tese" />
-    <None Include="shaders\triangle.frag" />
-    <None Include="shaders\triangle.vert" />
+    <None Include="shaders\terrain.vert" />
     <None Include="src\engine\vk_wrap\README.md" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\engine\DeletionQueue.h" />
     <ClInclude Include="external\vk-bootstrap\VkBootstrap.h" />
     <ClInclude Include="external\vk-bootstrap\VkBootstrapDispatch.h" />
     <ClInclude Include="src\engine\Mesh.h" />
@@ -192,6 +192,7 @@
     <ClInclude Include="external\imgui\imstb_truetype.h" />
     <ClInclude Include="external\imgui\misc\cpp\imgui_stdlib.h" />
     <ClInclude Include="src\engine\Camera.h" />
+    <ClInclude Include="src\engine\Shape.h" />
     <ClInclude Include="src\engine\vk_types.h" />
     <ClInclude Include="src\engine\vk_wrap\VKW_Object.h" />
     <ClInclude Include="src\engine\vk_wrap\VKW_Instance.h" />
@@ -209,6 +210,7 @@
     <ClInclude Include="src\engine\vk_wrap\VKW_Sampler.h" />
     <ClInclude Include="src\engine\vk_wrap\VKW_GraphicsPipeline.h" />
     <ClInclude Include="src\engine\vk_wrap\VKW_PushConstants.h" />
+    <ClInclude Include="src\engine\Terrain.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="shaders\terrain.txt" />

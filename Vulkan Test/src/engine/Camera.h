@@ -72,8 +72,8 @@ inline void Camera::set_dir(glm::vec3 dir)
 {
 	dir = glm::normalize(dir);
 
-	yaw = atan2(dir.z, dir.x);
-	pitch = asin(dir.y);
+	yaw = atan2(dir.y, dir.x);
+	pitch = asin(dir.z);
 }
 
 inline void Camera::set_aspect_ratio(unsigned int r_x, unsigned int r_y)
@@ -128,8 +128,6 @@ inline glm::vec3 Camera::get_dir() const
 	glm::vec3 dir;
 
 	dir.x = (float)(cos(yaw) * cos(pitch));
-	//dir.y = (float)sin(pitch);
-	//dir.z = (float)(sin(yaw) * cos(pitch));
 	dir.y = (float)(sin(yaw) * cos(pitch));
 	dir.z = (float)sin(pitch);
 
@@ -144,9 +142,7 @@ inline glm::vec3 Camera::get_up() const
 	float up_pitch = pitch + (float)M_PI_2;
 
 	up.x = (float)(cos(yaw) * cos(up_pitch));
-	//up.y = (float)sin(up_pitch);
-	//up.z = (float)(sin(yaw) * cos(up_pitch));
-	up.y = (float)(sin(yaw) * cos(up_pitch));;
+	up.y = (float)(sin(yaw) * cos(up_pitch));
 	up.z = (float)sin(up_pitch);
 
 	return up;

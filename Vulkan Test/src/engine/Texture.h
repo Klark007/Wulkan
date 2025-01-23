@@ -11,11 +11,14 @@
 // texture type defines the potential formats, need to check if formats have requested features
 enum Texture_Type
 {
-	Tex_D,   // create depth texture
 	Tex_DS,  // create depth & stencil texture
 	Tex_R,   // create R only texture
 	Tex_RGB, // create RGB texture
-	Tex_RGBA // create RGBA texture
+	Tex_RGBA, // create RGBA texture
+
+	Tex_Colortarget, // creates target used for rendering 
+	Tex_D   // create depth texture
+
 };
 
 // Texture with managing VkImage, VkImageView and Memory
@@ -169,6 +172,8 @@ inline int Texture::get_stbi_channels(Texture_Type type)
 		return STBI_rgb;
 	case Tex_RGBA:
 		return STBI_rgb_alpha;
+	case Tex_Colortarget:
+		throw RuntimeException("Don't support to create a render target that is filled with an image", __FILE__, __LINE__);
 	default:
 		throw NotImplementedException(std::format("Unknown type {}", (unsigned int) type), __FILE__, __LINE__);
 	}
@@ -190,6 +195,8 @@ inline std::vector<VkFormat> Texture::potential_formats(Texture_Type type)
 		return { VK_FORMAT_R8G8B8_SRGB, VK_FORMAT_R8G8B8A8_SRGB };
 	case Tex_RGBA:
 		return { VK_FORMAT_R8G8B8A8_SRGB };
+	case Tex_Colortarget:
+		return { VK_FORMAT_R16G16B16A16_SFLOAT };
 	default:
 		throw NotImplementedException(std::format("Unknown type {}", (unsigned int) type), __FILE__, __LINE__);
 	}
@@ -211,6 +218,13 @@ inline VkFormatFeatureFlags Texture::required_format_features(Texture_Type type)
 			VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT |
 			VK_FORMAT_FEATURE_TRANSFER_DST_BIT
 		;
+	case Tex_Colortarget:
+		return
+			VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT |
+			VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT |
+			VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT |
+			VK_FORMAT_FEATURE_TRANSFER_SRC_BIT
+			;
 	default:
 		throw NotImplementedException(std::format("Unknown type {}", (unsigned int) type), __FILE__, __LINE__);
 	}

@@ -62,6 +62,12 @@ void VKW_GraphicsPipeline::init(const VKW_Device* vkw_device)
 	pipeline_info.pDynamicState = &dynamic_state;
 
 	// pipeline layout
+	pipeline_layout_info.pPushConstantRanges = push_consts_range.data();
+	pipeline_layout_info.pushConstantRangeCount = static_cast<uint32_t>(push_consts_range.size());
+
+	pipeline_layout_info.pSetLayouts = descriptor_set_layouts.data();
+	pipeline_layout_info.setLayoutCount = static_cast<uint32_t>(descriptor_set_layouts.size());
+
 	VK_CHECK_ET(vkCreatePipelineLayout(*device, &pipeline_layout_info, nullptr, &layout), RuntimeException, "Failed to create graphics pipeline layout");
 	pipeline_info.layout = layout;
 
@@ -144,11 +150,11 @@ void VKW_GraphicsPipeline::clear()
 	scissor = {};
 	scissor.offset = { 0, 0 };
 
-	color_attachment_info = {};
-	color_attachment_info.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+	color_attachment_info = std::make_unique<VkRenderingAttachmentInfo>();
+	color_attachment_info->sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
 
-	depth_attachment_info = {};
-	depth_attachment_info.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+	depth_attachment_info = std::make_unique<VkRenderingAttachmentInfo>();
+	depth_attachment_info->sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
 }
 
 void VKW_GraphicsPipeline::add_shader_stages(const std::vector<VKW_Shader>& stages)
@@ -163,45 +169,47 @@ void VKW_GraphicsPipeline::add_descriptor_sets(const std::vector<VKW_DescriptorS
 	for (const VKW_DescriptorSetLayout layout : layouts) {
 		descriptor_set_layouts.push_back(layout);
 	}
+}
 
-	pipeline_layout_info.pSetLayouts = descriptor_set_layouts.data();
-	pipeline_layout_info.setLayoutCount = static_cast<uint32_t>(descriptor_set_layouts.size());
+void VKW_GraphicsPipeline::add_push_constants(const std::vector<VkPushConstantRange>& ranges)
+{
+	push_consts_range.insert(std::end(push_consts_range), std::begin(ranges), std::end(ranges));
 }
 
 void VKW_GraphicsPipeline::set_color_attachment(VkImageView attachment, bool do_clear_color, VkClearColorValue clear_color_value)
 {
 	
-	color_attachment_info.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	color_attachment_info->storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 	if (do_clear_color) {
-		color_attachment_info.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		color_attachment_info.clearValue.color = clear_color_value;
+		color_attachment_info->loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		color_attachment_info->clearValue.color = clear_color_value;
 	}
 	else {
-		color_attachment_info.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+		color_attachment_info->loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
 	}
 	
-	color_attachment_info.imageView = attachment;
-	color_attachment_info.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	color_attachment_info->imageView = attachment;
+	color_attachment_info->imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-	attachment_state.pColorAttachments = &color_attachment_info;
+	attachment_state.pColorAttachments = color_attachment_info.get();
 	attachment_state.colorAttachmentCount = 1;
 }
 
 void VKW_GraphicsPipeline::set_depth_attachment(VkImageView attachment, bool do_clear_depth, float clear_depth_value)
 {
-	depth_attachment_info.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	depth_attachment_info->storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 	if (do_clear_depth) {
-		depth_attachment_info.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		depth_attachment_info.clearValue.depthStencil.depth = clear_depth_value;
+		depth_attachment_info->loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		depth_attachment_info->clearValue.depthStencil.depth = clear_depth_value;
 	}
 	else {
-		depth_attachment_info.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+		depth_attachment_info->loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
 	}
 
-	depth_attachment_info.imageView = attachment;
-	depth_attachment_info.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+	depth_attachment_info->imageView = attachment;
+	depth_attachment_info->imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
-	attachment_state.pDepthAttachment = &depth_attachment_info;
+	attachment_state.pDepthAttachment = depth_attachment_info.get();
 }
 
 void VKW_GraphicsPipeline::set_render_size(VkExtent2D extend)
@@ -214,4 +222,9 @@ void VKW_GraphicsPipeline::set_render_size(VkExtent2D extend)
 	viewport.height = static_cast<float>(render_extent.height);
 
 	scissor.extent = render_extent;
+}
+
+void VKW_GraphicsPipeline::begin_rendering(const VKW_CommandBuffer& cmd) const
+{
+	vkCmdBeginRendering(cmd, &attachment_state);
 }

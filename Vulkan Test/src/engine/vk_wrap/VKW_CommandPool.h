@@ -6,7 +6,7 @@
 #include "VKW_Device.h"
 #include "VKW_Queue.h"
 
-class VKW_CommandPool : VKW_Object
+class VKW_CommandPool : public VKW_Object
 {
 public:
 	VKW_CommandPool() = default;

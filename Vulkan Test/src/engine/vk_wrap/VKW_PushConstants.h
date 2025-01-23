@@ -11,7 +11,7 @@ template <typename T> class VKW_PushConstants
 public:
 	VKW_PushConstants() = default;
 
-	void init(VkShaderStageFlags shader_stages);
+	void init(VkShaderStageFlags shader_stages, uint32_t offset = 0);
 private:
 	VkPushConstantRange range;
 	T data;
@@ -24,10 +24,10 @@ public:
 };
 
 template<typename T>
-inline void VKW_PushConstants<T>::init(VkShaderStageFlags shader_stages)
+inline void VKW_PushConstants<T>::init(VkShaderStageFlags shader_stages, uint32_t offset)
 {
 	range.stageFlags = shader_stages;
-	range.offset = 0;
+	range.offset = offset;
 	range.size = sizeof(T);
 }
 

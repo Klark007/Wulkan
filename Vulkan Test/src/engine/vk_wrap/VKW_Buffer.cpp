@@ -34,6 +34,10 @@ void VKW_Buffer::init(const VKW_Device* vkw_device, VkDeviceSize size, VkBufferU
 void VKW_Buffer::del()
 {
 	if (buffer && allocation && memory) {
+		// if mapped need to unmap before destroy
+		if (is_mapped) {
+			unmap();
+		}
 		vmaDestroyBuffer(allocator, buffer, allocation);
 		buffer = VK_NULL_HANDLE;
 		allocation = VK_NULL_HANDLE;
@@ -43,8 +47,8 @@ void VKW_Buffer::del()
 
 void VKW_Buffer::copy(const void* data)
 {
-	void* addr = map();
-	memcpy(addr, data, size());
+	map();
+	memcpy(mapped_address, data, size());
 	unmap();
 }
 
@@ -74,18 +78,15 @@ void VKW_Buffer::copy(const VKW_CommandPool* command_pool, const VKW_Buffer& oth
 	command_buffer.submit_single_use();
 }
 
-// maps whole buffer to adress and returns address
-void* VKW_Buffer::map()
+// maps whole buffer to cpu adress
+void VKW_Buffer::map()
 {
 	if (!mappable) {
 		throw SetupException("Tried to map a buffer that was not created as mappable", __FILE__, __LINE__);
 	}
 
-	void* data;
-
-	VK_CHECK_ET(vmaMapMemory(allocator, allocation, &data), RuntimeException, "Failed to map buffer to memory");
-	
-	return data;
+	VK_CHECK_ET(vmaMapMemory(allocator, allocation, &mapped_address), RuntimeException, "Failed to map buffer to memory");
+	is_mapped = true;
 }
 
 void VKW_Buffer::unmap()
@@ -94,7 +95,9 @@ void VKW_Buffer::unmap()
 		throw SetupException("Tried to unmap a buffer that was not created as mappable", __FILE__, __LINE__);
 	}
 
+	mapped_address = nullptr;
 	vmaUnmapMemory(allocator, allocation);
+	is_mapped = false;
 }
 
 VKW_Buffer create_staging_buffer(const VKW_Device* device, const void* data, VkDeviceSize size)

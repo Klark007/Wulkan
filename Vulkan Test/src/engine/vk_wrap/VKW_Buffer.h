@@ -17,7 +17,7 @@ public:
 
 	void copy(const void* data); // copies data into VKW_Buffer
 	void copy(const VKW_CommandPool* command_pool, const VKW_Buffer& other_buffer); // copies other buffer into this one, creates and submits single use command buffer
-	void* map(); // maps buffer into cpu accessible memory and returns pointer to it 
+	void map(); // maps buffer into cpu accessible memory and returns pointer to it 
 	void unmap();
 private:
 	const VKW_Device* device;
@@ -30,11 +30,14 @@ private:
 	VkDeviceMemory memory;
 
 	bool mappable;
+	bool is_mapped; // true if currently mapped to cpu memory
+	void* mapped_address; // stores the currently mapped address
 public:
 	inline VkBuffer get_buffer() const { return buffer; };
 	inline operator VkBuffer() const { return buffer; };
 	// size of underlying VkBuffer in bytes
 	inline size_t size() const { return length; };
+	inline void* get_mapped_address() const { return mapped_address; }; // returns mapped address or null if not mapped
 };
 
 VKW_Buffer create_staging_buffer(const VKW_Device* device, const void* data, VkDeviceSize size);

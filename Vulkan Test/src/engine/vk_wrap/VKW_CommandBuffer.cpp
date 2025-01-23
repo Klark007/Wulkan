@@ -47,3 +47,25 @@ void VKW_CommandBuffer::submit_single_use()
 
 	VK_DESTROY_FROM(command_buffer, vkFreeCommandBuffers, *device, *command_pool, 1, &command_buffer);
 }
+
+void VKW_CommandBuffer::submit(const std::vector<VkSemaphore>& wait_semaphores, const std::vector<VkPipelineStageFlags>& wait_stages, const std::vector<VkSemaphore>& signal_semaphores, VkFence fence) const
+{
+	VkSubmitInfo submit_info{};
+	submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submit_info.pCommandBuffers = &command_buffer;
+	submit_info.commandBufferCount = 1;
+
+	if (wait_semaphores.size() != wait_stages.size()) {
+		throw SetupException("Not every wait semaphore has a corresponding wait stage", __FILE__, __LINE__);
+	}
+
+	submit_info.pWaitSemaphores = wait_semaphores.data();
+	submit_info.pWaitDstStageMask = wait_stages.data();
+	submit_info.waitSemaphoreCount = static_cast<uint32_t>(wait_semaphores.size());
+
+	submit_info.pSignalSemaphores = signal_semaphores.data();
+	submit_info.signalSemaphoreCount = static_cast<uint32_t>(signal_semaphores.size());
+
+	
+	VK_CHECK_ET(vkQueueSubmit(*queue, 1, &submit_info, fence), RuntimeException, "Failed to submit command buffer");
+}

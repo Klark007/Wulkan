@@ -14,6 +14,12 @@ public:
 	void begin_single_use();
 	// submits command buffer and waits for the queue to be idle. WARNING: could take long
 	void submit_single_use();
+
+	// resets the currently recorded commands
+	inline void reset() const;
+
+	// submits the command buffer (with given signal, wait semaphores and fence)
+	void submit(const std::vector<VkSemaphore>& wait_semaphores, const std::vector<VkPipelineStageFlags>& wait_stages, const std::vector<VkSemaphore>& signal_semaphores, VkFence fence) const;
 private:
 	const VKW_Device* device;
 	const VKW_CommandPool* command_pool;
@@ -26,3 +32,7 @@ public:
 	inline operator VkCommandBuffer() const { return command_buffer; };
 };
 
+inline void VKW_CommandBuffer::reset() const
+{
+	vkResetCommandBuffer(command_buffer, 0);
+}

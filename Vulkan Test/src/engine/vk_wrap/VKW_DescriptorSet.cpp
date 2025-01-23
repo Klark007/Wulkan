@@ -27,7 +27,7 @@ void VKW_DescriptorSetLayout::add_binding(uint32_t binding_slot, VkDescriptorTyp
 	bindings.push_back(binding);
 }
 
-void VKW_DescriptorSet::init(VKW_Device* vkw_device, const VKW_DescriptorPool* vkw_pool, VKW_DescriptorSetLayout layout)
+void VKW_DescriptorSet::init(const VKW_Device* vkw_device, const VKW_DescriptorPool* vkw_pool, VKW_DescriptorSetLayout layout)
 {
 	device = vkw_device;
 	pool = vkw_pool;

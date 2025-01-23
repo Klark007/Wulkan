@@ -30,9 +30,9 @@
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 
-std::shared_ptr<Camera> camera = std::make_shared<Camera>(glm::vec3(0.0, 12.0, 8.0), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0), WIDTH, HEIGHT, glm::radians(45.0f), 0.01f, 100.0f);
+//std::shared_ptr<Camera> camera = std::make_shared<Camera>(glm::vec3(0.0, 12.0, 8.0), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0), WIDTH, HEIGHT, glm::radians(45.0f), 0.01f, 100.0f);
 
-Engine e{ WIDTH, HEIGHT, camera };
+Engine e;
 Engine* engine = nullptr;
 
 void glfm_mouse_move_callback(GLFWwindow* window, double pos_x, double pos_y);
@@ -63,6 +63,7 @@ struct UniformBufferObject {
 class HelloTriangleApplication {
 public:
     void run() {
+        e.init(WIDTH, HEIGHT);
         engine = &e;
         window = engine->get_window();
 
@@ -75,16 +76,6 @@ public:
 
 private:
     GLFWwindow* window;
-
-    const std::vector<const char*> validationLayers = {
-        "VK_LAYER_KHRONOS_validation"
-    };
-    
-#ifdef NDEBUG
-    const bool enableValidationLayers = false;
-#else
-    const bool enableValidationLayers = true;
-#endif
 
     VkInstance instance;
 
@@ -103,72 +94,24 @@ private:
     VkFormat swapChainImageFormat;
     VkExtent2D swapChainExtent;
 
-    Texture color_texture;
-    Texture depth_texture;
-
-    VKW_GraphicsPipeline graphics_pipeline;
-
-    std::vector<VkFramebuffer> swapChainFramebuffers;
-
     VkCommandPool graphicsCommandPool;
     std::vector<VkCommandBuffer> commandBuffers;
 
     VkCommandPool transferCommandPool;
     
+
+    VKW_GraphicsPipeline graphics_pipeline;
+
+    // done
     std::vector<VKW_Buffer> uniform_buffers;
     std::vector<void*> uniformBuffersMapped;
+    UniformBufferObject ubo{};
 
     VKW_DescriptorPool descriptor_pool;
     std::vector<VKW_DescriptorSet> descriptor_sets;
     VKW_DescriptorSetLayout descriptor_set_layout;
 
     VKW_PushConstants<PushConstData> push_constants;
-
-    Texture height_map;
-    VKW_Sampler texture_sampler;
-
-    Mesh mesh;
-
-    UniformBufferObject ubo{};
-
-    void initModel() {
-        std::vector<Vertex> model_vertices{};
-
-        //model_vertices.push_back({ { 1,1,0 }, 0.0f, { 0,1,0 }, 0.0f, { 1,0,1,1 } });
-        //model_vertices.push_back({ { -1,1,0 }, 0.0f, { 0,1,0 }, 0.0f, { 1,0,1,1 } });
-        //model_vertices.push_back({ { 0,-1,0 }, 0.0f, { 0,1,0 }, 0.0f, { 0,1,0,1 } });
-
-        
-        const uint32_t mesh_res = 32;
-        
-        for (uint32_t iy = 0; iy < mesh_res; iy++) {
-            for (uint32_t ix = 0; ix < mesh_res; ix++) {
-                float u = ((float)ix) / mesh_res;
-                float v = ((float)iy) / mesh_res;
-                float pos_x = (u - 0.5) * 2;
-                float pos_z = (v - 0.5) * 2;
-
-                model_vertices.push_back({ {pos_x,0,pos_z}, u, {0,1,0}, v, {1,0,0,1} });
-            }
-        }
-
-        std::vector<uint32_t> model_indices{};
-        //model_indices.push_back(0);
-        //model_indices.push_back(1);
-        //model_indices.push_back(2);
-        
-        for (uint32_t iy = 0; iy < mesh_res-1; iy++) {
-            for (uint32_t ix = 0; ix < mesh_res-1; ix++) {
-                model_indices.push_back(ix + iy * mesh_res);
-                model_indices.push_back(ix+1 + iy * mesh_res);
-                model_indices.push_back(ix+1 + (iy+1) * mesh_res);
-                model_indices.push_back(ix + (iy+1) * mesh_res);
-            }
-        }
-
-        mesh.init(engine->device, engine->get_current_transfer_pool(), model_vertices, model_indices);
-        
-    }
 
     void initVulkan() {
         instance = engine->instance;
@@ -179,21 +122,21 @@ private:
         device = engine->device;
 
         graphicsQueueFamily = engine->graphics_queue.get_queue_family();
-        std::cout << "Chosen queues" << engine->graphics_queue.get_queue_family() << "," << engine->present_queue.get_queue_family() << "," << engine->transfer_queue.get_queue_family() << std::endl;
+        //std::cout << "Chosen queues" << engine->graphics_queue.get_queue_family() << "," << engine->present_queue.get_queue_family() << "," << engine->transfer_queue.get_queue_family() << std::endl;
         graphicsQueue = engine->graphics_queue;
         presentQueue = engine->present_queue;
         transferQueue = engine->transfer_queue;
 
-        initModel();
+        //initModel();
         
         createSwapChain();
         
         createDescriptorSetLayout();
         
-        createDepthResources();
+        //createDepthResources();
         
-        createTextureImage();
-        createTextureSampler();
+        //createTextureImage();
+        //createTextureSampler();
 
         createUniformBuffers();
         
@@ -220,7 +163,7 @@ private:
         init_info.Device = device;
         init_info.QueueFamily = graphicsQueueFamily;
         init_info.Queue = graphicsQueue;
-        init_info.DescriptorPool = descriptor_pool;
+        init_info.DescriptorPool = engine->imgui_descriptor_pool;
 
         //dynamic rendering parameters for imgui to use
         init_info.UseDynamicRendering = true;
@@ -256,22 +199,22 @@ private:
 
         descriptor_set_layout.init(&engine->device);
     }
-
+    
     void createGraphicsPipeline() {
         VKW_Shader vert_shader{};
         //vert_shader.init(&engine->device, "shaders/triangle_v.spv", VK_SHADER_STAGE_VERTEX_BIT);
-        vert_shader.init(&engine->device, "shaders/vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+        vert_shader.init(&engine->device, "shaders/old/vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
 
         VKW_Shader frag_shader{};
         //frag_shader.init(&engine->device, "shaders/triangle_f.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 
-        frag_shader.init(&engine->device, "shaders/frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+        frag_shader.init(&engine->device, "shaders/old/frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 
         VKW_Shader tess_ctrl_shader{};
-        tess_ctrl_shader.init(&engine->device, "shaders/terrain_tcs.spv", VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT);
+        tess_ctrl_shader.init(&engine->device, "shaders/old/terrain_tcs.spv", VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT);
 
         VKW_Shader tess_eval_shader{};
-        tess_eval_shader.init(&engine->device, "shaders/terrain_tes.spv", VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT);
+        tess_eval_shader.init(&engine->device, "shaders/old/terrain_tes.spv", VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT);
 
         // new
 
@@ -289,51 +232,30 @@ private:
         graphics_pipeline.add_descriptor_sets({descriptor_set_layout});
         graphics_pipeline.add_push_constant(push_constants);
 
-        graphics_pipeline.set_color_attachment_format(color_texture.get_format());
-        graphics_pipeline.set_depth_attachment_format(depth_texture.get_format());
+        graphics_pipeline.set_color_attachment_format(engine->color_render_target.get_format());
+        graphics_pipeline.set_depth_attachment_format(engine->depth_render_target.get_format());
 
         graphics_pipeline.init(&engine->device);
 
         // end new
+
+        graphics_pipeline.set_color_attachment(
+            engine->color_render_target.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT),
+            true,
+            { {0.0f, 0.0f, 0.0f, 1.0f} }
+        );
+
+        graphics_pipeline.set_depth_attachment(
+            engine->depth_render_target.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT),
+            true,
+            1.0f
+        );
 
 
         vert_shader.del();
         frag_shader.del();
         tess_ctrl_shader.del();
         tess_eval_shader.del();
-    }
-
-    void createDepthResources() {
-        VkFormat depthFormat = findDepthFormat();
-
-        depth_texture.init(
-            &engine->device,
-            swapChainExtent.width, swapChainExtent.height,
-            depthFormat,
-            VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-            sharing_exlusive()
-        );
-
-        color_texture.init(
-            &engine->device,
-            swapChainExtent.width, swapChainExtent.height,
-            VK_FORMAT_R16G16B16A16_SFLOAT,
-            VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-            sharing_exlusive()
-        );
-    }
-
-    void createTextureImage() {
-        height_map = create_texture_from_path(
-            &engine->device,
-            &engine->get_current_graphics_pool(),
-            "textures/perlinNoise.png",
-            Texture_Type::Tex_R
-        );
-    }
-
-    void createTextureSampler() {
-        texture_sampler.init(&engine->device);
     }
 
     void createUniformBuffers() {
@@ -351,15 +273,14 @@ private:
                 true
             );
 
-            uniformBuffersMapped.at(i) = uniform_buffers.at(i).map();
+            uniform_buffers.at(i).map();
+            uniformBuffersMapped.at(i) = uniform_buffers.at(i).get_mapped_address();
         }
     }
 
     void createDescriptorPool() {
         descriptor_pool.add_layout(descriptor_set_layout, MAX_FRAMES_IN_FLIGHT);
-        // 1 additional sampler for imgui as well
-        descriptor_pool.add_type(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1);
-        descriptor_pool.init(&engine->device, MAX_FRAMES_IN_FLIGHT + 1);
+        descriptor_pool.init(&engine->device, MAX_FRAMES_IN_FLIGHT);
     }
 
     void createDescriptorSets() {
@@ -373,7 +294,7 @@ private:
         // configure descriptors
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             descriptor_sets[i].update(0, uniform_buffers[i]);
-            descriptor_sets[i].update(1, height_map, texture_sampler, VK_IMAGE_ASPECT_COLOR_BIT);
+            descriptor_sets[i].update(1, engine->terrain.height_map, engine->linear_texture_sampler, VK_IMAGE_ASPECT_COLOR_BIT);
         }
 
         push_constants.init(VK_SHADER_STAGE_VERTEX_BIT);
@@ -385,6 +306,7 @@ private:
             engine->update();
             engine->draw();
             drawFrame();
+            engine->present();
             engine->late_update();
         }
 
@@ -392,73 +314,20 @@ private:
     }
 
     void drawFrame() {
-        /*
-        vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
-
-        uint32_t imageIndex;
-        VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
-
-        if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-            recreateSwapChain();
-            return;
-        }
-        else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-            throw std::runtime_error(std::string(string_VkResult(result))+":Failed to aquire swap chain image");
-        }
-
-        vkResetFences(device, 1, &inFlightFences[currentFrame]); // only reset once work is submitted to avoid deadlock
-        */
         uint32_t imageIndex = engine->current_swapchain_image_idx; 
 
         updateUniformBuffer(engine->current_frame);
-
-        vkResetCommandBuffer(engine->command_structs.at(engine->current_frame).graphics_command_buffer, 0);
 
         recordCommand(engine->command_structs.at(engine->current_frame).graphics_command_buffer, imageIndex, drawImGui());
 
 
         // submit command buffer
-        VkSubmitInfo submitInfo{};
-        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-        VkSemaphore waitSemaphores[] = { engine->get_current_swapchain_semaphore()};
-        VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT}; // wait with writing colors until image available
-        submitInfo.waitSemaphoreCount = 1;
-        submitInfo.pWaitSemaphores = waitSemaphores;
-        submitInfo.pWaitDstStageMask = waitStages;
-
-        submitInfo.commandBufferCount = 1;
-        VkCommandBuffer command_buffer = engine->command_structs.at(engine->current_frame).graphics_command_buffer;
-        submitInfo.pCommandBuffers = &command_buffer;
-
-        VkSemaphore signalSemaphores[] = { engine->get_current_render_semaphore() };
-        submitInfo.signalSemaphoreCount = 1;
-        submitInfo.pSignalSemaphores = signalSemaphores;
-
-        if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, engine->get_current_render_fence()) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to submit draw commandbuffer");
-        }
-
-        VkPresentInfoKHR presentInfo{};
-        presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-
-        presentInfo.waitSemaphoreCount = 1;
-        presentInfo.pWaitSemaphores = signalSemaphores;
-
-        VkSwapchainKHR swapChains[] = { swapChain };
-        presentInfo.swapchainCount = 1;
-        presentInfo.pSwapchains = swapChains;
-        presentInfo.pImageIndices = &imageIndex;
-
-        VkResult result = vkQueuePresentKHR(presentQueue, &presentInfo);
-
-        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || engine->resize_window) {
-            engine->resize_window = false;
-            recreateSwapChain();
-        }
-        else if (result) {
-            throw std::runtime_error(std::string(string_VkResult(result)) + ":Failed to present swap chain image");
-        }
+        engine->get_current_command_buffer().submit(
+            { engine->get_current_swapchain_semaphore() },
+            { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT },
+            { engine->get_current_render_semaphore() },
+            engine->get_current_render_fence()
+        );
     }
 
     ImDrawData* drawImGui() {
@@ -478,16 +347,9 @@ private:
         return ImGui::GetDrawData();
     }
 
-    void cleanupSwapChain() {
-        for (auto& framebuffer : swapChainFramebuffers) {
-            if (framebuffer) {
-                vkDestroyFramebuffer(device, framebuffer, nullptr);
-                framebuffer = VK_NULL_HANDLE;
-            }
-        }
-        
-        color_texture.del();
-        depth_texture.del();
+    void cleanupSwapChain() {        
+        //color_texture.del();
+        //depth_texture.del();
     }
 
     void cleanupImGui() {
@@ -510,7 +372,7 @@ private:
 
         engine->create_swapchain();
         createSwapChain();
-        createDepthResources();
+        //createDepthResources();
     }
 
     void recordCommand(const VKW_CommandBuffer& commandBuffer, uint32_t imageIndex, ImDrawData* imgui_data) {
@@ -521,22 +383,10 @@ private:
             throw std::runtime_error("Failed to begin recording command buffer");
         }
 
-        Texture::transition_layout(commandBuffer, color_texture, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-        Texture::transition_layout(commandBuffer, depth_texture, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+        Texture::transition_layout(commandBuffer, engine->color_render_target, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        Texture::transition_layout(commandBuffer, engine->depth_render_target, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
-        
-        graphics_pipeline.set_color_attachment(
-            color_texture.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT),
-            true,
-            { {0.0f, 0.0f, 0.0f, 1.0f} }
-        );
-
-        graphics_pipeline.set_depth_attachment(
-            depth_texture.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT),
-            true,
-            1.0f
-        );
-
+        /*
         graphics_pipeline.set_render_size(swapChainExtent);
         
         graphics_pipeline.begin_rendering(commandBuffer);
@@ -545,19 +395,32 @@ private:
             graphics_pipeline.set_dynamic_scissor(commandBuffer);
 
             descriptor_sets[engine->current_frame].bind(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline.get_layout());
-            push_constants.update({ mesh.get_vertex_address() });
+            push_constants.update({ engine->terrain.mesh.get_vertex_address() });
             push_constants.push(commandBuffer, graphics_pipeline.get_layout());
 
-            mesh.draw(commandBuffer);
+            engine->terrain.mesh.draw(commandBuffer);
             
         graphics_pipeline.end_rendering(commandBuffer);
+        */
+        engine->terrain_pipeline.set_render_size(swapChainExtent);
+
+        engine->terrain_pipeline.begin_rendering(commandBuffer);
+        engine->terrain_pipeline.bind(commandBuffer);
+        
+
+        engine->terrain_pipeline.set_dynamic_viewport(commandBuffer);
+        engine->terrain_pipeline.set_dynamic_scissor(commandBuffer);
+        engine->terrain.draw(commandBuffer, engine->current_frame, engine->terrain_pipeline);
+        
+        engine->terrain_pipeline.end_rendering(commandBuffer);
+        
  
 
-        Texture::transition_layout(commandBuffer, color_texture, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+        Texture::transition_layout(commandBuffer, engine->color_render_target, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
         Texture::transition_layout(commandBuffer, engine->swapchain.images_at(imageIndex), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
         VkExtent2D extend{ swapChainExtent.width, swapChainExtent.height };
-        Texture::copy(commandBuffer, color_texture, engine->swapchain.images_at(imageIndex), extend, extend);
+        Texture::copy(commandBuffer, engine->color_render_target, engine->swapchain.images_at(imageIndex), extend, extend);
 
         // imgui draws directly into the swapchain image (don't care about post it in post processing)
         Texture::transition_layout(commandBuffer, engine->swapchain.images_at(imageIndex), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
@@ -624,12 +487,12 @@ private:
         auto currentTime = std::chrono::high_resolution_clock::now();
         float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
-        ubo.model = glm::scale(glm::mat4(1), glm::vec3(25.0,1,25.0)); // important not to scale y for error calculations
-        ubo.view  = camera->generate_view_mat(); 
-        ubo.virtualView  = camera->generate_virtual_view_mat(); 
+        ubo.model = glm::scale(glm::mat4(1), glm::vec3(25.0,25.0,1.0)); // important not to scale y for error calculations
+        ubo.view  = engine->camera.generate_view_mat(); 
+        ubo.virtualView  = engine->camera.generate_virtual_view_mat();
 
-        ubo.proj  = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 100.0f);
-
+        ubo.proj  = engine->camera.generate_projection_mat();
+        // see https://community.khronos.org/t/confused-when-using-glm-for-projection/108548/2 for reason for the multiplication
         ubo.proj[1][1] *= -1;
 
         ubo.tesselationStrength = 24; //abs(cos(time/10)) * 64; // max innerTess is found using limits.maxTessellationGenerationLevel
@@ -642,8 +505,7 @@ private:
         cleanupSwapChain();
         cleanupImGui();
         
-        texture_sampler.del();
-        height_map.del();
+        //height_map.del();
 
         descriptor_pool.del();
 
@@ -655,7 +517,7 @@ private:
         
         descriptor_set_layout.del();
 
-        mesh.del();
+        //mesh.del();
 
         graphics_pipeline.del();
     }

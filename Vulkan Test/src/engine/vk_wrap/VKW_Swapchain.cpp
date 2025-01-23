@@ -16,8 +16,10 @@ It also handles:
  * Sharing modes
 
 */
-void VKW_Swapchain::init(GLFWwindow* window, const VKW_Device& device)
+void VKW_Swapchain::init(GLFWwindow* window, const VKW_Device& device, const VKW_Queue* queue)
 {
+    present_queue = queue;
+
     vkb::SwapchainBuilder builder{ device.get_vkb_device() };
   
     // actual pixel resolution, might differ from given size which is screen coordinates
@@ -49,6 +51,30 @@ void VKW_Swapchain::del()
 
         swapchain = VK_NULL_HANDLE;
     }
+}
+
+bool VKW_Swapchain::present(const std::vector<VkSemaphore>& wait_semaphores, uint32_t image_idx) const
+{
+    VkPresentInfoKHR present_info{};
+    present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+
+    present_info.pSwapchains = &swapchain;
+    present_info.swapchainCount = 1;
+    
+    present_info.pWaitSemaphores = wait_semaphores.data();
+    present_info.waitSemaphoreCount = static_cast<uint32_t>(wait_semaphores.size());
+
+    present_info.pImageIndices = &image_idx;
+
+    VkResult result = vkQueuePresentKHR(*present_queue, &present_info);
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+        return false;
+    }
+    else if (result) {
+        throw RuntimeException(std::string(string_VkResult(result)) + ";\n" + "Failed to present swap chain image", __FILE__, __LINE__);
+    }
+
+    return true;
 }
 
 std::vector<VkImage> VKW_Swapchain::get_images()

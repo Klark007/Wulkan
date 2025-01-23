@@ -48,11 +48,3 @@ void Mesh::del()
 	vertex_buffer.del();
 	index_buffer.del();
 }
-
-void Mesh::draw(const VKW_CommandBuffer& command_buffer) const
-{
-	// bind index buffer
-	vkCmdBindIndexBuffer(command_buffer, index_buffer, 0, VK_INDEX_TYPE_UINT32);
-
-	vkCmdDrawIndexed(command_buffer, nr_indices, 1, 0, 0, 0);
-}

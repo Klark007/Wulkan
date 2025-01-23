@@ -2,12 +2,9 @@
 
 
 /* BIG TODO's:
- 
-	Implicit casts from VKW objects to their vulkan internals
-	Disable safety checks if compiled in Release mode
+ 	Disable safety checks if compiled in Release mode
 */
 
-// Consider adding implicit conversions from Wrapped object to their vulkan base struct
 #include "vk_wrap/VKW_Instance.h"
 #include "vk_wrap/VKW_Surface.h"
 #include "vk_wrap/VKW_Device.h"
@@ -20,9 +17,6 @@
 
 #include "vk_wrap/VKW_Buffer.h"
 
-#include "Texture.h"
-#include "Mesh.h"
-
 #include "vk_wrap/VKW_Shader.h"
 #include "vk_wrap/VKW_DescriptorPool.h"
 #include "vk_wrap/VKW_DescriptorSet.h"
@@ -30,12 +24,15 @@
 #include "vk_wrap/VKW_Sampler.h"
 #include "vk_wrap/VKW_GraphicsPipeline.h"
 
+#include "DeletionQueue.h"
+#include "Texture.h"
+#include "Mesh.h"
+#include "Terrain.h"
+
 #include "CameraController.h"
 
 void glfm_mouse_move_callback(GLFWwindow* window, double pos_x, double pos_y);
 void glfw_window_resize_callback(GLFWwindow* window, int width, int height);
-
-constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 2;
 
 struct CommandStructs {
 	VKW_CommandPool graphics_command_pool;
@@ -52,10 +49,23 @@ struct SyncStructs {
 	VkFence render_fence;
 };
 
+struct UniformStruct {
+	alignas(16) glm::mat4 view;
+	alignas(16) glm::mat4 virtual_view;
+	alignas(16) glm::mat4 proj;
+};
+
+// std430
+struct PushConstants {
+	alignas(8) VkDeviceAddress vertex_buffer;
+	alignas(16) glm::mat4 model;
+};
+
 class Engine
 {
 public:
-	Engine(unsigned int res_x, unsigned int res_y, std::shared_ptr<Camera> camera);
+	Engine() = default;
+	void init(unsigned int res_x, unsigned int res_y);
 	~Engine();
 	void run();
 private:
@@ -66,6 +76,7 @@ public:  // TODO: remove public
 	unsigned int current_frame;
 	void update();
 	void draw();
+	void present();
 	void late_update(); // executed after draw
 private: // TODO: remove public
 
@@ -81,6 +92,15 @@ private: // TODO: remove public
 	void create_surface();
 	void create_device();
 	void create_queues();
+
+	void init_terrain_data();
+	void create_texture_samplers();
+	void create_descriptor_sets();
+	void create_uniform_buffers();
+
+	void init_render_targets();
+
+	void create_graphics_pipelines();
 public: // TODO: remove public
   void create_swapchain();
 	void recreate_swapchain();
@@ -88,7 +108,9 @@ public: // TODO: remove public
 private:
 	void create_command_structs(); // creates command pools and buffers
 	void create_sync_structs(); // create fences and semaphores
-	bool aquire_image(); // aquires new image from swapchain, can fail if swapchain is out of date
+	void aquire_image(); // aquires new image from swapchain
+
+	void update_uniforms(); // updates uniform buffers (Pushconstant's are changed per object so not in this call)
 
 	std::vector<const char*> get_required_instance_extensions();
 	std::vector<const char*> get_required_device_extensions();
@@ -105,22 +127,44 @@ public: // TODO: remove public
 
 	VKW_Swapchain swapchain;
 
+	Texture color_render_target;
+	Texture depth_render_target;
+
+	VKW_GraphicsPipeline terrain_pipeline;
+
+	// general sampler for texture (Linear sampling, repeat address mode)
+	VKW_Sampler linear_texture_sampler;
+
+	// Terrain data
+	SharedTerrainData shared_terrain_data;
+	Terrain terrain;
+
+	// Input into shaders
+	VKW_DescriptorPool imgui_descriptor_pool;
+
+	VKW_DescriptorPool descriptor_pool;
+
+	std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT> uniform_buffers;
+
+
 	std::array<CommandStructs, MAX_FRAMES_IN_FLIGHT> command_structs;
 	std::array<SyncStructs, MAX_FRAMES_IN_FLIGHT> sync_structs;
 
 	inline const VKW_CommandPool& get_current_graphics_pool() const;
 	inline const VKW_CommandPool& get_current_transfer_pool() const;
+	inline const VKW_CommandBuffer& get_current_command_buffer() const;
 	inline VkSemaphore get_current_swapchain_semaphore() const;
 	inline VkSemaphore get_current_render_semaphore() const;
 	inline VkFence get_current_render_fence() const;
 
 	unsigned int current_swapchain_image_idx;
+	DeletionQueue cleanup_queue;
+
+	CameraController camera_controller;
+	Camera camera;
 private:
 
-
-
 public:
-	CameraController camera_controller;
 
 	inline void resize_callback(unsigned int new_x, unsigned int new_y);
 	struct GLFWwindow* get_window() const { return window; };
@@ -134,6 +178,11 @@ inline const VKW_CommandPool& Engine::get_current_graphics_pool() const
 inline const VKW_CommandPool& Engine::get_current_transfer_pool() const
 {
 	return command_structs[current_frame].transfer_command_pool;
+}
+
+inline const VKW_CommandBuffer& Engine::get_current_command_buffer() const
+{
+	return command_structs[current_frame].graphics_command_buffer;
 }
 
 inline VkSemaphore Engine::get_current_swapchain_semaphore() const

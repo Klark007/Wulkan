@@ -5,13 +5,17 @@
 
 
 #include "VKW_Device.h"
+#include "VKW_Queue.h"
 
 class VKW_Swapchain : public VKW_Object
 {
 public:
 	VKW_Swapchain() = default;
-	void init(struct GLFWwindow* window, const VKW_Device& device);
+	void init(struct GLFWwindow* window, const VKW_Device& device, const VKW_Queue* present_queue);
 	void del() override;
+
+	// hand image back to swapchain, if return false then swapchain (and the images we render into) needs to be recreated 
+	bool present(const std::vector<VkSemaphore>& wait_semaphores, uint32_t image_idx) const;
 
 	// TODO: add resizing with using the old swapchain
 private:
@@ -19,6 +23,7 @@ private:
 	vkb::Swapchain vkb_swapchain;
 	std::vector<VkImage> images;
 	std::vector<VkImageView> image_views;
+	const VKW_Queue* present_queue;
 
 	std::vector<VkImage> get_images();
 	std::vector<VkImageView> get_image_views();

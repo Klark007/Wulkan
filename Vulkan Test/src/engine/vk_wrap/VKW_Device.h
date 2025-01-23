@@ -8,6 +8,7 @@
 
 #define VMA_STATIC_VULKAN_FUNCTIONS 0
 #define VMA_DYNAMIC_VULKAN_FUNCTIONS 1
+#define VMA_DEBUG_LOG_FORMAT
 #include "vma/vk_mem_alloc.h"
 
 struct Required_Device_Features {

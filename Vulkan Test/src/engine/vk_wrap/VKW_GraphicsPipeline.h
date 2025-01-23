@@ -38,11 +38,11 @@ private:
 
 	VkPipelineLayoutCreateInfo pipeline_layout_info; // layout for descriptor sets and push constants to be used in the pipeline
 	std::vector<VkDescriptorSetLayout> descriptor_set_layouts;
-	VkPushConstantRange push_const_range;
+	std::vector<VkPushConstantRange> push_consts_range;
 
 	VkRenderingInfo attachment_state; // used for begin rendering, storing the area to be rendered into
-	VkRenderingAttachmentInfo color_attachment_info; // defines load ops (happen before first access) and store op (after last) for color attachment
-	VkRenderingAttachmentInfo depth_attachment_info;  // defines load ops (happen before first access) and store op (after last) for depth attachment
+	std::unique_ptr<VkRenderingAttachmentInfo> color_attachment_info; // defines load ops (happen before first access) and store op (after last) for color attachment
+	std::unique_ptr<VkRenderingAttachmentInfo> depth_attachment_info;  // defines load ops (happen before first access) and store op (after last) for depth attachment
 	
 	VkViewport viewport;
 	VkRect2D scissor;
@@ -52,7 +52,8 @@ public:
 	inline void bind(const VKW_CommandBuffer& cmd) const { vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline); };
 
 	// begins render pass using the attachment state of the pipeline
-	inline void begin_rendering(const VKW_CommandBuffer& cmd) const { vkCmdBeginRendering(cmd, &attachment_state); };
+	//inline void begin_rendering(const VKW_CommandBuffer& cmd) const { vkCmdBeginRendering(cmd, &attachment_state); };
+	void begin_rendering(const VKW_CommandBuffer& cmd) const;
 
 	// ends the current render pass
 	inline void end_rendering(const VKW_CommandBuffer& cmd) const { vkCmdEndRendering(cmd); };
@@ -93,6 +94,7 @@ public:
 	// adds a pushconstant to the pipeline
 	template <class T>
 	inline void add_push_constant(VKW_PushConstants<T> push_const);
+	void add_push_constants(const std::vector<VkPushConstantRange>& ranges);
 	
 	// END TO BE SET BEFORE INIT
 	
@@ -168,13 +170,10 @@ inline void VKW_GraphicsPipeline::set_depth_attachment_format(VkFormat format)
 	depth_attachment_format = format;
 
 	render_info.depthAttachmentFormat = format;
-	render_info.stencilAttachmentFormat = format; // TODO: Temp
 }
 
 template<class T>
 inline void VKW_GraphicsPipeline::add_push_constant(VKW_PushConstants<T> push_const)
 {
-	push_const_range = push_const.get_range();
-	pipeline_layout_info.pPushConstantRanges = &push_const_range;
-	pipeline_layout_info.pushConstantRangeCount = 1;
+	push_consts_range.push_back(push_const.get_range());
 }

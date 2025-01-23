@@ -29,6 +29,7 @@ inline constexpr SharingInfo sharing_exlusive() {
     return { VK_SHARING_MODE_EXCLUSIVE, {} };
 };
 
+constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 2;
 
 #ifdef NDEBUG
 const bool enable_validation_layers = false;
