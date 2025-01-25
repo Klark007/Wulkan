@@ -27,42 +27,34 @@ layout(location = 1) out vec3 outNormal[4];
 layout(location = 2) out vec4 outColor[4];
 
 //float local_tesselation_strength(uint idx);
+bool is_culled();
 
 void main()
 {
     if (gl_InvocationID == 0)
     {
-        float ls0 = 1;//local_tesselation_strength(0);
-        float ls1 = 1;//local_tesselation_strength(1);
-        float ls2 = 1;//local_tesselation_strength(2);
-        float ls3 = 1;//local_tesselation_strength(3);
+        if (is_culled()) {
+            gl_TessLevelOuter[0] = 0;
+            gl_TessLevelOuter[1] = 0;
+            gl_TessLevelOuter[2] = 0;
+            gl_TessLevelOuter[3] = 0;
+                                   
+            gl_TessLevelInner[0] = 0;
+            gl_TessLevelInner[1] = 0;
+        } else {
+            float ls0 = 1;//local_tesselation_strength(0);
+            float ls1 = 1;//local_tesselation_strength(1);
+            float ls2 = 1;//local_tesselation_strength(2);
+            float ls3 = 1;//local_tesselation_strength(3);
 
+            gl_TessLevelOuter[0] = mix(ls3, ls0, 0.5) * pc.tesselation_strength;
+            gl_TessLevelOuter[1] = mix(ls0, ls1, 0.5) * pc.tesselation_strength;
+            gl_TessLevelOuter[2] = mix(ls1, ls2, 0.5) * pc.tesselation_strength;
+            gl_TessLevelOuter[3] = mix(ls2, ls3, 0.5) * pc.tesselation_strength;
 
-        bool all_zero = (ls0 == 0) && (ls1 == 0) && (ls2 == 0) && (ls3 == 0);
-        float eps = (ls0 + ls1 + ls2 + ls3) / 4;
-        if (!all_zero) {
-            if (ls0 == 0) {
-                ls0 = eps;
-            }
-            if (ls1 == 0) {
-                ls1 = eps;
-            }
-            if (ls2 == 0) {
-                ls2 = eps;
-            }
-            if (ls3 == 0) {
-                ls3 = eps;
-            }
+            gl_TessLevelInner[0] = mix(gl_TessLevelOuter[1], gl_TessLevelOuter[3], 0.5);
+            gl_TessLevelInner[1] = mix(gl_TessLevelOuter[0], gl_TessLevelOuter[2], 0.5);
         }
-
-        gl_TessLevelOuter[0] = mix(ls3, ls0, 0.5) * pc.tesselation_strength;
-        gl_TessLevelOuter[1] = mix(ls0, ls1, 0.5) * pc.tesselation_strength;
-        gl_TessLevelOuter[2] = mix(ls1, ls2, 0.5) * pc.tesselation_strength;
-        gl_TessLevelOuter[3] = mix(ls2, ls3, 0.5) * pc.tesselation_strength;
-
-        gl_TessLevelInner[0] = mix(gl_TessLevelOuter[1], gl_TessLevelOuter[3], 0.5);
-        gl_TessLevelInner[1] = mix(gl_TessLevelOuter[0], gl_TessLevelOuter[2], 0.5);
-
     }
 
     gl_out[gl_InvocationID].gl_Position =  gl_in[gl_InvocationID].gl_Position;
@@ -70,6 +62,78 @@ void main()
     outUV[gl_InvocationID] = inUV[gl_InvocationID];
     outNormal[gl_InvocationID] = inNormal[gl_InvocationID];
     outColor[gl_InvocationID] = inColor[gl_InvocationID];
+}
+
+bool is_culled() {
+    // extract frustum planes in object space https://www.gamedevs.org/uploads/fast-extraction-viewing-frustum-planes-from-world-view-projection-matrix.pdf
+    mat4 MVP = ubo.proj * ubo.virtual_view * pc.model;
+    
+    vec4 left = vec4(0);
+    for (int i = 0; i < 4; i++) {
+        left[i] = MVP[i][3] + MVP[i][0];
+    }
+    
+    vec4 right = vec4(0);
+    for (int i = 0; i < 4; i++) {
+        right[i] = MVP[i][3] - MVP[i][0];
+    }
+
+    vec4 bottom = vec4(0);
+    for (int i = 0; i < 4; i++) {
+        bottom[i] = MVP[i][3] + MVP[i][1];
+    }
+
+    vec4 top = vec4(0);
+    for (int i = 0; i < 4; i++) {
+        top[i] = MVP[i][3] - MVP[i][1];
+    }
+
+    vec4 near = vec4(0);
+    for (int i = 0; i < 4; i++) {
+        near[i] = MVP[i][3] + MVP[i][2];
+    }
+
+    vec4 far = vec4(0);
+    for (int i = 0; i < 4; i++) {
+        far[i] = MVP[i][3] - MVP[i][2];
+    }
+    
+    vec4 planes[6] = vec4[6](left, right, bottom, top, near, far);
+
+
+    // bounding box
+    vec3 pos_zero = inPos[0];
+    pos_zero.z = texture(height_map, inUV[0]).r * pc.height_scale;
+
+    vec3 min_pos = pos_zero;
+    vec3 max_pos = pos_zero;
+
+    for (int i=1; i < 4; i++) {
+        vec3 pos = inPos[i];
+        pos.z = texture(height_map, inUV[i]).r * pc.height_scale;
+
+        min_pos = min(min_pos, pos);
+        max_pos = max(max_pos, pos);
+    }
+
+    for (int i = 0; i < 6; i++) {
+        bool outside = true;
+
+        outside = outside && dot(planes[i], vec4(min_pos.x, min_pos.y, min_pos.z, 1)) < 0;
+        outside = outside && dot(planes[i], vec4(max_pos.x, min_pos.y, min_pos.z, 1)) < 0;
+        outside = outside && dot(planes[i], vec4(min_pos.x, max_pos.y, min_pos.z, 1)) < 0;
+        outside = outside && dot(planes[i], vec4(min_pos.x, min_pos.y, max_pos.z, 1)) < 0;
+        outside = outside && dot(planes[i], vec4(max_pos.x, max_pos.y, min_pos.z, 1)) < 0;
+        outside = outside && dot(planes[i], vec4(min_pos.x, max_pos.y, max_pos.z, 1)) < 0;
+        outside = outside && dot(planes[i], vec4(max_pos.x, min_pos.y, max_pos.z, 1)) < 0;
+        outside = outside && dot(planes[i], vec4(max_pos.x, max_pos.y, max_pos.z, 1)) < 0;
+
+        if (outside) {
+            return true; // is culled
+        }
+    }
+
+    return false;
 }
 
 
