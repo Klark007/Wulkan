@@ -102,12 +102,13 @@ bool is_culled() {
 
 
     // bounding box
-    vec3 pos_zero = inPos[0];
-    pos_zero.z = texture(height_map, inUV[0]).r * pc.height_scale;
+    float eps = 0.01; // bias as texture is only sampled at the vertices of the patch
+    vec3 min_pos = inPos[0];
+    min_pos.z = (texture(height_map, inUV[0]).r - eps) * pc.height_scale;
 
-    vec3 min_pos = pos_zero;
-    vec3 max_pos = pos_zero;
-
+    vec3 max_pos = inPos[0];
+    max_pos.z = (texture(height_map, inUV[0]).r + eps) * pc.height_scale;
+    
     for (int i=1; i < 4; i++) {
         vec3 pos = inPos[i];
         pos.z = texture(height_map, inUV[i]).r * pc.height_scale;
