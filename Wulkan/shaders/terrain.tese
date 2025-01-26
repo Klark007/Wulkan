@@ -49,6 +49,6 @@ void main()
 
     vec4 color1 = mix(inColor[0], inColor[1], gl_TessCoord.x);
     vec4 color2 = mix(inColor[1], inColor[2], gl_TessCoord.x);
-    outColor = texture(height_map, outUV); //mix(color1, color2, gl_TessCoord.y);
+    outColor = mix(color1, color2, gl_TessCoord.y);
 }
 

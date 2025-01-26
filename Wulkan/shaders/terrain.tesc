@@ -26,7 +26,7 @@ layout(location = 0) out vec2 outUV[4];
 layout(location = 1) out vec3 outNormal[4];
 layout(location = 2) out vec4 outColor[4];
 
-//float local_tesselation_strength(uint idx);
+vec4 compute_tesselation_level();
 bool is_culled();
 
 void main()
@@ -42,10 +42,11 @@ void main()
             gl_TessLevelInner[0] = 0;
             gl_TessLevelInner[1] = 0;
         } else {
-            float ls0 = 1;//local_tesselation_strength(0);
-            float ls1 = 1;//local_tesselation_strength(1);
-            float ls2 = 1;//local_tesselation_strength(2);
-            float ls3 = 1;//local_tesselation_strength(3);
+            vec4 str = compute_tesselation_level();
+            float ls0 = str.x;
+            float ls1 = str.y;
+            float ls2 = str.z;
+            float ls3 = str.w;
 
             gl_TessLevelOuter[0] = mix(ls3, ls0, 0.5) * pc.tesselation_strength;
             gl_TessLevelOuter[1] = mix(ls0, ls1, 0.5) * pc.tesselation_strength;
@@ -54,6 +55,8 @@ void main()
 
             gl_TessLevelInner[0] = mix(gl_TessLevelOuter[1], gl_TessLevelOuter[3], 0.5);
             gl_TessLevelInner[1] = mix(gl_TessLevelOuter[0], gl_TessLevelOuter[2], 0.5);
+
+            outColor[gl_InvocationID] = str;
         }
     }
 
@@ -151,6 +154,7 @@ float s_der_y(vec2 uv, vec2 dir1, vec2 dir2, float eps1, float eps2) {
     return (f_der_y(uv + eps2*dir2, dir1, eps1) - f_der_y(uv - eps2*dir2, dir1, eps1)) / (2*eps2);
 }
 
+/*
 const float smoothness_factor = 50.0;
 float normalized_derivative(float der, float eps) {
     return clamp(map(abs(der),0,1.0/(smoothness_factor * 2*eps), 0, 1), 0, 1);
@@ -174,12 +178,14 @@ float linearize_depth(float d)
 float inout_bezier(float x) {
     return x * x * (3 - 2*x);
 }
+*/
 
-float local_tesselation_strength(uint idx) {
+vec4 compute_tesselation_level() {
     // returns scalar between 0 and 1
-    vec2 texSize = textureSize(height_map,0);
-    vec2 epsilon = vec2(1.0 / texSize.x, 1.0 / texSize.y);
+    //vec2 texSize = textureSize(height_map,0);
+    //vec2 epsilon = vec2(1.0 / texSize.x, 1.0 / texSize.y);
 
+    /*
     float n_ddydduu = normalized_s_der(inUV[idx], vec2(1,0), vec2(1,0), epsilon[0], epsilon[0]);
     float n_ddyddvv = normalized_s_der(inUV[idx], vec2(0,1), vec2(0,1), epsilon[1], epsilon[1]);
     float n_ddydduv = normalized_s_der(inUV[idx], vec2(1,0), vec2(0,1), epsilon[0], epsilon[1]);
@@ -190,25 +196,29 @@ float local_tesselation_strength(uint idx) {
     float ddydduv = s_der_y(inUV[idx], vec2(1,0), vec2(0,1), epsilon[0], epsilon[1]);
     float dydu = f_der_y(inUV[idx], vec2(1,0), epsilon[0]);
     float dydv = f_der_y(inUV[idx], vec2(0,1), epsilon[1]);
+    */
+
+    //float linear_f_depth = map(linearize_depth(pos.z), zNear, zFar, 0, 1);
+    //float depth = inout_bezier(1.0 - linear_f_depth);
+
+    //float approach_1 = sqrt(n_ddydduu * n_ddydduu + n_ddyddvv * n_ddyddvv) / sqrt(2);
+    //float approach_2 = sqrt(n_ddydduu * n_ddydduu + n_ddyddvv * n_ddyddvv + n_ddydduv * n_ddydduv + n_ddyddvu * n_ddyddvu) / sqrt(4);
+    //float approach_macu = 0.01 * abs((ddydduu * ddyddvv - ddydduv*ddydduv) / pow(1 + dydu*dydu + dydv * dydv, 2));
+    //float approach_3 = 0.5 * approach_2 + 0.5 * depth;
 
 
-    vec4 mod_pos = vec4(inPos[idx],1);
-    mod_pos.y = texture(height_map, inUV[idx]).r * pc.height_scale;
-    vec4 pos = ubo.proj * ubo.virtual_view * pc.model * mod_pos;
-    pos /= pos.w;
-    
-    if (!(-1 <= pos.x && pos.x <= 1) || !(-1 <= pos.y && pos.y <= 1) || !(0 <= pos.z && pos.z <= 1)) {
-        return 0;
+    //return approach_macu;
+    // 1 pixel distance sample is a bad estimate of derivatives / curvature at a patches vertex
+    vec2 epsilon = vec2(inUV[2] - inUV[0]) / 3;
+
+    vec4 res = vec4(0);
+
+    for (int i = 0; i < 4; i++) {
+        float dydu = f_der_y(inUV[i], vec2(1,0), epsilon[0]);
+        float dydv = f_der_y(inUV[i], vec2(0,1), epsilon[1]);
+
+        res[i] = sqrt(dydu*dydu + dydv*dydv);
     }
 
-    float linear_f_depth = map(linearize_depth(pos.z), zNear, zFar, 0, 1);
-    float depth = inout_bezier(1.0 - linear_f_depth);
-
-    float approach_1 = sqrt(n_ddydduu * n_ddydduu + n_ddyddvv * n_ddyddvv) / sqrt(2);
-    float approach_2 = sqrt(n_ddydduu * n_ddydduu + n_ddyddvv * n_ddyddvv + n_ddydduv * n_ddydduv + n_ddyddvu * n_ddyddvu) / sqrt(4);
-    float approach_macu = 0.01 * abs((ddydduu * ddyddvv - ddydduv*ddydduv) / pow(1 + dydu*dydu + dydv * dydv, 2));
-    float approach_3 = 0.5 * approach_2 + 0.5 * depth;
-
-
-    return approach_macu;
+    return res;
 }
