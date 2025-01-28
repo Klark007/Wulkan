@@ -14,7 +14,14 @@ void SharedTerrainData::init(const VKW_Device* device)
 	descriptor_set_layout.add_binding(
 		1,
 		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-		VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT | VK_SHADER_STAGE_FRAGMENT_BIT
+		VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT | VK_SHADER_STAGE_FRAGMENT_BIT
+	);
+
+	// normal map
+	descriptor_set_layout.add_binding(
+		2,
+		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+		VK_SHADER_STAGE_FRAGMENT_BIT
 	);
 
 	descriptor_set_layout.init(device);
@@ -29,7 +36,7 @@ void SharedTerrainData::del()
 	descriptor_set_layout.del();	
 }
 
-void Terrain::init(const VKW_Device& device, const VKW_CommandPool& graphics_pool, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool* descriptor_pool, SharedTerrainData* shared_terrain_data, const std::string& path, uint32_t mesh_res)
+void Terrain::init(const VKW_Device& device, const VKW_CommandPool& graphics_pool, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool* descriptor_pool, SharedTerrainData* shared_terrain_data, const std::string& height_path, const std::string& normal_path, uint32_t mesh_res)
 {
 	shared_data = shared_terrain_data;
 
@@ -37,8 +44,15 @@ void Terrain::init(const VKW_Device& device, const VKW_CommandPool& graphics_poo
 	height_map = create_texture_from_path(
 		&device,
 		&graphics_pool,
-		path,
+		height_path,
 		Texture_Type::Tex_R
+	);
+
+	normal_map = create_texture_from_path(
+		&device,
+		&graphics_pool,
+		normal_path,
+		Texture_Type::Tex_RGB
 	);
 
 	std::vector<Vertex> terrain_vertices{};
@@ -51,6 +65,7 @@ void Terrain::init(const VKW_Device& device, const VKW_CommandPool& graphics_poo
 			float pos_x = (u - 0.5) * 2;
 			float pos_y = (v - 0.5) * 2;
 
+			// normal is ignored and just computed from the normal map
 			terrain_vertices.push_back({ {pos_x,pos_y,0}, u, {0,0,1}, v, {1,0,0,1} });
 		}
 	}
@@ -79,12 +94,14 @@ void Terrain::set_descriptor_bindings(const std::array<VKW_Buffer, MAX_FRAMES_IN
 
 		set.update(0, uniform_buffers.at(i));
 		set.update(1, height_map, texture_sampler, VK_IMAGE_ASPECT_COLOR_BIT);
+		set.update(2, normal_map, texture_sampler, VK_IMAGE_ASPECT_COLOR_BIT);
 	}
 }
 
 void Terrain::del()
 {
 	height_map.del();
+	normal_map.del();
 	mesh.del();
 
 	for (VKW_DescriptorSet& set : descriptor_sets) {

@@ -63,7 +63,7 @@ class Terrain : public Shape
 {
 public:
 	Terrain() = default;
-	void init(const VKW_Device& device, const VKW_CommandPool& graphics_pool, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool* descriptor_pool, SharedTerrainData* shared_terrain_data, const std::string& path, uint32_t mesh_res);
+	void init(const VKW_Device& device, const VKW_CommandPool& graphics_pool, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool* descriptor_pool, SharedTerrainData* shared_terrain_data, const std::string& height_path, const std::string& normal_path, uint32_t mesh_res);
 	void set_descriptor_bindings(const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& uniform_buffers, const VKW_Sampler& texture_sampler);
 	void del() override;
 
@@ -72,6 +72,7 @@ public:
 private:
 	Mesh mesh;
 	Texture height_map;
+	Texture normal_map;
 
 	float tesselation_strength;
 	float max_tesselation;

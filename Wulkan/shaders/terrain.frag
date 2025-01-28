@@ -6,6 +6,7 @@ layout(location = 2) in vec3 inNormal;
 layout(location = 3) in vec4 inColor;
 
 layout(binding = 1) uniform sampler2D height_map;
+layout(binding = 2) uniform sampler2D normal_map;
 
 layout( push_constant ) uniform constants
 {
@@ -22,6 +23,11 @@ layout(location = 0) out vec4 outColor;
 void main() {
     switch (pc.visualization_mode) {
         case 0: // shading
+            outColor = inColor * dot(
+                normalize(texture(normal_map, inUV).rgb), 
+                normalize(vec3(0, 0, 1))
+            );
+            break;
         case 1: // tesselation level
             outColor = inColor;
             break;
@@ -29,7 +35,7 @@ void main() {
             outColor = texture(height_map, inUV);
             break;
         case 3: // normal
-            outColor = vec4(1,0,1,1);
+            outColor = texture(normal_map, inUV);
             break;
         case 4: // error
             float texture_height = texture(height_map, inUV).r * pc.height_scale;
