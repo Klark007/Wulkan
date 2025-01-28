@@ -22,7 +22,7 @@ void Engine::init(unsigned int w, unsigned int h)
 	init_glfw();
 	init_vulkan();
 
-	camera = Camera( glm::vec3(0.0, 12.0, 8.0), glm::vec3(0.0, 0.0, 8.0), res_x, res_y, glm::radians(45.0f), 0.01f, 100.0f );
+	camera = Camera( glm::vec3(0.0, 60.0, 25.0), glm::vec3(0.0, 10.0, 8.0), res_x, res_y, glm::radians(45.0f), 0.01f, 100.0f );
 	camera_controller = CameraController(window, &camera);
 	gui.init(window, instance, device, graphics_queue, imgui_descriptor_pool, &swapchain);
 	cleanup_queue.add(&gui);
@@ -73,7 +73,10 @@ void Engine::update()
 	camera_controller.set_rotation_strength(input.camera_rotation_speed);
 
 	terrain.set_tesselation_strength(input.terrain_tesselation);
+	terrain.set_max_tesselation(input.max_terrain_tesselation);
 	terrain.set_height_scale(input.terrain_height_scale);
+	terrain.set_texture_eps(input.terrain_texture_eps);
+	terrain.set_visualization_mode(input.terrain_vis_mode);
 
 	update_uniforms();
 }
@@ -210,7 +213,7 @@ void Engine::init_vulkan()
 
 void Engine::init_instance()
 {
-	instance.init("VK Study", get_required_instance_extensions(), std::vector<const char*>());
+	instance.init("Wulkan", get_required_instance_extensions(), std::vector<const char*>());
 	cleanup_queue.add(&instance);
 }
 
@@ -250,8 +253,9 @@ void Engine::init_terrain_data()
 		&descriptor_pool,
 		&shared_terrain_data,
 
-		"textures/perlinNoise.png",
-		32							// resolution of mesh
+		//"textures/height_test1.png",
+		"textures/terrain_heightmap.png",
+		64							// resolution of mesh
 	);
 	terrain.set_descriptor_bindings(uniform_buffers, linear_texture_sampler);
 	cleanup_queue.add(&terrain);

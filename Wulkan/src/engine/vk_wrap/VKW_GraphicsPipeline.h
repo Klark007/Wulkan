@@ -93,7 +93,7 @@ public:
 
 	// adds a pushconstant to the pipeline
 	template <class T>
-	inline void add_push_constant(VKW_PushConstants<T> push_const);
+	inline void add_push_constant(VKW_PushConstant<T> push_const);
 	void add_push_constants(const std::vector<VkPushConstantRange>& ranges);
 	
 	// END TO BE SET BEFORE INIT
@@ -173,7 +173,7 @@ inline void VKW_GraphicsPipeline::set_depth_attachment_format(VkFormat format)
 }
 
 template<class T>
-inline void VKW_GraphicsPipeline::add_push_constant(VKW_PushConstants<T> push_const)
+inline void VKW_GraphicsPipeline::add_push_constant(VKW_PushConstant<T> push_const)
 {
 	push_consts_range.push_back(push_const.get_range());
 }

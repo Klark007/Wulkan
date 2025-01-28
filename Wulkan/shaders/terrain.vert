@@ -15,7 +15,7 @@ layout(buffer_reference, std430) readonly buffer VertexBuffer{
 
 layout( push_constant ) uniform constants
 {
-	layout(offset = 80) VertexBuffer vertex_buffer;
+	layout(offset = 96) VertexBuffer vertex_buffer;
 } push_constant;
 
 layout(location = 0) out vec3 outPos;

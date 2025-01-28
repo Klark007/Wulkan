@@ -17,7 +17,10 @@ layout( push_constant ) uniform constants
 {
     mat4 model;
     float tesselation_strength;
+    float max_tesselation;
     float height_scale;
+    float texture_eps;
+    int visualization_mode;
 } pc;
 
 layout (vertices = 4) out;
@@ -25,6 +28,18 @@ layout (vertices = 4) out;
 layout(location = 0) out vec2 outUV[4];
 layout(location = 1) out vec3 outNormal[4];
 layout(location = 2) out vec4 outColor[4];
+
+vec4 debug_level(float str) {
+    if (str < pc.max_tesselation / 4) {
+        return vec4(0,1,0,1);
+    } else if (str < pc.max_tesselation / 2) {
+        return vec4(0,1,1,1);
+    } else if (str < 3 * pc.max_tesselation / 4) {
+        return vec4(0,0,1,1);
+    } else {
+        return vec4(1,0,0,1);
+    }
+}
 
 vec4 compute_tesselation_level();
 bool is_culled();
@@ -48,15 +63,13 @@ void main()
             float ls2 = str.z;
             float ls3 = str.w;
 
-            gl_TessLevelOuter[0] = mix(ls3, ls0, 0.5) * pc.tesselation_strength;
-            gl_TessLevelOuter[1] = mix(ls0, ls1, 0.5) * pc.tesselation_strength;
-            gl_TessLevelOuter[2] = mix(ls1, ls2, 0.5) * pc.tesselation_strength;
-            gl_TessLevelOuter[3] = mix(ls2, ls3, 0.5) * pc.tesselation_strength;
+            gl_TessLevelOuter[0] = min(max(mix(ls3, ls0, 0.5), 1) * pc.tesselation_strength, pc.max_tesselation);
+            gl_TessLevelOuter[1] = min(max(mix(ls0, ls1, 0.5), 1) * pc.tesselation_strength, pc.max_tesselation);
+            gl_TessLevelOuter[2] = min(max(mix(ls1, ls2, 0.5), 1) * pc.tesselation_strength, pc.max_tesselation);
+            gl_TessLevelOuter[3] = min(max(mix(ls2, ls3, 0.5), 1) * pc.tesselation_strength, pc.max_tesselation);
 
             gl_TessLevelInner[0] = mix(gl_TessLevelOuter[1], gl_TessLevelOuter[3], 0.5);
             gl_TessLevelInner[1] = mix(gl_TessLevelOuter[0], gl_TessLevelOuter[2], 0.5);
-
-            outColor[gl_InvocationID] = str;
         }
     }
 
@@ -64,7 +77,18 @@ void main()
 
     outUV[gl_InvocationID] = inUV[gl_InvocationID];
     outNormal[gl_InvocationID] = inNormal[gl_InvocationID];
-    outColor[gl_InvocationID] = inColor[gl_InvocationID];
+    
+    switch (pc.visualization_mode) {
+        case 0: // shading
+            outColor[gl_InvocationID] = inColor[gl_InvocationID];
+            break;
+        case 1: // tesselation level
+            outColor[gl_InvocationID] = debug_level(min(compute_tesselation_level() * pc.tesselation_strength, pc.max_tesselation)[gl_InvocationID]);
+            break;
+        default: // Not implemented modes or modes where color is computed in the fragment shader (pink) 
+            outColor[gl_InvocationID] = vec4(1,0,1,1);
+            break;
+    } 
 }
 
 bool is_culled() {
@@ -151,10 +175,17 @@ float f_der_y(vec2 uv, vec2 dir, float eps) {
 }
 
 float s_der_y(vec2 uv, vec2 dir1, vec2 dir2, float eps1, float eps2) {
+    /*
+    return (
+        texture(height_map, uv + eps1*dir1 + eps2*dir2).r
+        - 2 * texture(height_map, uv).r
+        + texture(height_map, uv - eps1*dir1 - eps2*dir2).r
+    ) / (eps1 * eps2);
+    */
+
     return (f_der_y(uv + eps2*dir2, dir1, eps1) - f_der_y(uv - eps2*dir2, dir1, eps1)) / (2*eps2);
 }
 
-/*
 const float smoothness_factor = 50.0;
 float normalized_derivative(float der, float eps) {
     return clamp(map(abs(der),0,1.0/(smoothness_factor * 2*eps), 0, 1), 0, 1);
@@ -178,46 +209,74 @@ float linearize_depth(float d)
 float inout_bezier(float x) {
     return x * x * (3 - 2*x);
 }
-*/
+
+float K(float theta, float K_uu, float K_vv, float K_uv) {
+    float A = K_uu;
+    float C = K_vv;
+    float B = sqrt(2)*K_uv - K_uu - K_vv;
+
+    float cos_t = cos(theta);
+    float sin_t = sin(theta);
+    float cos_2 = cos_t * cos_t;
+    float sin_2 = sin_t * sin_t;
+    float sin_cos = sin_t * cos_t;
+
+    return A * cos_2 + B * sin_cos + C * sin_2;
+}
 
 vec4 compute_tesselation_level() {
-    // returns scalar between 0 and 1
+    // https://en.wikipedia.org/wiki/Curvature#Graph_of_a_function
+    // Combining gaussian and mean curvature
+
     //vec2 texSize = textureSize(height_map,0);
     //vec2 epsilon = vec2(1.0 / texSize.x, 1.0 / texSize.y);
 
-    /*
-    float n_ddydduu = normalized_s_der(inUV[idx], vec2(1,0), vec2(1,0), epsilon[0], epsilon[0]);
-    float n_ddyddvv = normalized_s_der(inUV[idx], vec2(0,1), vec2(0,1), epsilon[1], epsilon[1]);
-    float n_ddydduv = normalized_s_der(inUV[idx], vec2(1,0), vec2(0,1), epsilon[0], epsilon[1]);
-    float n_ddyddvu = normalized_s_der(inUV[idx], vec2(1,0), vec2(1,0), epsilon[1], epsilon[0]);
-    
-    float ddydduu = s_der_y(inUV[idx], vec2(1,0), vec2(1,0), epsilon[0], epsilon[0]);
-    float ddyddvv = s_der_y(inUV[idx], vec2(0,1), vec2(0,1), epsilon[1], epsilon[1]);
-    float ddydduv = s_der_y(inUV[idx], vec2(1,0), vec2(0,1), epsilon[0], epsilon[1]);
-    float dydu = f_der_y(inUV[idx], vec2(1,0), epsilon[0]);
-    float dydv = f_der_y(inUV[idx], vec2(0,1), epsilon[1]);
-    */
-
-    //float linear_f_depth = map(linearize_depth(pos.z), zNear, zFar, 0, 1);
-    //float depth = inout_bezier(1.0 - linear_f_depth);
-
-    //float approach_1 = sqrt(n_ddydduu * n_ddydduu + n_ddyddvv * n_ddyddvv) / sqrt(2);
-    //float approach_2 = sqrt(n_ddydduu * n_ddydduu + n_ddyddvv * n_ddyddvv + n_ddydduv * n_ddydduv + n_ddyddvu * n_ddyddvu) / sqrt(4);
-    //float approach_macu = 0.01 * abs((ddydduu * ddyddvv - ddydduv*ddydduv) / pow(1 + dydu*dydu + dydv * dydv, 2));
-    //float approach_3 = 0.5 * approach_2 + 0.5 * depth;
-
-
-    //return approach_macu;
     // 1 pixel distance sample is a bad estimate of derivatives / curvature at a patches vertex
-    vec2 epsilon = vec2(inUV[2] - inUV[0]) / 3;
+    vec2 epsilon = vec2(inUV[2] - inUV[0]) * pc.texture_eps;
 
     vec4 res = vec4(0);
 
     for (int i = 0; i < 4; i++) {
+        float ddydduu = s_der_y(inUV[i], vec2(1,0), vec2(1,0), epsilon[0], epsilon[0]);
+        float ddyddvv = s_der_y(inUV[i], vec2(0,1), vec2(0,1), epsilon[1], epsilon[1]);
+        float ddydduv = s_der_y(inUV[i], vec2(1,0), vec2(0,1), epsilon[0], epsilon[1]);
+        
+        float ddydduu2 = (
+            texture(height_map, inUV[i] + epsilon[0]*vec2(1,0)).r
+            - 2 * texture(height_map, inUV[i]).r
+            + texture(height_map, inUV[i] - epsilon[0]*vec2(1,0)).r
+        ) / (epsilon[0]*epsilon[0]);
+
         float dydu = f_der_y(inUV[i], vec2(1,0), epsilon[0]);
         float dydv = f_der_y(inUV[i], vec2(0,1), epsilon[1]);
 
-        res[i] = sqrt(dydu*dydu + dydv*dydv);
+
+        // approach 1 derivatives (bad) : sqrt(dydu*dydu + dydv*dydv)
+        //res[i] = 0.01 * abs((ddydduu * ddyddvv - ddydduv*ddyddvu) / pow(1 + dydu*dydu + dydv * dydv, 2));
+        float K_uu = ddydduu / pow(1 + dydu * dydu, 1.5);
+        float K_vv = ddyddvv / pow(1 + dydv * dydv, 1.5);
+        float K_uv = (ddydduu * ddydduu + ddyddvv * ddydduv + 2 * ddydduv) / 2 / pow(1 + pow(dydu + dydv, 2) / 2, 1.5);
+
+        res[i] = abs(K_uu) + abs(K_vv);
+        //res[i] = abs(K_uu * K_vv);
+
+        /*
+        float theta_prime = 0.0;
+        if (abs(K_uu) <= 1e-5) {
+            theta_prime = 3.1415926535897932384626433832795 / 4; // pi / 4
+        } else {
+            theta_prime = 0.5 * atan(2 * sqrt(2) * K_uv - K_uu - K_vv, K_uu);
+        }
+
+        float K_1 = K(theta_prime, K_uu, K_vv, K_uv);
+        float K_2 = K(theta_prime + 3.1415926535897932384626433832795 / 2, K_uu, K_vv, K_uv);
+
+        res[i] = K_1 * K_2;
+        */
+
+
+        //res[i] = 0.5 * (K_1 + K_2);
+        //res[i] = K_1*K_1 + K_2*K_2;
     }
 
     return res;

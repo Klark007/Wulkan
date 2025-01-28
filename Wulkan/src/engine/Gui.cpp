@@ -94,9 +94,19 @@ void GUI::draw_gui(const VKW_CommandBuffer& cmd)
 			}
 
 			if (ImGui::TreeNode("Terrain")) {
-				ImGui::SliderFloat("Tesselation ammount", &data.terrain_tesselation, 1.0f, 50.0f);
+				ImGui::SliderFloat("Tesselation scale", &data.terrain_tesselation, 1.0f, 50.0f);
+				ImGui::SliderFloat("Maximum Tesselation ammount", &data.max_terrain_tesselation, 1.0f, 100.0f);
 				ImGui::SliderFloat("Height Scale", &data.terrain_height_scale, 0.1f, 1.0f);
+				ImGui::SliderFloat("Texture Derivative epsilon", &data.terrain_texture_eps, 0.01f, 1.0f);
 
+				constexpr const char* visualization_modes[] = { "Shaded", "Level", "Height", "Normals", "Error"};
+				static int selected_vis = 0;
+				if (ImGui::TreeNode("Visualization mode")) {
+					ImGui::ListBox("Mode", &selected_vis, visualization_modes, IM_ARRAYSIZE(visualization_modes));
+					data.terrain_vis_mode = static_cast<TerrainVisualizationMode>(selected_vis);
+					
+					ImGui::TreePop();
+				}
 				ImGui::TreePop();
 			}
 		}

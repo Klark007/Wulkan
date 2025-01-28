@@ -15,11 +15,24 @@ struct TerrainVertexPushConstants {
 	alignas(8) VkDeviceAddress vertex_buffer;
 };
 
+enum TerrainVisualizationMode {
+	Shaded,
+	Level,
+	Height,
+	Normal,
+	Error
+};
+
 struct TerrainPushConstants {
 	alignas(16) glm::mat4 model;
 
 	alignas(4) float tesselation_strength;
+	alignas(4) float max_tesselation;
 	alignas(4) float height_scale;
+	alignas(4) float texture_eps;
+
+	alignas(4) TerrainVisualizationMode visualization_mode;
+
 };
 
 // singleton shared between all Terrain instances
@@ -33,17 +46,17 @@ private:
 	VKW_DescriptorSetLayout descriptor_set_layout;
 
 	// TODO: are there potential race conditions with the push constants being shared between multiple Terrain's
-	VKW_PushConstants<TerrainPushConstants> push_constants;
-	VKW_PushConstants<TerrainVertexPushConstants> vertex_push_constants;
+	VKW_PushConstant<TerrainPushConstants> push_constant;
+	VKW_PushConstant<TerrainVertexPushConstants> vertex_push_constant;
 public:
 	const VKW_DescriptorSetLayout& get_descriptor_set_layout() const { return descriptor_set_layout; };
 	
 	inline std::vector<VkPushConstantRange> get_push_consts_range() const {
-		return { vertex_push_constants.get_range(), push_constants.get_range() };
+		return { vertex_push_constant.get_range(), push_constant.get_range()};
 	}
 
-	inline VKW_PushConstants<TerrainVertexPushConstants>& get_vertex_pc() { return vertex_push_constants; };
-	inline VKW_PushConstants<TerrainPushConstants>& get_pc() { return push_constants; };
+	inline VKW_PushConstant<TerrainVertexPushConstants>& get_vertex_pc() { return vertex_push_constant; };
+	inline VKW_PushConstant<TerrainPushConstants>& get_pc() { return push_constant; };
 };
 
 class Terrain : public Shape
@@ -55,21 +68,29 @@ public:
 	void del() override;
 
 	inline void draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame, const VKW_GraphicsPipeline& pipeline) override;
-public: // TODO remove
+
+private:
 	Mesh mesh;
 	Texture height_map;
 
-private: // TODO remove
 	float tesselation_strength;
+	float max_tesselation;
 	float height_scale;
+	float texture_eps;
+
+	TerrainVisualizationMode visualization_mode;
+
 
 	std::array<VKW_DescriptorSet, MAX_FRAMES_IN_FLIGHT> descriptor_sets;
 	SharedTerrainData* shared_data;
 public:
 	static VKW_GraphicsPipeline create_pipeline(const VKW_Device* device, Texture& color_rt, Texture& depth_rt, const SharedTerrainData& shared_terrain_data);
 	
-	inline void set_tesselation_strength(float strength) { tesselation_strength = strength; };
-	inline void set_height_scale(float scale) { height_scale = scale; };
+	inline void set_tesselation_strength(float strength) { tesselation_strength = strength; }; // multiplicative factor of the tesselation level computed
+	inline void set_max_tesselation(float max) { max_tesselation = max; }; // maximum tesselation level
+	inline void set_height_scale(float scale) { height_scale = scale; }; // scale the terrain height by an additional factor
+	inline void set_texture_eps(float eps) { texture_eps = eps; }; // used for delta u,v for computing texture derivatives and curvature
+	inline void set_visualization_mode(TerrainVisualizationMode mode) { visualization_mode = mode; }; // switch between shading and debug views
 };
 
 inline void Terrain::draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame, const VKW_GraphicsPipeline& pipeline)
@@ -79,7 +100,10 @@ inline void Terrain::draw(const VKW_CommandBuffer& command_buffer, uint32_t curr
 	shared_data->get_pc().update({
 		glm::scale(glm::mat4(1), glm::vec3(25.0,25.0,25.0)),
 		tesselation_strength,
-		height_scale
+		max_tesselation,
+		height_scale,
+		texture_eps,
+		visualization_mode
 	});
 	shared_data->get_pc().push(command_buffer, pipeline.get_layout());
 
@@ -109,7 +133,6 @@ inline VKW_GraphicsPipeline Terrain::create_pipeline(const VKW_Device* device, T
 	
 	graphics_pipeline.set_topology(VK_PRIMITIVE_TOPOLOGY_PATCH_LIST);
 	graphics_pipeline.set_culling_mode(VK_CULL_MODE_NONE); // TODO backface culling
-	//graphics_pipeline.set_wireframe_mode();
 	graphics_pipeline.enable_depth_test();
 	graphics_pipeline.enable_depth_write();
 

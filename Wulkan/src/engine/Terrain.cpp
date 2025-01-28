@@ -14,14 +14,14 @@ void SharedTerrainData::init(const VKW_Device* device)
 	descriptor_set_layout.add_binding(
 		1,
 		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-		VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT
+		VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT | VK_SHADER_STAGE_FRAGMENT_BIT
 	);
 
 	descriptor_set_layout.init(device);
 	// end create create descriptor set layout
 
-	push_constants.init(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, 0);
-	vertex_push_constants.init(VK_SHADER_STAGE_VERTEX_BIT, sizeof(TerrainPushConstants));
+	push_constant.init(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT | VK_SHADER_STAGE_FRAGMENT_BIT , 0);
+	vertex_push_constant.init(VK_SHADER_STAGE_VERTEX_BIT, sizeof(TerrainPushConstants));
 }
 
 void SharedTerrainData::del()

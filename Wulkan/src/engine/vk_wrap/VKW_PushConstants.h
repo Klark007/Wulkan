@@ -5,11 +5,12 @@
 #include "VKW_Device.h"
 #include "VKW_CommandBuffer.h"
 
-// represents push constants, currently just one VKW_PushConstants in a pipeline, so no offset
-template <typename T> class VKW_PushConstants
+// represents push constant
+template<typename T> 
+class VKW_PushConstant
 {
 public:
-	VKW_PushConstants() = default;
+	VKW_PushConstant() = default;
 
 	void init(VkShaderStageFlags shader_stages, uint32_t offset = 0);
 private:
@@ -24,7 +25,7 @@ public:
 };
 
 template<typename T>
-inline void VKW_PushConstants<T>::init(VkShaderStageFlags shader_stages, uint32_t offset)
+inline void VKW_PushConstant<T>::init(VkShaderStageFlags shader_stages, uint32_t offset)
 {
 	range.stageFlags = shader_stages;
 	range.offset = offset;
@@ -32,7 +33,7 @@ inline void VKW_PushConstants<T>::init(VkShaderStageFlags shader_stages, uint32_
 }
 
 template<typename T>
-inline void VKW_PushConstants<T>::push(const VKW_CommandBuffer& command_buffer, VkPipelineLayout layout) const
+inline void VKW_PushConstant<T>::push(const VKW_CommandBuffer& command_buffer, VkPipelineLayout layout) const
 {
 	vkCmdPushConstants(command_buffer, layout, range.stageFlags, range.offset, range.size, &data);
 }
