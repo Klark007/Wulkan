@@ -17,9 +17,16 @@ void SharedTerrainData::init(const VKW_Device* device)
 		VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT | VK_SHADER_STAGE_FRAGMENT_BIT
 	);
 
-	// normal map
+	// albedo
 	descriptor_set_layout.add_binding(
 		2,
+		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+		VK_SHADER_STAGE_FRAGMENT_BIT
+	);
+
+	// normal map
+	descriptor_set_layout.add_binding(
+		3,
 		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 		VK_SHADER_STAGE_FRAGMENT_BIT
 	);
@@ -36,7 +43,7 @@ void SharedTerrainData::del()
 	descriptor_set_layout.del();	
 }
 
-void Terrain::init(const VKW_Device& device, const VKW_CommandPool& graphics_pool, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool* descriptor_pool, SharedTerrainData* shared_terrain_data, const std::string& height_path, const std::string& normal_path, uint32_t mesh_res)
+void Terrain::init(const VKW_Device& device, const VKW_CommandPool& graphics_pool, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool* descriptor_pool, SharedTerrainData* shared_terrain_data, const std::string& height_path, const std::string& albedo_path, const std::string& normal_path, uint32_t mesh_res)
 {
 	shared_data = shared_terrain_data;
 
@@ -46,6 +53,13 @@ void Terrain::init(const VKW_Device& device, const VKW_CommandPool& graphics_poo
 		&graphics_pool,
 		height_path,
 		Texture_Type::Tex_R
+	);
+
+	albedo = create_texture_from_path(
+		&device,
+		&graphics_pool,
+		albedo_path,
+		Texture_Type::Tex_RGB
 	);
 
 	normal_map = create_texture_from_path(
@@ -94,13 +108,15 @@ void Terrain::set_descriptor_bindings(const std::array<VKW_Buffer, MAX_FRAMES_IN
 
 		set.update(0, uniform_buffers.at(i));
 		set.update(1, height_map, texture_sampler, VK_IMAGE_ASPECT_COLOR_BIT);
-		set.update(2, normal_map, texture_sampler, VK_IMAGE_ASPECT_COLOR_BIT);
+		set.update(2, albedo, texture_sampler, VK_IMAGE_ASPECT_COLOR_BIT);
+		set.update(3, normal_map, texture_sampler, VK_IMAGE_ASPECT_COLOR_BIT);
 	}
 }
 
 void Terrain::del()
 {
 	height_map.del();
+	albedo.del();
 	normal_map.del();
 	mesh.del();
 

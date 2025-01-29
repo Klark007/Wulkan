@@ -255,6 +255,7 @@ void Engine::init_terrain_data()
 
 		//"textures/height_test1.png",
 		"textures/terrain_heightmap.png",
+		"textures/terrain_texture.png",
 		"textures/terrain_normal.png",
 		64							// resolution of mesh
 	);
