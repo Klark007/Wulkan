@@ -7,6 +7,7 @@ layout(location = 2) in vec4 inColor[];
 
 layout(binding = 0) uniform UniformData {
     mat4 view;
+    mat4 inv_view;
     mat4 virtual_view;
     mat4 proj;
 } ubo;

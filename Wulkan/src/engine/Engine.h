@@ -53,6 +53,7 @@ struct SyncStructs {
 
 struct UniformStruct {
 	alignas(16) glm::mat4 view;
+	alignas(16) glm::mat4 inv_view;
 	alignas(16) glm::mat4 virtual_view;
 	alignas(16) glm::mat4 proj;
 };

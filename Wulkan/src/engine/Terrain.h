@@ -99,7 +99,7 @@ inline void Terrain::draw(const VKW_CommandBuffer& command_buffer, uint32_t curr
 	descriptor_sets.at(current_frame).bind(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get_layout());
 
 	shared_data->get_pc().update({
-		glm::scale(glm::mat4(1), glm::vec3(25.0,25.0,25.0)),
+		glm::scale(glm::rotate(glm::mat4(1), -0.5f, glm::vec3(1,0,0)), glm::vec3(25.0,25.0,25.0)),
 		tesselation_strength,
 		max_tesselation,
 		height_scale,

@@ -427,6 +427,7 @@ void Engine::update_uniforms()
 	uniform.proj[1][1] *= -1; // see https://community.khronos.org/t/confused-when-using-glm-for-projection/108548/2 for reason for the multiplication
 
 	uniform.view = camera.generate_view_mat();
+	uniform.inv_view = glm::inverse(uniform.view);
 	uniform.virtual_view = camera.generate_virtual_view_mat();
 
 	memcpy(uniform_buffers.at(current_frame).get_mapped_address(), &uniform, sizeof(UniformStruct));

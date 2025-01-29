@@ -5,6 +5,13 @@ layout(location = 1) in vec2 inUV;
 layout(location = 2) in vec3 inNormal;
 layout(location = 3) in vec4 inColor;
 
+layout(binding = 0) uniform UniformData {
+    mat4 view;
+    mat4 inv_view;
+    mat4 virtual_view;
+    mat4 proj;
+} ubo;
+
 layout(binding = 1) uniform sampler2D height_map;
 layout(binding = 2) uniform sampler2D normal_map;
 
@@ -21,11 +28,16 @@ layout( push_constant ) uniform constants
 layout(location = 0) out vec4 outColor;
 
 void main() {
+    vec3 obj_normal = normalize((texture(normal_map, inUV).rgb - vec3(0.5, 0.5, 0)) * vec3(2,2,1));
+    vec3 world_normal = normalize(mat3(transpose((pc.model))) * obj_normal);
+
     switch (pc.visualization_mode) {
-        case 0: // shading
-            outColor = inColor * dot(
-                normalize(texture(normal_map, inUV).rgb), 
-                normalize(vec3(0, 0, 1))
+        case 0: // shading            
+            outColor = inColor * max(
+                dot(
+                    world_normal, 
+                    normalize(vec3(0, 0, 1))
+                ), 0
             );
             break;
         case 1: // tesselation level
