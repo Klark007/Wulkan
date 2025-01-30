@@ -87,7 +87,7 @@ void GUI::draw_gui(const VKW_CommandBuffer& cmd)
 	{
 		if (ImGui::CollapsingHeader("Settings")) {
 			if (ImGui::TreeNode("Camera movement")) {
-				ImGui::SliderFloat("Movement speed", &data.camera_movement_speed, 1.0f, 25.0f);
+				ImGui::SliderFloat("Movement speed", &data.camera_movement_speed, 5.0f, 50.0f);
 				ImGui::SliderFloat("Rotation speed", &data.camera_rotation_speed, 0.0005f, 0.005f);
 
 				ImGui::TreePop();

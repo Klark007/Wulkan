@@ -176,15 +176,15 @@ float f_der_y(vec2 uv, vec2 dir, float eps) {
 }
 
 float s_der_y(vec2 uv, vec2 dir1, vec2 dir2, float eps1, float eps2) {
-    /*
+    
     return (
-        texture(height_map, uv + eps1*dir1 + eps2*dir2).r
+        texture(height_map, uv + eps1*2*dir1 + eps2*2*dir2).r
         - 2 * texture(height_map, uv).r
-        + texture(height_map, uv - eps1*dir1 - eps2*dir2).r
-    ) / (eps1 * eps2);
-    */
+        + texture(height_map, uv - eps1*2*dir1 - eps2*2*dir2).r
+    ) / (eps1*2 * eps2*2);
+    
 
-    return (f_der_y(uv + eps2*dir2, dir1, eps1) - f_der_y(uv - eps2*dir2, dir1, eps1)) / (2*eps2);
+    //return (f_der_y(uv + eps2*dir2, dir1, eps1) - f_der_y(uv - eps2*dir2, dir1, eps1)) / (2*eps2);
 }
 
 const float smoothness_factor = 50.0;
@@ -211,18 +211,18 @@ float inout_bezier(float x) {
     return x * x * (3 - 2*x);
 }
 
-float K(float theta, float K_uu, float K_vv, float K_uv) {
+vec2 curvature(float K_uu, float K_vv, float K_uv) {
+    // res.x mean curvature
+    // res.y gaussian curvature
+
     float A = K_uu;
     float C = K_vv;
-    float B = sqrt(2)*K_uv - K_uu - K_vv;
+    float B = K_uv - (K_uu + K_vv) / 2;
 
-    float cos_t = cos(theta);
-    float sin_t = sin(theta);
-    float cos_2 = cos_t * cos_t;
-    float sin_2 = sin_t * sin_t;
-    float sin_cos = sin_t * cos_t;
-
-    return A * cos_2 + B * sin_cos + C * sin_2;
+    vec2 res = vec2(0);
+    res.x = A + C;
+    res.y = A*C - B * B;
+    return res;
 }
 
 vec4 compute_tesselation_level() {
@@ -258,26 +258,11 @@ vec4 compute_tesselation_level() {
         float K_vv = ddyddvv / pow(1 + dydv * dydv, 1.5);
         float K_uv = (ddydduu * ddydduu + ddyddvv * ddydduv + 2 * ddydduv) / 2 / pow(1 + pow(dydu + dydv, 2) / 2, 1.5);
 
+        //vec2 c = curvature(K_uu, K_vv, K_uv);
+        
         res[i] = abs(K_uu) + abs(K_vv);
-        //res[i] = abs(K_uu * K_vv);
-
-        /*
-        float theta_prime = 0.0;
-        if (abs(K_uu) <= 1e-5) {
-            theta_prime = 3.1415926535897932384626433832795 / 4; // pi / 4
-        } else {
-            theta_prime = 0.5 * atan(2 * sqrt(2) * K_uv - K_uu - K_vv, K_uu);
-        }
-
-        float K_1 = K(theta_prime, K_uu, K_vv, K_uv);
-        float K_2 = K(theta_prime + 3.1415926535897932384626433832795 / 2, K_uu, K_vv, K_uv);
-
-        res[i] = K_1 * K_2;
-        */
-
-
-        //res[i] = 0.5 * (K_1 + K_2);
-        //res[i] = K_1*K_1 + K_2*K_2;
+        //res[i] = abs(K_uu);
+        //res[i] = abs(c.y);
     }
 
     return res;

@@ -100,7 +100,7 @@ inline void Terrain::draw(const VKW_CommandBuffer& command_buffer, uint32_t curr
 	descriptor_sets.at(current_frame).bind(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get_layout());
 
 	shared_data->get_pc().update({
-		glm::scale(glm::rotate(glm::mat4(1), -0.5f, glm::vec3(1,0,0)), glm::vec3(25.0,25.0,25.0)),
+		glm::scale(glm::rotate(glm::mat4(1), 0.0f, glm::vec3(1,0,0)), glm::vec3(25.0,25.0,25.0)),
 		tesselation_strength,
 		max_tesselation,
 		height_scale,
@@ -134,7 +134,7 @@ inline VKW_GraphicsPipeline Terrain::create_pipeline(const VKW_Device* device, T
 	VKW_GraphicsPipeline graphics_pipeline{};
 	
 	graphics_pipeline.set_topology(VK_PRIMITIVE_TOPOLOGY_PATCH_LIST);
-	graphics_pipeline.set_culling_mode(VK_CULL_MODE_NONE); // TODO backface culling
+	graphics_pipeline.set_culling_mode();
 	graphics_pipeline.enable_depth_test();
 	graphics_pipeline.enable_depth_write();
 

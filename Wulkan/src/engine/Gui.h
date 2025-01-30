@@ -18,7 +18,7 @@
 
 struct GUI_Input {
 	float camera_rotation_speed = 0.001f;
-	float camera_movement_speed = 5.0f;
+	float camera_movement_speed = 25.0f;
 
 	float terrain_tesselation = 10.0f;
 	float max_terrain_tesselation = 50.0f;
