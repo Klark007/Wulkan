@@ -238,20 +238,24 @@ vec4 compute_tesselation_level() {
     vec4 res = vec4(0);
 
     for (int i = 0; i < 4; i++) {
-        float ddydduu = s_der_y(inUV[i], vec2(1,0), vec2(1,0), epsilon[0], epsilon[0]);
-        float ddyddvv = s_der_y(inUV[i], vec2(0,1), vec2(0,1), epsilon[1], epsilon[1]);
-        float ddydduv = s_der_y(inUV[i], vec2(1,0), vec2(0,1), epsilon[0], epsilon[1]);
+        float huu = s_der_y(inUV[i], vec2(1,0), vec2(1,0), epsilon[0], epsilon[0]);
+        float hvv = s_der_y(inUV[i], vec2(0,1), vec2(0,1), epsilon[1], epsilon[1]);
+        float huv = s_der_y(inUV[i], vec2(1,0), vec2(0,1), epsilon[0], epsilon[1]);
+        float hvu = s_der_y(inUV[i], vec2(0,1), vec2(1,0), epsilon[1], epsilon[0]);
+
+        float hu = f_der_y(inUV[i], vec2(1,0), epsilon[0]);
+        float hv = f_der_y(inUV[i], vec2(0,1), epsilon[1]);
+
+        // definition taken from https://media.contentapi.ea.com/content/dam/eacom/frostbite/files/adaptive-terrain-tessellation.pdf
+        // mean curvature
+        float H = (huu * (1 + hv*hv) - (huv+hvu)*hu*hv + hvv * (1 + hu*hu)) / (2*pow(1 + hu*hu + hv*hv, 1.5));
+        // gaussian curvature
+        float K = (huu + hvv - 0.5*(huv+hvu)*0.5*(huv+hvu)) / (1 + hu*hu + hv*hv);
         
-        float ddydduu2 = (
-            texture(height_map, inUV[i] + epsilon[0]*vec2(1,0)).r
-            - 2 * texture(height_map, inUV[i]).r
-            + texture(height_map, inUV[i] - epsilon[0]*vec2(1,0)).r
-        ) / (epsilon[0]*epsilon[0]);
-
-        float dydu = f_der_y(inUV[i], vec2(1,0), epsilon[0]);
-        float dydv = f_der_y(inUV[i], vec2(0,1), epsilon[1]);
+        res[i] = abs(H);
 
 
+        /*
         // approach 1 derivatives (bad) : sqrt(dydu*dydu + dydv*dydv)
         //res[i] = 0.01 * abs((ddydduu * ddyddvv - ddydduv*ddyddvu) / pow(1 + dydu*dydu + dydv * dydv, 2));
         float K_uu = ddydduu / pow(1 + dydu * dydu, 1.5);
@@ -263,6 +267,7 @@ vec4 compute_tesselation_level() {
         res[i] = abs(K_uu) + abs(K_vv);
         //res[i] = abs(K_uu);
         //res[i] = abs(c.y);
+        */
     }
 
     return res;

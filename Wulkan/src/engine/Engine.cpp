@@ -257,7 +257,7 @@ void Engine::init_terrain_data()
 		"textures/terrain_heightmap.png",
 		"textures/terrain_texture.png",
 		"textures/terrain_normal.png",
-		65							// resolution of mesh
+		64							// resolution of mesh
 	);
 	terrain.set_descriptor_bindings(uniform_buffers, linear_texture_sampler);
 	cleanup_queue.add(&terrain);
