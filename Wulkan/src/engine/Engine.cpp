@@ -67,16 +67,16 @@ void Engine::update()
 	camera_controller.update_time();
 	camera_controller.handle_keys();
 
-	const GUI_Input& input = gui.get_input();
+	gui_input = gui.get_input();
 
-	camera_controller.set_move_strength(input.camera_movement_speed);
-	camera_controller.set_rotation_strength(input.camera_rotation_speed);
+	camera_controller.set_move_strength(gui_input.camera_movement_speed);
+	camera_controller.set_rotation_strength(gui_input.camera_rotation_speed);
 
-	terrain.set_tesselation_strength(input.terrain_tesselation);
-	terrain.set_max_tesselation(input.max_terrain_tesselation);
-	terrain.set_height_scale(input.terrain_height_scale);
-	terrain.set_texture_eps(input.terrain_texture_eps);
-	terrain.set_visualization_mode(input.terrain_vis_mode);
+	terrain.set_tesselation_strength(gui_input.terrain_tesselation);
+	terrain.set_max_tesselation(gui_input.max_terrain_tesselation);
+	terrain.set_height_scale(gui_input.terrain_height_scale);
+	terrain.set_texture_eps(gui_input.terrain_texture_eps);
+	terrain.set_visualization_mode(gui_input.terrain_vis_mode);
 
 	update_uniforms();
 }
@@ -97,18 +97,20 @@ void Engine::draw()
 
 
 		// draw terrain
-		terrain_pipeline.set_render_size(swapchain.get_extent());
-
-		terrain_pipeline.begin_rendering(cmd);
 		{
-			terrain_pipeline.bind(cmd);
+			VKW_GraphicsPipeline& pipeline = (gui_input.terrain_wireframe_mode) ? terrain_wireframe_pipeline : terrain_pipeline;
+			pipeline.set_render_size(swapchain.get_extent());
 
+			pipeline.begin_rendering(cmd);
+			{
+				pipeline.bind(cmd);
 
-			terrain_pipeline.set_dynamic_viewport(cmd);
-			terrain_pipeline.set_dynamic_scissor(cmd);
-			terrain.draw(cmd, current_frame, terrain_pipeline);
+				pipeline.set_dynamic_viewport(cmd);
+				pipeline.set_dynamic_scissor(cmd);
+				terrain.draw(cmd, current_frame, pipeline);
+			}
+			pipeline.end_rendering(cmd);
 		}
-		terrain_pipeline.end_rendering(cmd);
 
 		
 		// transitions for copy into swapchain images
@@ -257,7 +259,7 @@ void Engine::init_terrain_data()
 		"textures/terrain_heightmap.png",
 		"textures/terrain_texture.png",
 		"textures/terrain_normal.png",
-		64							// resolution of mesh
+		256							// resolution of mesh
 	);
 	terrain.set_descriptor_bindings(uniform_buffers, linear_texture_sampler);
 	cleanup_queue.add(&terrain);
@@ -327,6 +329,9 @@ void Engine::create_graphics_pipelines()
 {
 	terrain_pipeline = Terrain::create_pipeline(&device, color_render_target, depth_render_target, shared_terrain_data);
 	cleanup_queue.add(&terrain_pipeline);
+
+	terrain_wireframe_pipeline = Terrain::create_pipeline(&device, color_render_target, depth_render_target, shared_terrain_data, true);
+	cleanup_queue.add(&terrain_wireframe_pipeline);
 }
 
 void Engine::create_swapchain()

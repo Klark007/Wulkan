@@ -86,7 +86,7 @@ private:
 	std::array<VKW_DescriptorSet, MAX_FRAMES_IN_FLIGHT> descriptor_sets;
 	SharedTerrainData* shared_data;
 public:
-	static VKW_GraphicsPipeline create_pipeline(const VKW_Device* device, Texture& color_rt, Texture& depth_rt, const SharedTerrainData& shared_terrain_data);
+	static VKW_GraphicsPipeline create_pipeline(const VKW_Device* device, Texture& color_rt, Texture& depth_rt, const SharedTerrainData& shared_terrain_data, bool wireframe_mode = false);
 	
 	inline void set_tesselation_strength(float strength) { tesselation_strength = strength; }; // multiplicative factor of the tesselation level computed
 	inline void set_max_tesselation(float max) { max_tesselation = max; }; // maximum tesselation level
@@ -117,7 +117,7 @@ inline void Terrain::draw(const VKW_CommandBuffer& command_buffer, uint32_t curr
 	mesh.draw(command_buffer, current_frame, pipeline);
 }
 
-inline VKW_GraphicsPipeline Terrain::create_pipeline(const VKW_Device* device, Texture& color_rt, Texture& depth_rt, const SharedTerrainData& shared_terrain_data)
+inline VKW_GraphicsPipeline Terrain::create_pipeline(const VKW_Device* device, Texture& color_rt, Texture& depth_rt, const SharedTerrainData& shared_terrain_data, bool wireframe_mode)
 {
 	VKW_Shader terrain_vert_shader{};
 	terrain_vert_shader.init(device, "shaders/terrain_vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
@@ -134,6 +134,9 @@ inline VKW_GraphicsPipeline Terrain::create_pipeline(const VKW_Device* device, T
 	VKW_GraphicsPipeline graphics_pipeline{};
 	
 	graphics_pipeline.set_topology(VK_PRIMITIVE_TOPOLOGY_PATCH_LIST);
+	if (wireframe_mode) {
+		graphics_pipeline.set_wireframe_mode();
+	}
 	graphics_pipeline.set_culling_mode();
 	graphics_pipeline.enable_depth_test();
 	graphics_pipeline.enable_depth_write();

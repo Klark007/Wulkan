@@ -59,15 +59,11 @@ void main()
             gl_TessLevelInner[1] = 0;
         } else {
             vec4 str = compute_tesselation_level();
-            float ls0 = str.x;
-            float ls1 = str.y;
-            float ls2 = str.z;
-            float ls3 = str.w;
 
-            gl_TessLevelOuter[0] = min(max(mix(ls3, ls0, 0.5), 1) * pc.tesselation_strength, pc.max_tesselation);
-            gl_TessLevelOuter[1] = min(max(mix(ls0, ls1, 0.5), 1) * pc.tesselation_strength, pc.max_tesselation);
-            gl_TessLevelOuter[2] = min(max(mix(ls1, ls2, 0.5), 1) * pc.tesselation_strength, pc.max_tesselation);
-            gl_TessLevelOuter[3] = min(max(mix(ls2, ls3, 0.5), 1) * pc.tesselation_strength, pc.max_tesselation);
+            gl_TessLevelOuter[0] = min(max(mix(str.w, str.x, 0.5), 1) * pc.tesselation_strength, pc.max_tesselation);
+            gl_TessLevelOuter[1] = min(max(mix(str.x, str.y, 0.5), 1) * pc.tesselation_strength, pc.max_tesselation);
+            gl_TessLevelOuter[2] = min(max(mix(str.y, str.z, 0.5), 1) * pc.tesselation_strength, pc.max_tesselation);
+            gl_TessLevelOuter[3] = min(max(mix(str.z, str.w, 0.5), 1) * pc.tesselation_strength, pc.max_tesselation);
 
             gl_TessLevelInner[0] = mix(gl_TessLevelOuter[1], gl_TessLevelOuter[3], 0.5);
             gl_TessLevelInner[1] = mix(gl_TessLevelOuter[0], gl_TessLevelOuter[2], 0.5);
@@ -84,7 +80,12 @@ void main()
             outColor[gl_InvocationID] = inColor[gl_InvocationID];
             break;
         case 1: // tesselation level
-            outColor[gl_InvocationID] = debug_level(min(compute_tesselation_level() * pc.tesselation_strength, pc.max_tesselation)[gl_InvocationID]);
+            outColor[gl_InvocationID] = debug_level(
+                min(
+                    compute_tesselation_level() * pc.tesselation_strength, 
+                    pc.max_tesselation
+                )[gl_InvocationID]
+            );
             break;
         default: // Not implemented modes or modes where color is computed in the fragment shader (pink) 
             outColor[gl_InvocationID] = vec4(1,0,1,1);
@@ -165,11 +166,6 @@ bool is_culled() {
     return false;
 }
 
-
-float map(float value, float min1, float max1, float min2, float max2) {
-  return min2 + (value - min1) * (max2 - min2) / (max1 - min1);
-}
-
 float f_der_y(vec2 uv, vec2 dir, float eps) {
     // for dydu dir == vec2(1,0) for dydv dir == vec2(0,1)
     return (texture(height_map, uv + eps*dir).r - texture(height_map, uv - eps*dir).r) / (2*eps);
@@ -187,51 +183,38 @@ float s_der_y(vec2 uv, vec2 dir1, vec2 dir2, float eps1, float eps2) {
     //return (f_der_y(uv + eps2*dir2, dir1, eps1) - f_der_y(uv - eps2*dir2, dir1, eps1)) / (2*eps2);
 }
 
-const float smoothness_factor = 50.0;
-float normalized_derivative(float der, float eps) {
-    return clamp(map(abs(der),0,1.0/(smoothness_factor * 2*eps), 0, 1), 0, 1);
+vec4 project_point(vec4 p) {
+    p.z = texture(height_map, inUV[0]).r * pc.height_scale;
+    vec4 proj_p = ubo.proj * ubo.virtual_view * pc.model * p;
+    proj_p = proj_p / proj_p.w;
+
+    return proj_p;
 }
 
-float normalized_s_der(vec2 uv, vec2 dir1, vec2 dir2, float eps1, float eps2) {
-    float f_der1 = f_der_y(uv + eps2*dir2, dir1, eps1);
-    float f_der2 = f_der_y(uv - eps2*dir2, dir1, eps1);
+float projected_size() {
+    vec4 p1 = project_point(vec4(inPos[0],1));
+    vec4 p2 = project_point(vec4(inPos[1],1));
+    vec4 p3 = project_point(vec4(inPos[2],1));
+    vec4 p4 = project_point(vec4(inPos[3],1));
 
-    return normalized_derivative((f_der1-f_der2) / (2*eps2), eps1*eps2);
-}
+    // area of 0,1,2
+    float area1 = abs(
+        p1.x * (p2.y - p3.y)
+        + p2.x * (p3.y - p1.y)
+        + p3.x * (p1.y - p2.y)
+    ) / 2;
 
-// TODO: Set by uniform buffer object or extracted from projection matrix
-const float zNear = 0.1;
-const float zFar  = 100.0;
-float linearize_depth(float d)
-{
-    return zNear * zFar / (zFar + d * (zNear - zFar));
-}
+    // area of 0,2,3
+    float area2 = abs(
+        p1.x * (p2.y - p4.y)
+        + p2.x * (p4.y - p1.y)
+        + p4.x * (p1.y - p2.y)
+    ) / 2;
 
-float inout_bezier(float x) {
-    return x * x * (3 - 2*x);
-}
-
-vec2 curvature(float K_uu, float K_vv, float K_uv) {
-    // res.x mean curvature
-    // res.y gaussian curvature
-
-    float A = K_uu;
-    float C = K_vv;
-    float B = K_uv - (K_uu + K_vv) / 2;
-
-    vec2 res = vec2(0);
-    res.x = A + C;
-    res.y = A*C - B * B;
-    return res;
+    return area1 + area2;
 }
 
 vec4 compute_tesselation_level() {
-    // https://en.wikipedia.org/wiki/Curvature#Graph_of_a_function
-    // Combining gaussian and mean curvature
-
-    //vec2 texSize = textureSize(height_map,0);
-    //vec2 epsilon = vec2(1.0 / texSize.x, 1.0 / texSize.y);
-
     // 1 pixel distance sample is a bad estimate of derivatives / curvature at a patches vertex
     vec2 epsilon = vec2(inUV[2] - inUV[0]) * pc.texture_eps;
 
@@ -241,34 +224,21 @@ vec4 compute_tesselation_level() {
         float huu = s_der_y(inUV[i], vec2(1,0), vec2(1,0), epsilon[0], epsilon[0]);
         float hvv = s_der_y(inUV[i], vec2(0,1), vec2(0,1), epsilon[1], epsilon[1]);
         float huv = s_der_y(inUV[i], vec2(1,0), vec2(0,1), epsilon[0], epsilon[1]);
-        float hvu = s_der_y(inUV[i], vec2(0,1), vec2(1,0), epsilon[1], epsilon[0]);
-
+        
         float hu = f_der_y(inUV[i], vec2(1,0), epsilon[0]);
         float hv = f_der_y(inUV[i], vec2(0,1), epsilon[1]);
 
         // definition taken from https://media.contentapi.ea.com/content/dam/eacom/frostbite/files/adaptive-terrain-tessellation.pdf
         // mean curvature
-        float H = (huu * (1 + hv*hv) - (huv+hvu)*hu*hv + hvv * (1 + hu*hu)) / (2*pow(1 + hu*hu + hv*hv, 1.5));
+        float H = (huu * (1 + hv*hv) - 2*huv*hu*hv + hvv * (1 + hu*hu)) / (2*pow(1 + hu*hu + hv*hv, 1.5));
         // gaussian curvature
-        float K = (huu + hvv - 0.5*(huv+hvu)*0.5*(huv+hvu)) / (1 + hu*hu + hv*hv);
+        //float K = (huu + hvv - huv*huv) / (1 + hu*hu + hv*hv);
         
         res[i] = abs(H);
-
-
-        /*
-        // approach 1 derivatives (bad) : sqrt(dydu*dydu + dydv*dydv)
-        //res[i] = 0.01 * abs((ddydduu * ddyddvv - ddydduv*ddyddvu) / pow(1 + dydu*dydu + dydv * dydv, 2));
-        float K_uu = ddydduu / pow(1 + dydu * dydu, 1.5);
-        float K_vv = ddyddvv / pow(1 + dydv * dydv, 1.5);
-        float K_uv = (ddydduu * ddydduu + ddyddvv * ddydduv + 2 * ddydduv) / 2 / pow(1 + pow(dydu + dydv, 2) / 2, 1.5);
-
-        //vec2 c = curvature(K_uu, K_vv, K_uv);
-        
-        res[i] = abs(K_uu) + abs(K_vv);
-        //res[i] = abs(K_uu);
-        //res[i] = abs(c.y);
-        */
     }
+
+    // Introduces seams
+    // res = 0.3 * tesselation_lvl + 0.7 * vec4(projected_size() * 150 * 150);
 
     return res;
 }

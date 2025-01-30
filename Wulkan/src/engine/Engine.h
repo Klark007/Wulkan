@@ -134,6 +134,7 @@ public: // TODO: remove public
 	Texture depth_render_target;
 
 	VKW_GraphicsPipeline terrain_pipeline;
+	VKW_GraphicsPipeline terrain_wireframe_pipeline;
 
 	// general sampler for texture (Linear sampling, repeat address mode)
 	VKW_Sampler linear_texture_sampler;
@@ -165,6 +166,7 @@ public: // TODO: remove public
 
 	CameraController camera_controller;
 	GUI gui;
+	GUI_Input gui_input;
 	Camera camera;
 private:
 

@@ -20,11 +20,11 @@ struct GUI_Input {
 	float camera_rotation_speed = 0.001f;
 	float camera_movement_speed = 25.0f;
 
-	float terrain_tesselation = 10.0f;
-	float max_terrain_tesselation = 50.0f;
+	float terrain_tesselation = 0.1f;
+	float max_terrain_tesselation = 16.0f;
 	float terrain_height_scale = 0.6f;
-	float terrain_texture_eps = 0.33f;
-	
+	float terrain_texture_eps = 1.0f;
+	bool terrain_wireframe_mode = false;
 	TerrainVisualizationMode terrain_vis_mode = TerrainVisualizationMode::Shaded;
 };
 

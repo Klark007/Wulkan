@@ -99,6 +99,8 @@ void GUI::draw_gui(const VKW_CommandBuffer& cmd)
 				ImGui::SliderFloat("Height Scale", &data.terrain_height_scale, 0.1f, 1.0f);
 				ImGui::SliderFloat("Texture Derivative epsilon", &data.terrain_texture_eps, 0.01f, 1.0f);
 
+				ImGui::Checkbox("Show Wireframe", &data.terrain_wireframe_mode);
+
 				constexpr const char* visualization_modes[] = { "Shaded", "Level", "Height", "Normals", "Error"};
 				static int selected_vis = 0;
 				if (ImGui::TreeNode("Visualization mode")) {
