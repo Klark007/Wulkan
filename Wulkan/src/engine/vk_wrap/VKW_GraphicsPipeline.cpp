@@ -164,7 +164,7 @@ void VKW_GraphicsPipeline::add_shader_stages(const std::vector<VKW_Shader>& stag
 	}
 }
 
-void VKW_GraphicsPipeline::add_descriptor_sets(const std::vector<VKW_DescriptorSetLayout> layouts)
+void VKW_GraphicsPipeline::add_descriptor_sets(const std::vector<VKW_DescriptorSetLayout>& layouts)
 {
 	for (const VKW_DescriptorSetLayout layout : layouts) {
 		descriptor_set_layouts.push_back(layout);

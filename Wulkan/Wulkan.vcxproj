@@ -166,9 +166,11 @@
     <ClCompile Include="src\engine\vk_wrap\VKW_Sampler.cpp" />
     <ClCompile Include="src\engine\vk_wrap\VKW_GraphicsPipeline.cpp" />
     <ClCompile Include="src\engine\Terrain.cpp" />
+    <ClCompile Include="src\engine\vk_wrap\VKW_ComputePipeline.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\compile.bat" />
+    <None Include="shaders\curvature.comp" />
     <None Include="shaders\terrain.frag" />
     <None Include="shaders\terrain.tesc" />
     <None Include="shaders\terrain.tese" />
@@ -213,6 +215,7 @@
     <ClInclude Include="src\engine\vk_wrap\VKW_GraphicsPipeline.h" />
     <ClInclude Include="src\engine\vk_wrap\VKW_PushConstants.h" />
     <ClInclude Include="src\engine\Terrain.h" />
+    <ClInclude Include="src\engine\vk_wrap\VKW_ComputePipeline.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="shaders\terrain.txt" />

@@ -70,6 +70,8 @@ public:
 	inline operator VkImage() const { return image; };
 	VkImageView get_image_view(VkImageAspectFlags aspect_flag);
 	inline VkFormat get_format() const { return format; };
+	inline unsigned int get_width() const { return width; };
+	inline unsigned int get_height() const { return height; };
 };
 
 // creates a texture from a path, needs graphics command pool as input argument as we are waiting on a stage not present supported in transfer queues (in transition_layout)

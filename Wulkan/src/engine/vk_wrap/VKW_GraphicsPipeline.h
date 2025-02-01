@@ -89,7 +89,7 @@ public:
 	void add_shader_stages(const std::vector<VKW_Shader>& stages);
 
 	// adds Descriptorset to the pipeline
-	void add_descriptor_sets(const std::vector<VKW_DescriptorSetLayout> layouts);
+	void add_descriptor_sets(const std::vector<VKW_DescriptorSetLayout>& layouts);
 
 	// adds a pushconstant to the pipeline
 	template <class T>

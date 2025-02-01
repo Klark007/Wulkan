@@ -8,6 +8,7 @@ layout(location = 3) in vec4 inColor;
 layout(binding = 1) uniform sampler2D height_map;
 layout(binding = 2) uniform sampler2D albedo;
 layout(binding = 3) uniform sampler2D normal_map;
+layout(binding = 4) uniform sampler2D curvature;
 
 layout( push_constant ) uniform constants
 {
@@ -41,7 +42,7 @@ void main() {
             outColor = texture(height_map, inUV);
             break;
         case 3: // normal
-            outColor = texture(normal_map, inUV);
+            outColor = texture(curvature, inUV);
             break;
         case 4: // error
             float texture_height = texture(height_map, inUV).r * pc.height_scale;

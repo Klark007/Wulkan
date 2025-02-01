@@ -1,4 +1,5 @@
 #include "Terrain.h"
+#include "vk_wrap/VKW_ComputePipeline.h"
 
 void SharedTerrainData::init(const VKW_Device* device)
 {
@@ -31,6 +32,13 @@ void SharedTerrainData::init(const VKW_Device* device)
 		VK_SHADER_STAGE_FRAGMENT_BIT
 	);
 
+	// curvature map
+	descriptor_set_layout.add_binding(
+		4,
+		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+		VK_SHADER_STAGE_FRAGMENT_BIT
+	);
+
 	descriptor_set_layout.init(device);
 	// end create create descriptor set layout
 
@@ -43,10 +51,12 @@ void SharedTerrainData::del()
 	descriptor_set_layout.del();	
 }
 
-void Terrain::init(const VKW_Device& device, const VKW_CommandPool& graphics_pool, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool* descriptor_pool, SharedTerrainData* shared_terrain_data, const std::string& height_path, const std::string& albedo_path, const std::string& normal_path, uint32_t mesh_res)
+void Terrain::init(const VKW_Device& device, const VKW_CommandPool& graphics_pool, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool* descriptor_pool, const VKW_Sampler* sampler, SharedTerrainData* shared_terrain_data, const std::string& height_path, const std::string& albedo_path, const std::string& normal_path, uint32_t mesh_res)
 {
 	shared_data = shared_terrain_data;
+	texture_sampler = sampler;
 
+	// textures to be used
 	// todo check if we need graphics pool for create_texture_from_path
 	height_map = create_texture_from_path(
 		&device,
@@ -55,6 +65,19 @@ void Terrain::init(const VKW_Device& device, const VKW_CommandPool& graphics_poo
 		Texture_Type::Tex_R
 	);
 
+	curvatue.init(
+		&device,
+		height_map.get_width(),
+		height_map.get_height(),
+		Texture::find_format(device, Texture_Type::Tex_Colortarget),
+		VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+		sharing_exlusive()
+	);
+
+	// Compute curvature as a preprocessing step
+	precompute_curvature(device, graphics_pool, descriptor_pool);
+
+	// shading
 	albedo = create_texture_from_path(
 		&device,
 		&graphics_pool,
@@ -69,6 +92,7 @@ void Terrain::init(const VKW_Device& device, const VKW_CommandPool& graphics_poo
 		Texture_Type::Tex_RGB
 	);
 
+	// create cpu mesh
 	std::vector<Vertex> terrain_vertices{};
 	std::vector<uint32_t> terrain_indices{};
 
@@ -100,22 +124,82 @@ void Terrain::init(const VKW_Device& device, const VKW_CommandPool& graphics_poo
 	mesh.init(device, transfer_pool, terrain_vertices, terrain_indices);
 }
 
-void Terrain::set_descriptor_bindings(const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& uniform_buffers, const VKW_Sampler& texture_sampler)
+void Terrain::set_descriptor_bindings(const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& uniform_buffers)
 {
 	// set the bindings
 	for (unsigned int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 		const VKW_DescriptorSet& set = descriptor_sets.at(i);
 
 		set.update(0, uniform_buffers.at(i));
-		set.update(1, height_map, texture_sampler, VK_IMAGE_ASPECT_COLOR_BIT);
-		set.update(2, albedo, texture_sampler, VK_IMAGE_ASPECT_COLOR_BIT);
-		set.update(3, normal_map, texture_sampler, VK_IMAGE_ASPECT_COLOR_BIT);
+		set.update(1, height_map, *texture_sampler);
+		set.update(2, albedo, *texture_sampler);
+		set.update(3, normal_map, *texture_sampler);
+		set.update(4, curvatue, *texture_sampler);
 	}
+}
+
+void Terrain::precompute_curvature(const VKW_Device& device, const VKW_CommandPool& graphics_pool, const VKW_DescriptorPool* descriptor_pool)
+{
+	// descriptor sets
+	VKW_DescriptorSetLayout compute_layout{};
+	// read from height map
+	compute_layout.add_binding(
+		0,
+		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, // read only 
+		VK_SHADER_STAGE_COMPUTE_BIT
+	);
+
+	// write into curvature texture
+	compute_layout.add_binding(
+		1,
+		VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, // supports load, store and atomic operations
+		VK_SHADER_STAGE_COMPUTE_BIT
+	);
+	compute_layout.init(&device);
+
+	VKW_DescriptorSet compute_desc_set{};
+	compute_desc_set.init(&device, descriptor_pool, compute_layout);
+
+	// transition layout of curvatue
+	curvatue.transition_layout(&graphics_pool, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
+
+	// update descriptor sets
+	compute_desc_set.update(0, height_map, *texture_sampler);
+	compute_desc_set.update(1, curvatue, *texture_sampler, VK_IMAGE_LAYOUT_GENERAL);
+
+	// compute pipeline
+	VKW_ComputePipeline pipeline{};
+	pipeline.add_descriptor_sets({ compute_layout });
+	pipeline.init(&device, "shaders/curvature_comp.spv");
+
+	VKW_CommandBuffer command_buffer{};
+	command_buffer.init(
+		&device,
+		&graphics_pool,
+		true
+	);
+
+	// execute
+	command_buffer.begin_single_use();
+	{
+		pipeline.bind(command_buffer);
+		compute_desc_set.bind(command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.get_layout());
+		
+		pipeline.dispatch(command_buffer, std::ceil(curvatue.get_width() / 16.0), std::ceil(curvatue.get_height() / 16.0), 1);
+		
+		Texture::transition_layout(command_buffer, curvatue, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	}
+	command_buffer.submit_single_use();
+
+	pipeline.del();
+	compute_desc_set.del();
+	compute_layout.del();
 }
 
 void Terrain::del()
 {
 	height_map.del();
+	curvatue.del();
 	albedo.del();
 	normal_map.del();
 	mesh.del();

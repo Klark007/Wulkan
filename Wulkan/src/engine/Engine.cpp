@@ -253,6 +253,7 @@ void Engine::init_terrain_data()
 		get_current_graphics_pool(),
 		get_current_transfer_pool(),
 		&descriptor_pool,
+		&linear_texture_sampler,
 		&shared_terrain_data,
 
 		//"textures/height_test1.png",
@@ -261,7 +262,7 @@ void Engine::init_terrain_data()
 		"textures/terrain_normal.png",
 		256							// resolution of mesh
 	);
-	terrain.set_descriptor_bindings(uniform_buffers, linear_texture_sampler);
+	terrain.set_descriptor_bindings(uniform_buffers);
 	cleanup_queue.add(&terrain);
 }
 
