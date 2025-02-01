@@ -7,9 +7,10 @@ layout(location = 3) in vec4 inColor[];
 
 layout(binding = 0) uniform UniformData {
     mat4 view;
-    mat4 inv_view;
+    mat4 _inv_view;
     mat4 virtual_view;
     mat4 proj;
+    vec2 near_far_plane;
 } ubo;
 
 layout(binding = 1) uniform sampler2D height_map;
@@ -191,6 +192,20 @@ vec4 project_point(vec4 p) {
     return proj_p;
 }
 
+float linearize_depth(float d)
+{
+    return ubo.near_far_plane.x * ubo.near_far_plane.y / (ubo.near_far_plane.y + d * (ubo.near_far_plane.x - ubo.near_far_plane.y));
+}
+
+
+float map(float value, float min1, float max1, float min2, float max2) {
+  return min2 + (value - min1) * (max2 - min2) / (max1 - min1);
+}
+
+float inout_bezier(float x) {
+    return x * x * (3 - 2*x);
+}
+
 float projected_size() {
     vec4 p1 = project_point(vec4(inPos[0],1));
     vec4 p2 = project_point(vec4(inPos[1],1));
@@ -234,7 +249,9 @@ vec4 compute_tesselation_level() {
         // gaussian curvature
         //float K = (huu + hvv - huv*huv) / (1 + hu*hu + hv*hv);
         
-        res[i] = abs(H);
+        float linear_depth = map(linearize_depth(project_point(vec4(inPos[i],1)).z), ubo.near_far_plane.x, ubo.near_far_plane.y, 0, 1);
+
+        res[i] = abs(H) * inout_bezier(1 - linear_depth);
     }
 
     // Introduces seams

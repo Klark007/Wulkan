@@ -56,6 +56,7 @@ struct UniformStruct {
 	alignas(16) glm::mat4 inv_view;
 	alignas(16) glm::mat4 virtual_view;
 	alignas(16) glm::mat4 proj;
+	alignas(8) glm::vec2 near_far_plane;
 };
 
 // std430

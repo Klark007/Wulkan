@@ -5,13 +5,6 @@ layout(location = 1) in vec2 inUV;
 layout(location = 2) in vec3 inNormal;
 layout(location = 3) in vec4 inColor;
 
-layout(binding = 0) uniform UniformData {
-    mat4 view;
-    mat4 inv_view;
-    mat4 virtual_view;
-    mat4 proj;
-} ubo;
-
 layout(binding = 1) uniform sampler2D height_map;
 layout(binding = 2) uniform sampler2D albedo;
 layout(binding = 3) uniform sampler2D normal_map;

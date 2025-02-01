@@ -22,7 +22,7 @@ void Engine::init(unsigned int w, unsigned int h)
 	init_glfw();
 	init_vulkan();
 
-	camera = Camera( glm::vec3(0.0, 60.0, 25.0), glm::vec3(0.0, 10.0, 8.0), res_x, res_y, glm::radians(45.0f), 0.01f, 100.0f );
+	camera = Camera( glm::vec3(0.0, 60.0, 25.0), glm::vec3(0.0, 10.0, 8.0), res_x, res_y, glm::radians(45.0f), 0.1f, 100.0f );
 	camera_controller = CameraController(window, &camera);
 	gui.init(window, instance, device, graphics_queue, imgui_descriptor_pool, &swapchain);
 	cleanup_queue.add(&gui);
@@ -435,6 +435,8 @@ void Engine::update_uniforms()
 	uniform.view = camera.generate_view_mat();
 	uniform.inv_view = glm::inverse(uniform.view);
 	uniform.virtual_view = camera.generate_virtual_view_mat();
+
+	uniform.near_far_plane = glm::vec2(camera.get_near_plane(), camera.get_far_plane());
 
 	memcpy(uniform_buffers.at(current_frame).get_mapped_address(), &uniform, sizeof(UniformStruct));
 }

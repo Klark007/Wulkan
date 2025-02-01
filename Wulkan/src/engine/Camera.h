@@ -64,6 +64,9 @@ public:
 	inline unsigned int get_resolution_x() const { return res_x; };
 	inline unsigned int get_resolution_y() const { return res_y; };
 
+	inline float get_near_plane() const { return z_near; };
+	inline float get_far_plane() const { return z_far; };
+
 	inline bool points_up() const { return get_up().z > 0; };
 	inline float linearize_depth(float d) const;
 };

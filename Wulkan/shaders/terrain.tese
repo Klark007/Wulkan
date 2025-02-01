@@ -7,9 +7,10 @@ layout(location = 2) in vec4 inColor[];
 
 layout(binding = 0) uniform UniformData {
     mat4 view;
-    mat4 inv_view;
-    mat4 virtual_view;
+    mat4 _inv_view;
+    mat4 _virtual_view;
     mat4 proj;
+    vec2 _near_far_plane;
 } ubo;
 
 layout(binding = 1) uniform sampler2D height_map;
