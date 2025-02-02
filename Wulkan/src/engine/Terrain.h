@@ -76,6 +76,7 @@ private:
 	Texture normal_map;
 
 	Texture curvatue;
+	// precomputes the curvature from the height map using a compute shader
 	void precompute_curvature(const VKW_Device& device, const VKW_CommandPool& graphics_pool, const VKW_DescriptorPool* descriptor_pool);
 
 	float tesselation_strength;

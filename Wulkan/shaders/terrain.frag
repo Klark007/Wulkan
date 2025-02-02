@@ -42,7 +42,7 @@ void main() {
             outColor = texture(height_map, inUV);
             break;
         case 3: // normal
-            outColor = texture(curvature, inUV);
+            outColor = texture(normal_map, inUV);
             break;
         case 4: // error
             float texture_height = texture(height_map, inUV).r * pc.height_scale;

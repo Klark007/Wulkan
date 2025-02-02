@@ -3,25 +3,56 @@
 //size of a workgroup for compute
 layout (local_size_x = 16, local_size_y = 16) in;
 
+layout(binding = 0) uniform sampler2D height_map;
+
 //descriptor bindings for the pipeline
 layout(rgba16f, binding = 1) uniform image2D image;
 
 
+float sample_height_map(ivec2 tex_coord, ivec2 size) {
+    return texture(
+        height_map,
+        vec2(float(tex_coord.x)/(size.x), float(tex_coord.y)/(size.y))
+    ).r;
+}
+
+int eps = 8;
+float f_der_y(ivec2 uv, ivec2 dir, ivec2 size) {
+    // for dydu dir == vec2(1,0) for dydv dir == vec2(0,1)
+    return (sample_height_map(uv + dir*eps, size) - sample_height_map(uv - dir*eps, size)) * dot(dir, size / eps);
+}
+
+float s_der_y(ivec2 uv, ivec2 dir1, ivec2 dir2, ivec2 size) {
+    
+    return (
+        sample_height_map(uv + dir1*eps + dir2*eps, size)
+        
+        - 2 * sample_height_map(uv, size)
+
+        + sample_height_map(uv - dir1*eps - dir2*eps, size)
+    ) * dot(dir1, size / eps) * dot(dir2, size / eps); 
+}
+
 void main() 
 {
-    ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 texel_coord = ivec2(gl_GlobalInvocationID.xy);
 	ivec2 size = imageSize(image);
 
-    if(texelCoord.x < size.x && texelCoord.y < size.y)
+    if(texel_coord.x < size.x && texel_coord.y < size.y)
     {
-        vec4 color = vec4(0.0, 0.0, 0.0, 1.0);
+        float h_uu = s_der_y(texel_coord, ivec2(1,0), ivec2(1,0), size);
+        float h_vv = s_der_y(texel_coord, ivec2(0,1), ivec2(0,1), size);
+        float h_uv = s_der_y(texel_coord, ivec2(1,0), ivec2(0,1), size);
 
-        if(gl_LocalInvocationID.x != 0 && gl_LocalInvocationID.y != 0)
-        {
-            color.x = float(texelCoord.x)/(size.x);
-            color.y = float(texelCoord.y)/(size.y);	
-        }
+        float h_u = f_der_y(texel_coord, ivec2(1,0), size);
+        float h_v = f_der_y(texel_coord, ivec2(0,1), size);
+
+        // definition taken from https://media.contentapi.ea.com/content/dam/eacom/frostbite/files/adaptive-terrain-tessellation.pdf
+        // mean curvature
+        float H = (h_uu * (1 + h_v*h_v) - 2*h_uv*h_u*h_v + h_vv * (1 + h_u*h_u)) / (2*pow(1 + h_u*h_u + h_v*h_v, 1.5));   
+
+        vec4 color = vec4(abs(H), 0, 0, 1.0);
     
-        imageStore(image, texelCoord, color);
+        imageStore(image, texel_coord, color);
     }
 }

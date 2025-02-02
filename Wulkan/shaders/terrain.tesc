@@ -14,6 +14,7 @@ layout(binding = 0) uniform UniformData {
 } ubo;
 
 layout(binding = 1) uniform sampler2D height_map;
+layout(binding = 4) uniform sampler2D curvature;
 
 layout( push_constant ) uniform constants
 {
@@ -61,10 +62,10 @@ void main()
         } else {
             vec4 str = compute_tesselation_level();
 
-            gl_TessLevelOuter[0] = min(max(mix(str.w, str.x, 0.5), 1) * pc.tesselation_strength, pc.max_tesselation);
-            gl_TessLevelOuter[1] = min(max(mix(str.x, str.y, 0.5), 1) * pc.tesselation_strength, pc.max_tesselation);
-            gl_TessLevelOuter[2] = min(max(mix(str.y, str.z, 0.5), 1) * pc.tesselation_strength, pc.max_tesselation);
-            gl_TessLevelOuter[3] = min(max(mix(str.z, str.w, 0.5), 1) * pc.tesselation_strength, pc.max_tesselation);
+            gl_TessLevelOuter[0] = clamp(mix(str.w, str.x, 0.5) * pc.tesselation_strength, 1, pc.max_tesselation);
+            gl_TessLevelOuter[1] = clamp(mix(str.x, str.y, 0.5) * pc.tesselation_strength, 1, pc.max_tesselation);
+            gl_TessLevelOuter[2] = clamp(mix(str.y, str.z, 0.5) * pc.tesselation_strength, 1, pc.max_tesselation);
+            gl_TessLevelOuter[3] = clamp(mix(str.z, str.w, 0.5) * pc.tesselation_strength, 1, pc.max_tesselation);
 
             gl_TessLevelInner[0] = mix(gl_TessLevelOuter[1], gl_TessLevelOuter[3], 0.5);
             gl_TessLevelInner[1] = mix(gl_TessLevelOuter[0], gl_TessLevelOuter[2], 0.5);
@@ -87,6 +88,15 @@ void main()
                     pc.max_tesselation
                 )[gl_InvocationID]
             );
+            /*
+            outColor[gl_InvocationID] = vec4(
+            vec3(
+                    min(
+                        compute_tesselation_level()[gl_InvocationID] * pc.tesselation_strength,
+                        pc.max_tesselation
+                    )
+            ), 1);
+            */
             break;
         default: // Not implemented modes or modes where color is computed in the fragment shader (pink) 
             outColor[gl_InvocationID] = vec4(1,0,1,1);
@@ -206,29 +216,6 @@ float inout_bezier(float x) {
     return x * x * (3 - 2*x);
 }
 
-float projected_size() {
-    vec4 p1 = project_point(vec4(inPos[0],1));
-    vec4 p2 = project_point(vec4(inPos[1],1));
-    vec4 p3 = project_point(vec4(inPos[2],1));
-    vec4 p4 = project_point(vec4(inPos[3],1));
-
-    // area of 0,1,2
-    float area1 = abs(
-        p1.x * (p2.y - p3.y)
-        + p2.x * (p3.y - p1.y)
-        + p3.x * (p1.y - p2.y)
-    ) / 2;
-
-    // area of 0,2,3
-    float area2 = abs(
-        p1.x * (p2.y - p4.y)
-        + p2.x * (p4.y - p1.y)
-        + p4.x * (p1.y - p2.y)
-    ) / 2;
-
-    return area1 + area2;
-}
-
 vec4 compute_tesselation_level() {
     // 1 pixel distance sample is a bad estimate of derivatives / curvature at a patches vertex
     vec2 epsilon = vec2(inUV[2] - inUV[0]) * pc.texture_eps;
@@ -236,26 +223,23 @@ vec4 compute_tesselation_level() {
     vec4 res = vec4(0);
 
     for (int i = 0; i < 4; i++) {
-        float huu = s_der_y(inUV[i], vec2(1,0), vec2(1,0), epsilon[0], epsilon[0]);
-        float hvv = s_der_y(inUV[i], vec2(0,1), vec2(0,1), epsilon[1], epsilon[1]);
-        float huv = s_der_y(inUV[i], vec2(1,0), vec2(0,1), epsilon[0], epsilon[1]);
-        
-        float hu = f_der_y(inUV[i], vec2(1,0), epsilon[0]);
-        float hv = f_der_y(inUV[i], vec2(0,1), epsilon[1]);
 
-        // definition taken from https://media.contentapi.ea.com/content/dam/eacom/frostbite/files/adaptive-terrain-tessellation.pdf
-        // mean curvature
-        float H = (huu * (1 + hv*hv) - 2*huv*hu*hv + hvv * (1 + hu*hu)) / (2*pow(1 + hu*hu + hv*hv, 1.5));
-        // gaussian curvature
-        //float K = (huu + hvv - huv*huv) / (1 + hu*hu + hv*hv);
-        
+        int samples = 4;
+
+        float abs_h = 0;
+        int nr_samples = 0;
+        // can be improved by non grid samples
+        for (float dx = -epsilon.x; dx <= epsilon.x; dx += 2*epsilon.x / samples) {
+            for (float dy = -epsilon.y; dy <= epsilon.y; dy += 2*epsilon.y / samples) {
+                abs_h += texture(curvature, inUV[i] + vec2(dx, dy)).r;
+                nr_samples += 1;
+            }
+        }
+
         float linear_depth = map(linearize_depth(project_point(vec4(inPos[i],1)).z), ubo.near_far_plane.x, ubo.near_far_plane.y, 0, 1);
 
-        res[i] = abs(H) * inout_bezier(1 - linear_depth);
+        res[i] = abs_h / nr_samples * inout_bezier(1 - linear_depth);
     }
-
-    // Introduces seams
-    // res = 0.3 * tesselation_lvl + 0.7 * vec4(projected_size() * 150 * 150);
 
     return res;
 }

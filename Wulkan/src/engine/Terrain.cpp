@@ -36,7 +36,7 @@ void SharedTerrainData::init(const VKW_Device* device)
 	descriptor_set_layout.add_binding(
 		4,
 		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-		VK_SHADER_STAGE_FRAGMENT_BIT
+		VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_FRAGMENT_BIT
 	);
 
 	descriptor_set_layout.init(device);
