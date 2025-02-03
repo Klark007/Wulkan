@@ -103,21 +103,25 @@ inline Texture create_texture_from_path(const VKW_Device* device, const VKW_Comm
 		sharing_exlusive() // exclusively owned by graphics queue
 	);
 
-	// transfer layout 1
-	texture.transition_layout(command_pool,
-		VK_IMAGE_LAYOUT_UNDEFINED, 
-		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
-	);
 
-	// copying
 	VKW_CommandBuffer command_buffer{};
 	command_buffer.init(
 		device,
 		command_pool,
 		true
 	);
+
 	command_buffer.begin_single_use();
 
+	// transfer layout 1
+	Texture::transition_layout(
+		command_buffer,
+		texture,
+		VK_IMAGE_LAYOUT_UNDEFINED,
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+	);
+
+	// copying
 	VkBufferImageCopy image_copy{};
 	image_copy.bufferOffset = 0;
 	image_copy.bufferRowLength = 0; // tightly packed
@@ -132,14 +136,17 @@ inline Texture create_texture_from_path(const VKW_Device* device, const VKW_Comm
 	image_copy.imageExtent = { (unsigned int) width, (unsigned int) height, 1 };
 
 	vkCmdCopyBufferToImage(command_buffer, staging_buffer, texture, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &image_copy);
-	command_buffer.submit_single_use();
-
+	
 	// transfer layout 2
-	texture.transition_layout(command_pool,
+	Texture::transition_layout(
+		command_buffer,
+		texture,
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
 	);
 	
+	command_buffer.submit_single_use();
+
 	staging_buffer.del();
 
 	return texture;

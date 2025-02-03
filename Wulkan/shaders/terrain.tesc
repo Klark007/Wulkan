@@ -177,23 +177,6 @@ bool is_culled() {
     return false;
 }
 
-float f_der_y(vec2 uv, vec2 dir, float eps) {
-    // for dydu dir == vec2(1,0) for dydv dir == vec2(0,1)
-    return (texture(height_map, uv + eps*dir).r - texture(height_map, uv - eps*dir).r) / (2*eps);
-}
-
-float s_der_y(vec2 uv, vec2 dir1, vec2 dir2, float eps1, float eps2) {
-    
-    return (
-        texture(height_map, uv + eps1*2*dir1 + eps2*2*dir2).r
-        - 2 * texture(height_map, uv).r
-        + texture(height_map, uv - eps1*2*dir1 - eps2*2*dir2).r
-    ) / (eps1*2 * eps2*2);
-    
-
-    //return (f_der_y(uv + eps2*dir2, dir1, eps1) - f_der_y(uv - eps2*dir2, dir1, eps1)) / (2*eps2);
-}
-
 vec4 project_point(vec4 p) {
     p.z = texture(height_map, inUV[0]).r * pc.height_scale;
     vec4 proj_p = ubo.proj * ubo.virtual_view * pc.model * p;
@@ -206,7 +189,6 @@ float linearize_depth(float d)
 {
     return ubo.near_far_plane.x * ubo.near_far_plane.y / (ubo.near_far_plane.y + d * (ubo.near_far_plane.x - ubo.near_far_plane.y));
 }
-
 
 float map(float value, float min1, float max1, float min2, float max2) {
   return min2 + (value - min1) * (max2 - min2) / (max1 - min1);
