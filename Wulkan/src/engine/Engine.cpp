@@ -49,11 +49,19 @@ void Engine::run()
 	while (!glfwWindowShouldClose(window)) {
 		update();
 
-		draw();
+		if (aquire_image()) {
+			draw();
 
-		present();
+			present();
 
-		late_update();
+			late_update();
+		}
+
+		if (resize_window) {
+			recreate_swapchain();
+			resize_window = false;
+		}
+
 	}
 
 	vkDeviceWaitIdle(device);
@@ -83,7 +91,6 @@ void Engine::update()
 
 void Engine::draw()
 {
-	aquire_image();
 	const VKW_CommandBuffer& cmd = get_current_command_buffer();
 	cmd.reset();
 
@@ -100,6 +107,18 @@ void Engine::draw()
 		{
 			VKW_GraphicsPipeline& pipeline = (gui_input.terrain_wireframe_mode) ? terrain_wireframe_pipeline : terrain_pipeline;
 			pipeline.set_render_size(swapchain.get_extent());
+
+			pipeline.set_color_attachment(
+				color_render_target.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT),
+				true,
+				{ {0.0f, 0.0f, 0.0f, 1.0f} }
+			);
+
+			pipeline.set_depth_attachment(
+				depth_render_target.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT),
+				true,
+				1.0f
+			);
 
 			pipeline.begin_rendering(cmd);
 			{
@@ -147,8 +166,8 @@ void Engine::present()
 {
 	if (!swapchain.present({ get_current_render_semaphore() }, current_swapchain_image_idx)) {
 		std::cout << "Recreate swapchain (Present)" << std::endl;
-
-		// recreate_swapchain(); 
+		resize_window = true;
+		//recreate_swapchain(); 
 	}
 }
 
@@ -179,7 +198,8 @@ void Engine::init_glfw()
 	}
 
 	glfwSetWindowUserPointer(window, this);
-	glfwSetFramebufferSizeCallback(window, glfw_window_resize_callback);
+	
+	//glfwSetFramebufferSizeCallback(window, glfw_window_resize_callback);
 
 	// disable cursor so can use raw mouse movement
 	if (!glfwRawMouseMotionSupported()) {
@@ -345,11 +365,28 @@ void Engine::create_swapchain()
 
 void Engine::recreate_swapchain()
 {
-  // TODO wait device idle
+	// dont recreate swapchain while image is minimized
+	int width, height;
+	glfwGetFramebufferSize(window, &width, &height);
+	while (width == 0 || height == 0) {
+		glfwGetFramebufferSize(window, &width, &height);
+		glfwWaitEvents();
+	}
+	res_x = width;
+	res_y = height;
+
+	vkDeviceWaitIdle(device);
+
 	destroy_swapchain();
+
+	// important to clear i.e. image view cache
+	color_render_target = {};
+	depth_render_target = {};
 
 	// TODO swap to recreating using previous swapchain
 	create_swapchain();
+
+	camera.set_aspect_ratio(res_x, res_y);
 }
 
 void Engine::destroy_swapchain()
@@ -400,7 +437,7 @@ void Engine::create_sync_structs()
 	}
 }
 
-void Engine::aquire_image()
+bool Engine::aquire_image()
 {
 	VkFence render_fence = get_current_render_fence();
 	VK_CHECK_E(vkWaitForFences(device, 1, &render_fence, VK_TRUE, UINT64_MAX), RuntimeException);
@@ -413,11 +450,11 @@ void Engine::aquire_image()
 		VK_NULL_HANDLE, 
 		&current_swapchain_image_idx
 	);
-	if (aquire_image_result == VK_ERROR_OUT_OF_DATE_KHR || resize_window) {
+	if (aquire_image_result == VK_ERROR_OUT_OF_DATE_KHR) {
 		std::cout << "Recreate swapchain (Aquire)" << std::endl;
-		// resize_window = false;
-		// recreate_swapchain(); 
-		// return;
+
+		resize_window = true;
+		return false;
 	}
 	else if (aquire_image_result != VK_SUCCESS && aquire_image_result != VK_SUBOPTIMAL_KHR) {
 		throw RuntimeException("Failed to aquire image from swapchain: " + std::string(string_VkResult(aquire_image_result)), __FILE__, __LINE__);
@@ -425,6 +462,8 @@ void Engine::aquire_image()
 	
 	// we have successfully aquired image, can reset fence
 	VK_CHECK_E(vkResetFences(device, 1, &render_fence), RuntimeException);
+
+	return true;
 }
 
 void Engine::update_uniforms()
@@ -488,6 +527,7 @@ void glfm_mouse_move_callback(GLFWwindow* window, double pos_x, double pos_y) {
 	}
 }
 
+/*
 void glfw_window_resize_callback(GLFWwindow* window, int width, int height) {
 	Engine* engine = reinterpret_cast<Engine*>(glfwGetWindowUserPointer(window));
 	if (engine) {
@@ -497,3 +537,4 @@ void glfw_window_resize_callback(GLFWwindow* window, int width, int height) {
 		throw SetupException("GLFW Engine User pointer not set", __FILE__, __LINE__);
 	}
 }
+*/

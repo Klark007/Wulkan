@@ -156,18 +156,6 @@ inline VKW_GraphicsPipeline Terrain::create_pipeline(const VKW_Device* device, T
 	graphics_pipeline.set_color_attachment_format(color_rt.get_format());
 	graphics_pipeline.set_depth_attachment_format(depth_rt.get_format());
 
-	graphics_pipeline.set_color_attachment(
-		color_rt.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT),
-		true,
-		{ {0.0f, 0.0f, 0.0f, 1.0f} }
-	);
-
-	graphics_pipeline.set_depth_attachment(
-		depth_rt.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT),
-		true,
-		1.0f
-	);
-
 	graphics_pipeline.init(device);
 
 	terrain_vert_shader.del();

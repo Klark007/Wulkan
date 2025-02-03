@@ -76,17 +76,13 @@ private:
 	struct GLFWwindow* window;
 	unsigned int res_x, res_y;
 
-public:  // TODO: remove public
 	unsigned int current_frame;
 	void update();
 	void draw();
 	void present();
 	void late_update(); // executed after draw
-private: // TODO: remove public
 
-public: // TODO: remove public
 	bool resize_window = false; // set to true by resize_callback(), will execute resize to avoid issues with resources 
-private: // TODO: remove public
 	void resize();
 
 	void init_glfw();
@@ -105,14 +101,13 @@ private: // TODO: remove public
 	void init_render_targets();
 
 	void create_graphics_pipelines();
-public: // TODO: remove public
-  void create_swapchain();
+	void create_swapchain();
 	void recreate_swapchain();
 	void destroy_swapchain();
-private:
 	void create_command_structs(); // creates command pools and buffers
 	void create_sync_structs(); // create fences and semaphores
-	void aquire_image(); // aquires new image from swapchain
+
+	bool aquire_image(); // aquires new image from swapchain
 
 	void update_uniforms(); // updates uniform buffers (Pushconstant's are changed per object so not in this call)
 
@@ -207,10 +202,14 @@ inline VkFence Engine::get_current_render_fence() const
 	return sync_structs[current_frame].render_fence;
 }
 
+/*
 // TODO: check if resize_callback could call resize directly
 inline void Engine::resize_callback(unsigned int new_x, unsigned int new_y)
 {
+	std::cout << "Resize callback" << std::endl;
+
 	res_x = new_x;
 	res_y = new_y;
 	resize_window = true;
 }
+*/
