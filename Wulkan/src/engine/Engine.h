@@ -103,7 +103,7 @@ private:
 	void create_graphics_pipelines();
 	void create_swapchain();
 	void recreate_swapchain();
-	void destroy_swapchain();
+	void recreate_render_targets();
 	void create_command_structs(); // creates command pools and buffers
 	void create_sync_structs(); // create fences and semaphores
 
@@ -201,15 +201,3 @@ inline VkFence Engine::get_current_render_fence() const
 {
 	return sync_structs[current_frame].render_fence;
 }
-
-/*
-// TODO: check if resize_callback could call resize directly
-inline void Engine::resize_callback(unsigned int new_x, unsigned int new_y)
-{
-	std::cout << "Resize callback" << std::endl;
-
-	res_x = new_x;
-	res_y = new_y;
-	resize_window = true;
-}
-*/

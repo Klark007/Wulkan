@@ -2,6 +2,9 @@
 
 #include "GLFW/glfw3.h"
 
+#define PROFILING
+#include "../Profiler.h"
+
 /* 
  By default the swapchain builder uses
  
@@ -16,7 +19,7 @@ It also handles:
  * Sharing modes
 
 */
-void VKW_Swapchain::init(GLFWwindow* window, const VKW_Device& device, const VKW_Queue* queue)
+void VKW_Swapchain::init(GLFWwindow* window, const VKW_Device& device, const VKW_Queue* queue, VkSwapchainKHR old_swapchain)
 {
     present_queue = queue;
 
@@ -29,12 +32,13 @@ void VKW_Swapchain::init(GLFWwindow* window, const VKW_Device& device, const VKW
   
     builder.set_desired_extent(width, height)
         .add_image_usage_flags(VK_IMAGE_USAGE_TRANSFER_DST_BIT)
+        .set_old_swapchain(old_swapchain)
     ;
 
     auto build_result = builder.build();
 
     if (!build_result) {
-        throw SetupException("Failed to create a swapchain: " + build_result.error().message(), __FILE__, __LINE__);
+        throw SetupException(std::string(string_VkResult((VkResult) build_result.vk_result())) + ";\n" + "Failed to create a swapchain", __FILE__, __LINE__);
     }
 
     vkb_swapchain = build_result.value();
@@ -52,6 +56,17 @@ void VKW_Swapchain::del()
         swapchain = VK_NULL_HANDLE;
     }
 }
+
+void VKW_Swapchain::recreate(GLFWwindow* window, const VKW_Device& device)
+{
+    vkb_swapchain.destroy_image_views(image_views);
+    vkb::Swapchain old_swapchain = vkb_swapchain;
+    
+    init(window, device, present_queue, old_swapchain);
+
+    vkb::destroy_swapchain(old_swapchain);
+}
+
 
 bool VKW_Swapchain::present(const std::vector<VkSemaphore>& wait_semaphores, uint32_t image_idx) const
 {

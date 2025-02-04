@@ -196,6 +196,7 @@
     <ClInclude Include="external\imgui\imstb_truetype.h" />
     <ClInclude Include="external\imgui\misc\cpp\imgui_stdlib.h" />
     <ClInclude Include="src\engine\Camera.h" />
+    <ClInclude Include="src\engine\Profiler.h" />
     <ClInclude Include="src\engine\Shape.h" />
     <ClInclude Include="src\engine\vk_types.h" />
     <ClInclude Include="src\engine\vk_wrap\VKW_Object.h" />

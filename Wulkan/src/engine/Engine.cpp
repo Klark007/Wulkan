@@ -12,7 +12,10 @@
 
 #ifdef NDEBUG
 #else
+#define PROFILING
 #endif
+
+#include "Profiler.h"
 
 void Engine::init(unsigned int w, unsigned int h)
 {
@@ -164,10 +167,10 @@ void Engine::draw()
 
 void Engine::present()
 {
+	// TODO CHECK WHICH MISTAKE
 	if (!swapchain.present({ get_current_render_semaphore() }, current_swapchain_image_idx)) {
 		std::cout << "Recreate swapchain (Present)" << std::endl;
 		resize_window = true;
-		//recreate_swapchain(); 
 	}
 }
 
@@ -199,8 +202,6 @@ void Engine::init_glfw()
 
 	glfwSetWindowUserPointer(window, this);
 	
-	//glfwSetFramebufferSizeCallback(window, glfw_window_resize_callback);
-
 	// disable cursor so can use raw mouse movement
 	if (!glfwRawMouseMotionSupported()) {
 		throw std::runtime_error("Raw mouse motion not supported");
@@ -375,28 +376,36 @@ void Engine::recreate_swapchain()
 	res_x = width;
 	res_y = height;
 
+	INIT_TRACE();
+	BEGIN_TRACE();
 	vkDeviceWaitIdle(device);
+	END_TRACE("Wait device: ");
 
-	destroy_swapchain();
+	BEGIN_TRACE();
+	swapchain.recreate(window, device);
+	END_TRACE("Recreate swapchain: ");
+
+
+	BEGIN_TRACE();
+	recreate_render_targets();
+	END_TRACE("Recreate RT's: ");
+
+
+	camera.set_aspect_ratio(res_x, res_y);
+}
+
+void Engine::recreate_render_targets()
+{
+	// Destroys render targets
+
+	color_render_target.del();
+	depth_render_target.del();
 
 	// important to clear i.e. image view cache
 	color_render_target = {};
 	depth_render_target = {};
 
-	// TODO swap to recreating using previous swapchain
-	create_swapchain();
-
-	camera.set_aspect_ratio(res_x, res_y);
-}
-
-void Engine::destroy_swapchain()
-{
-	// Destroys images, image views and framebuffers associated with the swapchain
-	// TODO: reset images etc.
-
-	swapchain.del();
-	color_render_target.del();
-	depth_render_target.del();
+	init_render_targets();
 }
 
 void Engine::create_command_structs()
@@ -452,8 +461,8 @@ bool Engine::aquire_image()
 	);
 	if (aquire_image_result == VK_ERROR_OUT_OF_DATE_KHR) {
 		std::cout << "Recreate swapchain (Aquire)" << std::endl;
-
 		resize_window = true;
+
 		return false;
 	}
 	else if (aquire_image_result != VK_SUCCESS && aquire_image_result != VK_SUBOPTIMAL_KHR) {
@@ -526,15 +535,3 @@ void glfm_mouse_move_callback(GLFWwindow* window, double pos_x, double pos_y) {
 		throw SetupException("GLFW Engine User pointer not set", __FILE__, __LINE__);
 	}
 }
-
-/*
-void glfw_window_resize_callback(GLFWwindow* window, int width, int height) {
-	Engine* engine = reinterpret_cast<Engine*>(glfwGetWindowUserPointer(window));
-	if (engine) {
-		engine->resize_callback(width, height);
-	}
-	else {
-		throw SetupException("GLFW Engine User pointer not set", __FILE__, __LINE__);
-	}
-}
-*/
