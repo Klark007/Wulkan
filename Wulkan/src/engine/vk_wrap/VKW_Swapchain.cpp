@@ -2,9 +2,6 @@
 
 #include "GLFW/glfw3.h"
 
-#define PROFILING
-#include "../Profiler.h"
-
 /* 
  By default the swapchain builder uses
  

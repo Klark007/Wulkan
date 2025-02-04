@@ -74,83 +74,9 @@ public:
 	inline unsigned int get_height() const { return height; };
 };
 
+
 // creates a texture from a path, needs graphics command pool as input argument as we are waiting on a stage not present supported in transfer queues (in transition_layout)
-inline Texture create_texture_from_path(const VKW_Device* device, const VKW_CommandPool* command_pool, const std::string& path, Texture_Type type) {
-	VkFormat format = Texture::find_format(*device, type);
-	
-	int desired_channels = Texture::get_stbi_channels(format);
-
-	int width, height, channels;
-	stbi_uc* pixels = stbi_load(path.c_str(), &width, &height, &channels, desired_channels); // force rgba for texture STBI_grey
-
-	if (!pixels) {
-		std::string reason = std::string(stbi_failure_reason());
-		throw IOException(std::format("Failed to load image ({}) at {}", reason, path), __FILE__, __LINE__);
-	}
-
-	VkDeviceSize image_size = width * height * desired_channels;
-	// todo make staging buffer local to constructor
-	VKW_Buffer staging_buffer = create_staging_buffer(device, pixels, image_size);
-
-	stbi_image_free(pixels);
-
-	Texture texture{};
-	texture.init(
-		device, 
-		width, height, 
-		format, 
-		VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 
-		sharing_exlusive() // exclusively owned by graphics queue
-	);
-
-
-	VKW_CommandBuffer command_buffer{};
-	command_buffer.init(
-		device,
-		command_pool,
-		true
-	);
-
-	command_buffer.begin_single_use();
-
-	// transfer layout 1
-	Texture::transition_layout(
-		command_buffer,
-		texture,
-		VK_IMAGE_LAYOUT_UNDEFINED,
-		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
-	);
-
-	// copying
-	VkBufferImageCopy image_copy{};
-	image_copy.bufferOffset = 0;
-	image_copy.bufferRowLength = 0; // tightly packed
-	image_copy.bufferImageHeight = 0;
-
-	image_copy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	image_copy.imageSubresource.mipLevel = 0;
-	image_copy.imageSubresource.baseArrayLayer = 0;
-	image_copy.imageSubresource.layerCount = 1;
-
-	image_copy.imageOffset = { 0,0,0 };
-	image_copy.imageExtent = { (unsigned int) width, (unsigned int) height, 1 };
-
-	vkCmdCopyBufferToImage(command_buffer, staging_buffer, texture, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &image_copy);
-	
-	// transfer layout 2
-	Texture::transition_layout(
-		command_buffer,
-		texture,
-		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-	);
-	
-	command_buffer.submit_single_use();
-
-	staging_buffer.del();
-
-	return texture;
-}
+Texture create_texture_from_path(const VKW_Device* device, const VKW_CommandPool* command_pool, const std::string& path, Texture_Type type);
 
 inline VkFormat Texture::find_format(const VKW_Device& device, Texture_Type type)
 {

@@ -167,7 +167,6 @@ void Engine::draw()
 
 void Engine::present()
 {
-	// TODO CHECK WHICH MISTAKE
 	if (!swapchain.present({ get_current_render_semaphore() }, current_swapchain_image_idx)) {
 		std::cout << "Recreate swapchain (Present)" << std::endl;
 		resize_window = true;
@@ -277,7 +276,6 @@ void Engine::init_terrain_data()
 		&linear_texture_sampler,
 		&shared_terrain_data,
 
-		//"textures/height_test1.png",
 		"textures/terrain_heightmap.png",
 		"textures/terrain_texture.png",
 		"textures/terrain_normal.png",
@@ -376,20 +374,11 @@ void Engine::recreate_swapchain()
 	res_x = width;
 	res_y = height;
 
-	INIT_TRACE();
-	BEGIN_TRACE();
 	vkDeviceWaitIdle(device);
-	END_TRACE("Wait device: ");
 
-	BEGIN_TRACE();
 	swapchain.recreate(window, device);
-	END_TRACE("Recreate swapchain: ");
 
-
-	BEGIN_TRACE();
 	recreate_render_targets();
-	END_TRACE("Recreate RT's: ");
-
 
 	camera.set_aspect_ratio(res_x, res_y);
 }
