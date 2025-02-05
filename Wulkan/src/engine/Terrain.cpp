@@ -82,7 +82,7 @@ void Terrain::init(const VKW_Device& device, const VKW_CommandPool& graphics_poo
 		&device,
 		&graphics_pool,
 		albedo_path,
-		Texture_Type::Tex_RGB
+		Texture_Type::Tex_HDR_RGBA
 	);
 
 	normal_map = create_texture_from_path(

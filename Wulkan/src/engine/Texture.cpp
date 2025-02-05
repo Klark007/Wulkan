@@ -231,27 +231,70 @@ void Texture::copy(const VKW_CommandBuffer& command_buffer, VkImage src_texture,
 	vkCmdBlitImage2(command_buffer, &blit_info);
 }
 
+#include <iostream>
+
+// TODO instead return out_rgb
+void load_exr_image(const std::string& path, float** out_rgb, int& width, int& height, int& channels) {
+	channels = 4;
+	
+	const char* err = nullptr;
+	int res = LoadEXRWithLayer(out_rgb, &width, &height, path.c_str(), nullptr, &err);
+
+	if (res) {
+		std::string msg = std::format("Failed to koad EXR file ({}) at {}", res, path);
+		if (err) {
+			msg += std::string(": ") + err;
+			FreeEXRErrorMessage(err);
+		}
+
+		// todo need to gamma convert
+
+		throw IOException(msg, __FILE__, __LINE__);
+	}
+}
+
+void load_image(const std::string& path, stbi_uc** out_rgb, int& width, int& height, int& channels, VkFormat format) {
+	channels = Texture::get_stbi_channels(format);
+
+	int ch;
+	*out_rgb = stbi_load(path.c_str(), &width, &height, &ch, channels);
+
+	if (!(*out_rgb)) {
+		std::string reason = std::string(stbi_failure_reason());
+		throw IOException(std::format("Failed to load image ({}) at {}", reason, path), __FILE__, __LINE__);
+	}
+}
+
+
 Texture create_texture_from_path(const VKW_Device* device, const VKW_CommandPool* command_pool, const std::string& path, Texture_Type type) {
 	VkFormat format = Texture::find_format(*device, type);
 
 	size_t type_start = path.rfind(".")+1;
 	std::string file_type = path.substr(type_start, path.size() - type_start);
+	bool is_exr = file_type == "exr";
 
-	int desired_channels = Texture::get_stbi_channels(format);
+	VKW_Buffer staging_buffer;
+	int width, height;
+	if (is_exr) {
+		float* rgba = nullptr;
+		int channels;
+		
+		load_exr_image(path, &rgba, width, height, channels);
+		
+		VkDeviceSize image_size = width * height * channels * sizeof(float);
+		staging_buffer = create_staging_buffer(device, rgba, image_size);
 
-	int width, height, channels;
-	stbi_uc* pixels = stbi_load(path.c_str(), &width, &height, &channels, desired_channels); // force rgba for texture STBI_grey
+		free(rgba);
+	} else {
+		stbi_uc* pixels = nullptr;
+		int channels;
+		load_image(path, &pixels, width, height, channels, format);
 
-	if (!pixels) {
-		std::string reason = std::string(stbi_failure_reason());
-		throw IOException(std::format("Failed to load image ({}) at {}", reason, path), __FILE__, __LINE__);
+		VkDeviceSize image_size = width * height * channels * sizeof(stbi_uc);
+		staging_buffer = create_staging_buffer(device, pixels, image_size);
+	
+		stbi_image_free(pixels);
 	}
-
-	VkDeviceSize image_size = width * height * desired_channels;
-	// todo make staging buffer local to constructor
-	VKW_Buffer staging_buffer = create_staging_buffer(device, pixels, image_size);
-
-	stbi_image_free(pixels);
 
 	Texture texture{};
 	texture.init(

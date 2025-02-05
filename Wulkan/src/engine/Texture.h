@@ -15,6 +15,7 @@ enum Texture_Type
 	Tex_R,   // create R only texture
 	Tex_RGB, // create RGB texture
 	Tex_RGBA, // create RGBA texture
+	Tex_HDR_RGBA, // create RGBA with high dynamic range texture
 
 	Tex_Colortarget, // creates target used for rendering 
 	Tex_D   // create depth texture
@@ -76,6 +77,8 @@ public:
 
 
 // creates a texture from a path, needs graphics command pool as input argument as we are waiting on a stage not present supported in transfer queues (in transition_layout)
+// Low-dynamic range images are created with the nr channels dictated by the type (1,3,4)
+// High dynamic range images are always 4 channels
 Texture create_texture_from_path(const VKW_Device* device, const VKW_CommandPool* command_pool, const std::string& path, Texture_Type type);
 
 inline VkFormat Texture::find_format(const VKW_Device& device, Texture_Type type)
@@ -109,8 +112,6 @@ inline int Texture::get_stbi_channels(VkFormat format)
 	case VK_FORMAT_D32_SFLOAT:
 	case VK_FORMAT_D32_SFLOAT_S8_UINT:
 	case VK_FORMAT_D24_UNORM_S8_UINT:
-	case Tex_Colortarget:
-		throw RuntimeException(std::format("Don't support to create a texturet that is filled with an image for format {:x}", static_cast<int>(format)), __FILE__, __LINE__);
 	default:
 		throw NotImplementedException(std::format("Unknown type {:x}", static_cast<int>(format)), __FILE__, __LINE__);
 	}
@@ -132,6 +133,8 @@ inline std::vector<VkFormat> Texture::potential_formats(Texture_Type type)
 		return { VK_FORMAT_R8G8B8_SRGB, VK_FORMAT_R8G8B8A8_SRGB };
 	case Tex_RGBA:
 		return { VK_FORMAT_R8G8B8A8_SRGB };
+	case Tex_HDR_RGBA:
+		return { VK_FORMAT_R32G32B32A32_SFLOAT };
 	case Tex_Colortarget:
 		return { VK_FORMAT_R16G16B16A16_SFLOAT };
 	default:
@@ -148,6 +151,7 @@ inline VkFormatFeatureFlags Texture::required_format_features(Texture_Type type)
 	case Tex_R:
 	case Tex_RGB:
 	case Tex_RGBA:
+	case Tex_HDR_RGBA:
 		return VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT | VK_FORMAT_FEATURE_TRANSFER_DST_BIT;
 	case Tex_Colortarget:
 		return

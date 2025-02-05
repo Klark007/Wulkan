@@ -277,7 +277,8 @@ void Engine::init_terrain_data()
 		&shared_terrain_data,
 
 		"textures/terrain_heightmap.png",
-		"textures/terrain_texture.png",
+		"textures/day_cube_map_+X.exr",
+		//"textures/terrain_texture.png",
 		"textures/terrain_normal.png",
 		256							// resolution of mesh
 	);
