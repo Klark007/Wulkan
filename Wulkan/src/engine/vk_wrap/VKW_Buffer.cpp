@@ -45,11 +45,12 @@ void VKW_Buffer::del()
 	}
 }
 
-void VKW_Buffer::copy(const void* data)
+void VKW_Buffer::copy(const void* data, size_t data_size, size_t offset)
 {
-	map();
-	memcpy(mapped_address, data, size());
-	unmap();
+	if (offset + data_size > size()) {
+		throw RuntimeException("Tried copy that would write outside of bounds", __FILE__, __LINE__);
+	}
+	memcpy_s((char*) mapped_address+offset, size(), data, data_size);
 }
 
 void VKW_Buffer::copy(const VKW_CommandPool* command_pool, const VKW_Buffer& other_buffer)
@@ -100,18 +101,20 @@ void VKW_Buffer::unmap()
 	is_mapped = false;
 }
 
-VKW_Buffer create_staging_buffer(const VKW_Device* device, const void* data, VkDeviceSize size)
+VKW_Buffer create_staging_buffer(const VKW_Device* device, VkDeviceSize buffer_size, const void* data, size_t data_size)
 {
 	VKW_Buffer staging_buffer = {};
 	staging_buffer.init(
 		device,
-		size,
+		buffer_size,
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		sharing_exlusive(),
 		true
 	);
 
-	staging_buffer.copy(data);
+	staging_buffer.map();
+	staging_buffer.copy(data, data_size);
+	staging_buffer.unmap();
 
 	return staging_buffer;
 }

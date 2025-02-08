@@ -8,7 +8,6 @@
 // TODO: Per Shape model transform
 #include <glm/gtc/matrix_transform.hpp>
 
-
 #include "vk_wrap/VKW_GraphicsPipeline.h"
 
 struct TerrainVertexPushConstants {
@@ -62,12 +61,11 @@ class Terrain : public Shape
 {
 public:
 	Terrain() = default;
-	void init(const VKW_Device& device, const VKW_CommandPool& graphics_pool, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool* descriptor_pool, const VKW_Sampler* sampler, SharedTerrainData* shared_terrain_data, const std::string& height_path, const std::string& albedo_path, const std::string& normal_path, uint32_t mesh_res);
+	void init(const VKW_Device& device, const VKW_CommandPool& graphics_pool, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, const VKW_Sampler* sampler, SharedTerrainData* shared_terrain_data, const std::string& height_path, const std::string& albedo_path, const std::string& normal_path, uint32_t mesh_res);
 	void set_descriptor_bindings(const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& uniform_buffers);
 	void del() override;
 
 	inline void draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame, const VKW_GraphicsPipeline& pipeline) override;
-
 private:
 	Mesh mesh;
 	const VKW_Sampler* texture_sampler;
@@ -77,7 +75,7 @@ private:
 
 	Texture curvatue;
 	// precomputes the curvature from the height map using a compute shader
-	void precompute_curvature(const VKW_Device& device, const VKW_CommandPool& graphics_pool, const VKW_DescriptorPool* descriptor_pool);
+	void precompute_curvature(const VKW_Device& device, const VKW_CommandPool& graphics_pool, const VKW_DescriptorPool& descriptor_pool);
 
 	float tesselation_strength;
 	float max_tesselation;

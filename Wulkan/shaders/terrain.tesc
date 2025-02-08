@@ -88,15 +88,6 @@ void main()
                     pc.max_tesselation
                 )[gl_InvocationID]
             );
-            /*
-            outColor[gl_InvocationID] = vec4(
-            vec3(
-                    min(
-                        compute_tesselation_level()[gl_InvocationID] * pc.tesselation_strength,
-                        pc.max_tesselation
-                    )
-            ), 1);
-            */
             break;
         default: // Not implemented modes or modes where color is computed in the fragment shader (pink) 
             outColor[gl_InvocationID] = vec4(1,0,1,1);
@@ -177,8 +168,8 @@ bool is_culled() {
     return false;
 }
 
-vec4 project_point(vec4 p) {
-    p.z = texture(height_map, inUV[0]).r * pc.height_scale;
+vec4 project_point(vec4 p, vec2 uv) {
+    p.z = texture(height_map, uv).r * pc.height_scale;
     vec4 proj_p = ubo.proj * ubo.virtual_view * pc.model * p;
     proj_p = proj_p / proj_p.w;
 
@@ -218,7 +209,7 @@ vec4 compute_tesselation_level() {
             }
         }
 
-        float linear_depth = map(linearize_depth(project_point(vec4(inPos[i],1)).z), ubo.near_far_plane.x, ubo.near_far_plane.y, 0, 1);
+        float linear_depth = map(linearize_depth(project_point(vec4(inPos[i],1), inUV[i]).z), ubo.near_far_plane.x, ubo.near_far_plane.y, 0, 1);
 
         res[i] = abs_h / nr_samples * inout_bezier(1 - linear_depth);
     }

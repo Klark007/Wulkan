@@ -15,7 +15,7 @@ public:
 	void init(const VKW_Device* device, VkDeviceSize size, VkBufferUsageFlags usage, SharingInfo info, bool mappable);
 	void del() override;
 
-	void copy(const void* data); // copies data into VKW_Buffer
+	void copy(const void* data, size_t data_size, size_t offset=0); // copies data into VKW_Buffer (copies data_size many bytes from data to mapped_address + offset)
 	void copy(const VKW_CommandPool* command_pool, const VKW_Buffer& other_buffer); // copies other buffer into this one, creates and submits single use command buffer
 	void map(); // maps buffer into cpu accessible memory and returns pointer to it 
 	void unmap();
@@ -40,4 +40,4 @@ public:
 	inline void* get_mapped_address() const { return mapped_address; }; // returns mapped address or null if not mapped
 };
 
-VKW_Buffer create_staging_buffer(const VKW_Device* device, const void* data, VkDeviceSize size);
+VKW_Buffer create_staging_buffer(const VKW_Device* device, VkDeviceSize buffer_size, const void* data, size_t data_size);

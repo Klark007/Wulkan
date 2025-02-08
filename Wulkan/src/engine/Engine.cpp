@@ -29,7 +29,7 @@ void Engine::init(unsigned int w, unsigned int h)
 	camera_controller = CameraController(window, &camera);
 	gui.init(window, instance, device, graphics_queue, imgui_descriptor_pool, &swapchain);
 	cleanup_queue.add(&gui);
-}
+ }
 
 Engine::~Engine()
 {
@@ -105,6 +105,36 @@ void Engine::draw()
 		Texture::transition_layout(cmd, color_render_target, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 		Texture::transition_layout(cmd, depth_render_target, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
+		// draw environment map
+		{
+			
+			VKW_GraphicsPipeline& pipeline = environment_map_pipeline;
+			pipeline.set_render_size(swapchain.get_extent());
+
+			// would theoretically not need to clear the screen
+			pipeline.set_color_attachment(
+				color_render_target.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT),
+				true,
+				{ {0.2f, 0.2f, 0.2f, 1.0f} }
+			);
+
+			pipeline.set_depth_attachment(
+				depth_render_target.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT),
+				true,
+				1.0f
+			);
+			
+			pipeline.begin_rendering(cmd);
+			{
+				pipeline.bind(cmd);
+
+				pipeline.set_dynamic_viewport(cmd);
+				pipeline.set_dynamic_scissor(cmd);
+				environment_map.draw(cmd, current_frame, pipeline);
+			}
+			pipeline.end_rendering(cmd);
+		}
+		
 
 		// draw terrain
 		{
@@ -113,13 +143,13 @@ void Engine::draw()
 
 			pipeline.set_color_attachment(
 				color_render_target.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT),
-				true,
-				{ {0.0f, 0.0f, 0.0f, 1.0f} }
+				false,
+				{ {1.0f, 0.0f, 1.0f, 1.0f} }
 			);
 
 			pipeline.set_depth_attachment(
 				depth_render_target.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT),
-				true,
+				false,
 				1.0f
 			);
 
@@ -133,7 +163,6 @@ void Engine::draw()
 			}
 			pipeline.end_rendering(cmd);
 		}
-
 		
 		// transitions for copy into swapchain images
 		Texture::transition_layout(cmd, color_render_target, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
@@ -167,7 +196,6 @@ void Engine::draw()
 
 void Engine::present()
 {
-	// TODO CHECK WHICH MISTAKE
 	if (!swapchain.present({ get_current_render_semaphore() }, current_swapchain_image_idx)) {
 		std::cout << "Recreate swapchain (Present)" << std::endl;
 		resize_window = true;
@@ -226,9 +254,11 @@ void Engine::init_vulkan()
 	create_texture_samplers();
 
 	create_uniform_buffers();
+
+	init_shared_data();
 	create_descriptor_sets();
 
-	init_terrain_data();
+	init_data();
 
 
 	create_graphics_pipelines();
@@ -267,24 +297,47 @@ void Engine::create_queues()
 	std::cout << "Chosen queues:" << graphics_queue.get_queue_family() << "," << present_queue.get_queue_family() << "," << transfer_queue.get_queue_family() << std::endl;
 }
 
-void Engine::init_terrain_data()
+void Engine::init_shared_data()
+{
+	shared_terrain_data.init(&device);
+	cleanup_queue.add(&shared_terrain_data);
+
+	shared_environment_data.init(&device);
+	cleanup_queue.add(&shared_environment_data);
+}
+
+void Engine::init_data()
 {
 	terrain.init(
 		device,
 		get_current_graphics_pool(),
 		get_current_transfer_pool(),
-		&descriptor_pool,
+		descriptor_pool,
 		&linear_texture_sampler,
 		&shared_terrain_data,
 
-		//"textures/height_test1.png",
-		"textures/terrain_heightmap.png",
-		"textures/terrain_texture.png",
-		"textures/terrain_normal.png",
+		"textures/terrain/heightmap.png",
+		//"textures/terrain/test/height_test1.png",
+		"textures/terrain/texture.png",
+		"textures/terrain/normal.png",
 		256							// resolution of mesh
 	);
 	terrain.set_descriptor_bindings(uniform_buffers);
 	cleanup_queue.add(&terrain);
+
+	environment_map.init(
+		device,
+		get_current_graphics_pool(),
+		get_current_transfer_pool(),
+		descriptor_pool,
+		&shared_environment_data,
+
+		"textures/environment_maps/day_cube_map_%.exr"
+		//"textures/environment_maps/rogland_clear_night_%.exr"
+		//"textures/environment_maps/test/test_%.exr"
+	);
+	environment_map.set_descriptor_bindings(uniform_buffers, linear_texture_sampler);
+	cleanup_queue.add(&environment_map);
 }
 
 void Engine::create_texture_samplers()
@@ -298,14 +351,12 @@ void Engine::create_descriptor_sets()
 	imgui_descriptor_pool.add_type(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1);
 	imgui_descriptor_pool.init(&device, 1);
 	cleanup_queue.add(&imgui_descriptor_pool);
-
-	
-	shared_terrain_data.init(&device);
-	cleanup_queue.add(&shared_terrain_data);
 	
 	// each Terrain instance needs MAX_FRAMES_IN_FLIGHT many descriptor sets
 	descriptor_pool.add_layout(shared_terrain_data.get_descriptor_set_layout(), MAX_FRAMES_IN_FLIGHT);
-	descriptor_pool.init(&device, MAX_FRAMES_IN_FLIGHT);
+	descriptor_pool.add_layout(shared_environment_data.get_descriptor_set_layout(), MAX_FRAMES_IN_FLIGHT);
+
+	descriptor_pool.init(&device, MAX_FRAMES_IN_FLIGHT*2);
 	cleanup_queue.add(&descriptor_pool);
 }
 
@@ -354,6 +405,9 @@ void Engine::create_graphics_pipelines()
 
 	terrain_wireframe_pipeline = Terrain::create_pipeline(&device, color_render_target, depth_render_target, shared_terrain_data, true);
 	cleanup_queue.add(&terrain_wireframe_pipeline);
+
+	environment_map_pipeline = EnvironmentMap::create_pipeline(&device, color_render_target, depth_render_target, shared_environment_data);
+	cleanup_queue.add(&environment_map_pipeline);
 }
 
 void Engine::create_swapchain()
@@ -376,20 +430,11 @@ void Engine::recreate_swapchain()
 	res_x = width;
 	res_y = height;
 
-	INIT_TRACE();
-	BEGIN_TRACE();
 	vkDeviceWaitIdle(device);
-	END_TRACE("Wait device: ");
 
-	BEGIN_TRACE();
 	swapchain.recreate(window, device);
-	END_TRACE("Recreate swapchain: ");
 
-
-	BEGIN_TRACE();
 	recreate_render_targets();
-	END_TRACE("Recreate RT's: ");
-
 
 	camera.set_aspect_ratio(res_x, res_y);
 }

@@ -80,11 +80,11 @@ void VKW_DescriptorSet::update(uint32_t binding, const VKW_Buffer& buffer) const
 	vkUpdateDescriptorSets(*device, 1, &buffer_write, 0, VK_NULL_HANDLE);
 }
 
-void VKW_DescriptorSet::update(uint32_t binding, Texture& texture, const VKW_Sampler& sampler, VkImageLayout layout, VkImageAspectFlags aspect) const
+void VKW_DescriptorSet::update(uint32_t binding, VkImageView image_view, const VKW_Sampler& sampler, VkImageLayout layout, VkImageAspectFlags aspect) const
 {
 	VkDescriptorImageInfo image_info{};
 	image_info.imageLayout = layout;
-	image_info.imageView = texture.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT);
+	image_info.imageView = image_view;
 	image_info.sampler = sampler;
 
 	VkWriteDescriptorSet image_write{};

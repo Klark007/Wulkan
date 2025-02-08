@@ -15,6 +15,7 @@ enum Texture_Type
 	Tex_R,   // create R only texture
 	Tex_RGB, // create RGB texture
 	Tex_RGBA, // create RGBA texture
+	Tex_HDR_RGBA, // create RGBA with high dynamic range texture
 
 	Tex_Colortarget, // creates target used for rendering 
 	Tex_D   // create depth texture
@@ -28,7 +29,7 @@ class Texture : public VKW_Object
 public:
 	Texture() = default;
 	// create an image (and memory) but not load it (to be used as attachment), if we want to load an image, use create_texture_from_path
-	void init(const VKW_Device* vkw_device, unsigned int width, unsigned int height, VkFormat format, VkImageUsageFlags usage, SharingInfo sharing_info);
+	void init(const VKW_Device* vkw_device, unsigned int width, unsigned int height, VkFormat format, VkImageUsageFlags usage, SharingInfo sharing_info, VkImageCreateFlags flags = 0, uint32_t array_layers = 1);
 	void del() override;
 
 private:
@@ -39,7 +40,7 @@ private:
 	VkImage image;
 	VkDeviceMemory memory;
 
-	std::map<VkImageAspectFlags, VkImageView> image_views;
+	std::map<std::pair<VkImageAspectFlags, VkImageViewType>, VkImageView> image_views;
 
 	unsigned int width, height;
 	VkFormat format;
@@ -66,91 +67,25 @@ public:
 	inline static VkFormat find_format(const VKW_Device& device, Texture_Type type);
 	inline static int get_stbi_channels(VkFormat format);
 
+	// gets image view of aspect with specific type (assumes one view per aspect flag, image view type combiniation)
+	VkImageView get_image_view(VkImageAspectFlags aspect_flag, VkImageViewType type = VK_IMAGE_VIEW_TYPE_2D, uint32_t array_layers = 1);
+
 	inline VkImage get_image() const { return image; };
 	inline operator VkImage() const { return image; };
-	VkImageView get_image_view(VkImageAspectFlags aspect_flag);
 	inline VkFormat get_format() const { return format; };
 	inline unsigned int get_width() const { return width; };
 	inline unsigned int get_height() const { return height; };
 };
 
+
 // creates a texture from a path, needs graphics command pool as input argument as we are waiting on a stage not present supported in transfer queues (in transition_layout)
-inline Texture create_texture_from_path(const VKW_Device* device, const VKW_CommandPool* command_pool, const std::string& path, Texture_Type type) {
-	VkFormat format = Texture::find_format(*device, type);
-	
-	int desired_channels = Texture::get_stbi_channels(format);
+// Low-dynamic range images are created with the nr channels dictated by the type (1,3,4)
+// High dynamic range images are always 4 channels
+Texture create_texture_from_path(const VKW_Device* device, const VKW_CommandPool* command_pool, const std::string& path, Texture_Type type);
 
-	int width, height, channels;
-	stbi_uc* pixels = stbi_load(path.c_str(), &width, &height, &channels, desired_channels); // force rgba for texture STBI_grey
-
-	if (!pixels) {
-		std::string reason = std::string(stbi_failure_reason());
-		throw IOException(std::format("Failed to load image ({}) at {}", reason, path), __FILE__, __LINE__);
-	}
-
-	VkDeviceSize image_size = width * height * desired_channels;
-	// todo make staging buffer local to constructor
-	VKW_Buffer staging_buffer = create_staging_buffer(device, pixels, image_size);
-
-	stbi_image_free(pixels);
-
-	Texture texture{};
-	texture.init(
-		device, 
-		width, height, 
-		format, 
-		VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 
-		sharing_exlusive() // exclusively owned by graphics queue
-	);
-
-
-	VKW_CommandBuffer command_buffer{};
-	command_buffer.init(
-		device,
-		command_pool,
-		true
-	);
-
-	command_buffer.begin_single_use();
-
-	// transfer layout 1
-	Texture::transition_layout(
-		command_buffer,
-		texture,
-		VK_IMAGE_LAYOUT_UNDEFINED,
-		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
-	);
-
-	// copying
-	VkBufferImageCopy image_copy{};
-	image_copy.bufferOffset = 0;
-	image_copy.bufferRowLength = 0; // tightly packed
-	image_copy.bufferImageHeight = 0;
-
-	image_copy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	image_copy.imageSubresource.mipLevel = 0;
-	image_copy.imageSubresource.baseArrayLayer = 0;
-	image_copy.imageSubresource.layerCount = 1;
-
-	image_copy.imageOffset = { 0,0,0 };
-	image_copy.imageExtent = { (unsigned int) width, (unsigned int) height, 1 };
-
-	vkCmdCopyBufferToImage(command_buffer, staging_buffer, texture, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &image_copy);
-	
-	// transfer layout 2
-	Texture::transition_layout(
-		command_buffer,
-		texture,
-		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-	);
-	
-	command_buffer.submit_single_use();
-
-	staging_buffer.del();
-
-	return texture;
-}
+// create a cube map from a path containing a %. % sign will be replaced with (+|-) (X|Y|Z) to get the 6 faces
+// Currently only supports hdr images (exr files)
+Texture create_cube_map_from_path(const VKW_Device* device, const VKW_CommandPool* command_pool, const std::string& path, Texture_Type type);
 
 inline VkFormat Texture::find_format(const VKW_Device& device, Texture_Type type)
 {
@@ -183,8 +118,6 @@ inline int Texture::get_stbi_channels(VkFormat format)
 	case VK_FORMAT_D32_SFLOAT:
 	case VK_FORMAT_D32_SFLOAT_S8_UINT:
 	case VK_FORMAT_D24_UNORM_S8_UINT:
-	case Tex_Colortarget:
-		throw RuntimeException(std::format("Don't support to create a texturet that is filled with an image for format {:x}", static_cast<int>(format)), __FILE__, __LINE__);
 	default:
 		throw NotImplementedException(std::format("Unknown type {:x}", static_cast<int>(format)), __FILE__, __LINE__);
 	}
@@ -206,6 +139,8 @@ inline std::vector<VkFormat> Texture::potential_formats(Texture_Type type)
 		return { VK_FORMAT_R8G8B8_SRGB, VK_FORMAT_R8G8B8A8_SRGB };
 	case Tex_RGBA:
 		return { VK_FORMAT_R8G8B8A8_SRGB };
+	case Tex_HDR_RGBA:
+		return { VK_FORMAT_R32G32B32A32_SFLOAT };
 	case Tex_Colortarget:
 		return { VK_FORMAT_R16G16B16A16_SFLOAT };
 	default:
@@ -222,6 +157,7 @@ inline VkFormatFeatureFlags Texture::required_format_features(Texture_Type type)
 	case Tex_R:
 	case Tex_RGB:
 	case Tex_RGBA:
+	case Tex_HDR_RGBA:
 		return VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT | VK_FORMAT_FEATURE_TRANSFER_DST_BIT;
 	case Tex_Colortarget:
 		return

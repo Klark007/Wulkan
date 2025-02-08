@@ -52,8 +52,7 @@ public:
 	inline void bind(const VKW_CommandBuffer& cmd) const { vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, graphics_pipeline); };
 
 	// begins render pass using the attachment state of the pipeline
-	//inline void begin_rendering(const VKW_CommandBuffer& cmd) const { vkCmdBeginRendering(cmd, &attachment_state); };
-	void begin_rendering(const VKW_CommandBuffer& cmd) const;
+	inline void begin_rendering(const VKW_CommandBuffer& cmd) const { vkCmdBeginRendering(cmd, &attachment_state); };
 
 	// ends the current render pass
 	inline void end_rendering(const VKW_CommandBuffer& cmd) const { vkCmdEndRendering(cmd); };
