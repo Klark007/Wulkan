@@ -28,6 +28,7 @@
 #include "Texture.h"
 #include "Mesh.h"
 #include "Terrain.h"
+#include "EnvironmentMap.h"
 
 #include "Gui.h"
 
@@ -93,10 +94,14 @@ private:
 	void create_device();
 	void create_queues();
 
-	void init_terrain_data();
+	void init_shared_data();
+
 	void create_texture_samplers();
-	void create_descriptor_sets();
 	void create_uniform_buffers();
+	void create_descriptor_sets();
+
+	void init_data();
+
 
 	void init_render_targets();
 
@@ -131,6 +136,7 @@ public: // TODO: remove public
 
 	VKW_GraphicsPipeline terrain_pipeline;
 	VKW_GraphicsPipeline terrain_wireframe_pipeline;
+	VKW_GraphicsPipeline environment_map_pipeline;
 
 	// general sampler for texture (Linear sampling, repeat address mode)
 	VKW_Sampler linear_texture_sampler;
@@ -138,6 +144,9 @@ public: // TODO: remove public
 	// Terrain data
 	SharedTerrainData shared_terrain_data;
 	Terrain terrain;
+
+	SharedEnvironmentData shared_environment_data;
+	EnvironmentMap environment_map;
 
 	// Input into shaders
 	VKW_DescriptorPool imgui_descriptor_pool;

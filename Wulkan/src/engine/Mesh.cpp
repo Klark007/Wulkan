@@ -4,7 +4,7 @@ void Mesh::init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, 
 {
 	// create gpu side buffer storing vertices
 	VkDeviceSize vertex_buffer_size = sizeof(Vertex) * vertices.size();
-	VKW_Buffer vertex_staging_buffer = create_staging_buffer(&device, vertices.data(), vertex_buffer_size);
+	VKW_Buffer vertex_staging_buffer = create_staging_buffer(&device, vertex_buffer_size, vertices.data(), vertex_buffer_size);
 
 	vertex_buffer.init(
 		&device,
@@ -20,7 +20,7 @@ void Mesh::init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, 
 
 	// create gpu side buffer storing indices
 	VkDeviceSize index_buffer_size = sizeof(uint32_t) * indices.size();
-	VKW_Buffer index_staging_buffer = create_staging_buffer(&device, indices.data(), index_buffer_size);
+	VKW_Buffer index_staging_buffer = create_staging_buffer(&device, index_buffer_size, indices.data(), index_buffer_size);
 
 	index_buffer.init(
 		&device,

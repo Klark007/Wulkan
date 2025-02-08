@@ -8,7 +8,7 @@
 #include <format>
 
 
-void Texture::init(const VKW_Device* vkw_device, unsigned int w, unsigned int h, VkFormat f, VkImageUsageFlags usage, SharingInfo sharing_info)
+void Texture::init(const VKW_Device* vkw_device, unsigned int w, unsigned int h, VkFormat f, VkImageUsageFlags usage, SharingInfo sharing_info, VkImageCreateFlags flags, uint32_t array_layers)
 {
 	device = vkw_device;
 	allocator = device->get_allocator();
@@ -19,13 +19,14 @@ void Texture::init(const VKW_Device* vkw_device, unsigned int w, unsigned int h,
 	VkImageCreateInfo image_info{};
 	image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 	image_info.imageType = VK_IMAGE_TYPE_2D;
+	image_info.flags = flags;
 	
 	image_info.extent.width = width;
 	image_info.extent.height = height;
 	image_info.extent.depth = 1; // 2d
 
 	image_info.mipLevels = 1;
-	image_info.arrayLayers = 1;
+	image_info.arrayLayers = array_layers;
 
 	image_info.format = format;
 	image_info.tiling = VK_IMAGE_TILING_OPTIMAL; // Not readable by cpu without changing Tiling
@@ -64,15 +65,16 @@ void Texture::del()
 	}
 }
 
-VkImageView Texture::get_image_view(VkImageAspectFlags aspect_flag)
+VkImageView Texture::get_image_view(VkImageAspectFlags aspect_flag, VkImageViewType type, uint32_t array_layers)
 {
-	if (image_views.contains(aspect_flag)) {
-		return image_views[aspect_flag];
+	std::pair<VkImageAspectFlags, VkImageViewType> pair = std::make_pair(aspect_flag, type);
+	if (image_views.contains(pair)) {
+		return image_views[pair];
 	} else {
 		VkImageViewCreateInfo view_info{};
 		view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 		view_info.image = image;
-		view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		view_info.viewType = type;
 		view_info.format = format;
 
 		view_info.subresourceRange.aspectMask = aspect_flag;
@@ -81,13 +83,12 @@ VkImageView Texture::get_image_view(VkImageAspectFlags aspect_flag)
 		view_info.subresourceRange.levelCount = 1;
 	
 		view_info.subresourceRange.baseArrayLayer = 0;
-		view_info.subresourceRange.layerCount = 1;
+		view_info.subresourceRange.layerCount = array_layers;
 
 		VkImageView image_view;
 		VK_CHECK_ET(vkCreateImageView(*device, &view_info, nullptr, &image_view), RuntimeException, std::format("Failed to create image view for aspect {}", aspect_flag));
 
-
-		image_views[aspect_flag] = image_view;
+		image_views[pair] = image_view;
 		return image_view;
 	}
 }
@@ -231,14 +232,12 @@ void Texture::copy(const VKW_CommandBuffer& command_buffer, VkImage src_texture,
 	vkCmdBlitImage2(command_buffer, &blit_info);
 }
 
-#include <iostream>
-
-// TODO instead return out_rgb
-void load_exr_image(const std::string& path, float** out_rgb, int& width, int& height, int& channels) {
+float* load_exr_image(const std::string& path, int& width, int& height, int& channels) {
 	channels = 4;
 	
+	float* rgba;
 	const char* err = nullptr;
-	int res = LoadEXRWithLayer(out_rgb, &width, &height, path.c_str(), nullptr, &err);
+	int res = LoadEXRWithLayer(&rgba, &width, &height, path.c_str(), nullptr, &err);
 
 	if (res) {
 		std::string msg = std::format("Failed to koad EXR file ({}) at {}", res, path);
@@ -247,22 +246,24 @@ void load_exr_image(const std::string& path, float** out_rgb, int& width, int& h
 			FreeEXRErrorMessage(err);
 		}
 
-		// todo need to gamma convert
-
 		throw IOException(msg, __FILE__, __LINE__);
 	}
+
+	return rgba;
 }
 
-void load_image(const std::string& path, stbi_uc** out_rgb, int& width, int& height, int& channels, VkFormat format) {
+stbi_uc* load_image(const std::string& path, int& width, int& height, int& channels, VkFormat format) {
 	channels = Texture::get_stbi_channels(format);
 
 	int ch;
-	*out_rgb = stbi_load(path.c_str(), &width, &height, &ch, channels);
+	stbi_uc* pixels = stbi_load(path.c_str(), &width, &height, &ch, channels);
 
-	if (!(*out_rgb)) {
+	if (!pixels) {
 		std::string reason = std::string(stbi_failure_reason());
 		throw IOException(std::format("Failed to load image ({}) at {}", reason, path), __FILE__, __LINE__);
 	}
+
+	return pixels;
 }
 
 
@@ -276,22 +277,20 @@ Texture create_texture_from_path(const VKW_Device* device, const VKW_CommandPool
 	VKW_Buffer staging_buffer;
 	int width, height;
 	if (is_exr) {
-		float* rgba = nullptr;
 		int channels;
 		
-		load_exr_image(path, &rgba, width, height, channels);
+		float* rgba = load_exr_image(path, width, height, channels);
 		
 		VkDeviceSize image_size = width * height * channels * sizeof(float);
-		staging_buffer = create_staging_buffer(device, rgba, image_size);
+		staging_buffer = create_staging_buffer(device, image_size, rgba, image_size);
 
 		free(rgba);
 	} else {
-		stbi_uc* pixels = nullptr;
 		int channels;
-		load_image(path, &pixels, width, height, channels, format);
+		stbi_uc* pixels = load_image(path, width, height, channels, format);
 
 		VkDeviceSize image_size = width * height * channels * sizeof(stbi_uc);
-		staging_buffer = create_staging_buffer(device, pixels, image_size);
+		staging_buffer = create_staging_buffer(device, image_size, pixels, image_size);
 	
 		stbi_image_free(pixels);
 	}
@@ -349,6 +348,127 @@ Texture create_texture_from_path(const VKW_Device* device, const VKW_CommandPool
 
 	command_buffer.submit_single_use();
 
+	staging_buffer.del();
+
+	return texture;
+}
+
+Texture create_cube_map_from_path(const VKW_Device* device, const VKW_CommandPool* command_pool, const std::string& path, Texture_Type type)
+{
+	VkFormat format = Texture::find_format(*device, type);
+
+	size_t type_start = path.rfind(".") + 1;
+	std::string file_type = path.substr(type_start, path.size() - type_start);
+	bool is_exr = file_type == "exr";
+
+	// get all paths
+	size_t special_symbol_idx = path.find("%");
+	if (special_symbol_idx == std::string::npos) {
+		throw IOException(
+			std::format("Cube map path does not contain % to be replaced with sides (+X,-X,...): {}", path), __FILE__, __LINE__
+		);
+	}
+
+	std::string pre_string = path.substr(0, special_symbol_idx);
+	std::string post_string = path.substr(special_symbol_idx+1, path.size() - (special_symbol_idx+1));
+	std::array<std::string, 6> paths = {
+		pre_string + "+X" + post_string,
+		pre_string + "-X" + post_string,		
+
+		pre_string + "+Y" + post_string,
+		pre_string + "-Y" + post_string,
+
+		pre_string + "-Z" + post_string, // vulkan cube maps are y down
+		pre_string + "+Z" + post_string,
+	};
+
+	VKW_Buffer staging_buffer{};
+	VkDeviceSize image_size;
+
+	int width, height;
+	if (is_exr) {
+		int channels;
+
+		float* rgba = load_exr_image(paths[0], width, height, channels);
+
+		image_size = width * height * channels * sizeof(float);
+		staging_buffer = create_staging_buffer(device, image_size*6, rgba, image_size);
+		staging_buffer.map();
+
+		free(rgba);
+	}
+	else {
+		throw NotImplementedException("Creating cube map with low dynamic range images is not supported", __FILE__, __LINE__);
+	}
+
+	// copy all 6 images into single staging buffer
+	for (unsigned int i = 1; i < 6; i++) {
+		int channels;
+
+		float* rgba = load_exr_image(paths[i], width, height, channels);
+
+		staging_buffer.copy(rgba, image_size, image_size * i);
+	}
+	staging_buffer.unmap();
+
+
+	Texture texture{};
+	texture.init(
+		device,
+		width, height,
+		format,
+		VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+		sharing_exlusive(), // exclusively owned by graphics queue
+		VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,
+		6
+	);
+
+	VKW_CommandBuffer command_buffer{};
+	command_buffer.init(
+		device,
+		command_pool,
+		true
+	);
+
+	command_buffer.begin_single_use();
+	{
+		// transfer layout 1
+		Texture::transition_layout(
+			command_buffer,
+			texture,
+			VK_IMAGE_LAYOUT_UNDEFINED,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+		);
+
+		std::array<VkBufferImageCopy, 6> image_copies{};
+
+		for (unsigned int i = 0; i < 6; i++) {
+			image_copies[i].bufferOffset = image_size * i;
+
+			image_copies[i].bufferRowLength = 0; // tightly packed
+			image_copies[i].bufferImageHeight = 0;
+
+			image_copies[i].imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			image_copies[i].imageSubresource.mipLevel = 0;
+			image_copies[i].imageSubresource.baseArrayLayer = i;
+			image_copies[i].imageSubresource.layerCount = 1;
+
+			image_copies[i].imageOffset = { 0,0,0 };
+			image_copies[i].imageExtent = { (unsigned int)width, (unsigned int)height, 1 };
+		}
+
+		vkCmdCopyBufferToImage(command_buffer, staging_buffer, texture, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 6, image_copies.data());
+
+		// transfer layout 2
+		Texture::transition_layout(
+			command_buffer,
+			texture,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+		);
+	}
+	command_buffer.submit_single_use();
+	
 	staging_buffer.del();
 
 	return texture;

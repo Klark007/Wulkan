@@ -223,8 +223,3 @@ void VKW_GraphicsPipeline::set_render_size(VkExtent2D extend)
 
 	scissor.extent = render_extent;
 }
-
-void VKW_GraphicsPipeline::begin_rendering(const VKW_CommandBuffer& cmd) const
-{
-	vkCmdBeginRendering(cmd, &attachment_state);
-}

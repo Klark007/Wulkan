@@ -135,6 +135,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\engine\EnvironmentMap.cpp" />
     <ClCompile Include="external\miniz\miniz.c" />
     <ClCompile Include="external\vk-bootstrap\VkBootstrap.cpp" />
     <ClCompile Include="src\engine\Gui.cpp" />
@@ -172,6 +173,8 @@
   <ItemGroup>
     <None Include="shaders\compile.bat" />
     <None Include="shaders\curvature.comp" />
+    <None Include="shaders\environment.frag" />
+    <None Include="shaders\environment.vert" />
     <None Include="shaders\terrain.frag" />
     <None Include="shaders\terrain.tesc" />
     <None Include="shaders\terrain.tese" />
@@ -179,6 +182,7 @@
     <None Include="src\engine\vk_wrap\README.md" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\engine\EnvironmentMap.h" />
     <ClInclude Include="external\include\tinyexr.h" />
     <ClInclude Include="external\miniz\miniz.h" />
     <ClInclude Include="src\engine\Gui.h" />

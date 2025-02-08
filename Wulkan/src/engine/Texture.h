@@ -29,7 +29,7 @@ class Texture : public VKW_Object
 public:
 	Texture() = default;
 	// create an image (and memory) but not load it (to be used as attachment), if we want to load an image, use create_texture_from_path
-	void init(const VKW_Device* vkw_device, unsigned int width, unsigned int height, VkFormat format, VkImageUsageFlags usage, SharingInfo sharing_info);
+	void init(const VKW_Device* vkw_device, unsigned int width, unsigned int height, VkFormat format, VkImageUsageFlags usage, SharingInfo sharing_info, VkImageCreateFlags flags = 0, uint32_t array_layers = 1);
 	void del() override;
 
 private:
@@ -40,7 +40,7 @@ private:
 	VkImage image;
 	VkDeviceMemory memory;
 
-	std::map<VkImageAspectFlags, VkImageView> image_views;
+	std::map<std::pair<VkImageAspectFlags, VkImageViewType>, VkImageView> image_views;
 
 	unsigned int width, height;
 	VkFormat format;
@@ -67,9 +67,11 @@ public:
 	inline static VkFormat find_format(const VKW_Device& device, Texture_Type type);
 	inline static int get_stbi_channels(VkFormat format);
 
+	// gets image view of aspect with specific type (assumes one view per aspect flag, image view type combiniation)
+	VkImageView get_image_view(VkImageAspectFlags aspect_flag, VkImageViewType type = VK_IMAGE_VIEW_TYPE_2D, uint32_t array_layers = 1);
+
 	inline VkImage get_image() const { return image; };
 	inline operator VkImage() const { return image; };
-	VkImageView get_image_view(VkImageAspectFlags aspect_flag);
 	inline VkFormat get_format() const { return format; };
 	inline unsigned int get_width() const { return width; };
 	inline unsigned int get_height() const { return height; };
@@ -80,6 +82,10 @@ public:
 // Low-dynamic range images are created with the nr channels dictated by the type (1,3,4)
 // High dynamic range images are always 4 channels
 Texture create_texture_from_path(const VKW_Device* device, const VKW_CommandPool* command_pool, const std::string& path, Texture_Type type);
+
+// create a cube map from a path containing a %. % sign will be replaced with (+|-) (X|Y|Z) to get the 6 faces
+// Currently only supports hdr images (exr files)
+Texture create_cube_map_from_path(const VKW_Device* device, const VKW_CommandPool* command_pool, const std::string& path, Texture_Type type);
 
 inline VkFormat Texture::find_format(const VKW_Device& device, Texture_Type type)
 {

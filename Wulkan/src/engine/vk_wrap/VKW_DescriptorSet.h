@@ -50,8 +50,8 @@ public:
 	// Updates descriptor at binding. Assumes binding corresponds to a type which can be updated using a buffer
 	void update(uint32_t binding, const VKW_Buffer& buffer) const;
 
-	// Updates descriptor at binding. Assumes binding corresponds to a combined sampler and the image to be in layout 
-	void update(uint32_t binding, Texture& texture, const VKW_Sampler& sampler, VkImageLayout layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VkImageAspectFlags aspect = VK_IMAGE_ASPECT_COLOR_BIT) const;
+	// Updates descriptor at binding. Assumes binding corresponds to a combined sampler and the image corresponding to the view is in the mentioned layout 
+	void update(uint32_t binding, VkImageView image_view, const VKW_Sampler& sampler, VkImageLayout layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VkImageAspectFlags aspect = VK_IMAGE_ASPECT_COLOR_BIT) const;
 
 
 	inline VkDescriptorSet get_descriptor_set() const { return descriptor_set; };

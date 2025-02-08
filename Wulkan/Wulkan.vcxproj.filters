@@ -114,6 +114,9 @@
     <ClCompile Include="external\miniz\miniz.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\engine\EnvironmentMap.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\compile.bat">
@@ -125,6 +128,8 @@
     <None Include="shaders\terrain.tese" />
     <None Include="shaders\terrain.vert" />
     <None Include="shaders\curvature.comp" />
+    <None Include="shaders\environment.vert" />
+    <None Include="shaders\environment.frag" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\engine\CameraController.h">
@@ -248,6 +253,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="external\miniz\miniz.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\engine\EnvironmentMap.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
