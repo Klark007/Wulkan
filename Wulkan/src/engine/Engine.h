@@ -140,6 +140,7 @@ public: // TODO: remove public
 
 	// general sampler for texture (Linear sampling, repeat address mode)
 	VKW_Sampler linear_texture_sampler;
+	VKW_Sampler mirror_texture_sampler;
 
 	// Terrain data
 	SharedTerrainData shared_terrain_data;

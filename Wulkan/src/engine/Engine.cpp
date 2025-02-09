@@ -313,11 +313,11 @@ void Engine::init_data()
 		get_current_graphics_pool(),
 		get_current_transfer_pool(),
 		descriptor_pool,
-		&linear_texture_sampler,
+		&mirror_texture_sampler,
 		&shared_terrain_data,
 
-		"textures/terrain/heightmap.png",
-		//"textures/terrain/test/height_test1.png",
+		//"textures/terrain/heightmap.png",
+		"textures/terrain/test/height_test4.png",
 		"textures/terrain/texture.png",
 		"textures/terrain/normal.png",
 		256							// resolution of mesh
@@ -344,6 +344,10 @@ void Engine::create_texture_samplers()
 {
 	linear_texture_sampler.init(&device);
 	cleanup_queue.add(&linear_texture_sampler);
+
+	mirror_texture_sampler.set_address_mode(VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT);
+	mirror_texture_sampler.init(&device);
+	cleanup_queue.add(&mirror_texture_sampler);
 }
 
 void Engine::create_descriptor_sets()
