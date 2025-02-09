@@ -58,6 +58,7 @@ struct UniformStruct {
 	alignas(16) glm::mat4 virtual_view;
 	alignas(16) glm::mat4 proj;
 	alignas(8) glm::vec2 near_far_plane;
+	alignas(16) glm::vec3 sun_direction; // TODO: could be compressed
 };
 
 // std430

@@ -24,6 +24,7 @@ layout(binding = 0) uniform UniformData {
     mat4 _virtual_view;
     mat4 proj;
     vec2 _near_far_plane;
+	vec3 _sun_direction;
 } ubo;
 
 layout(location = 0) out vec3 outUVW;

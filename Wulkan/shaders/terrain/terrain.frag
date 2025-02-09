@@ -10,6 +10,15 @@ layout(binding = 2) uniform sampler2D albedo;
 layout(binding = 3) uniform sampler2D normal_map;
 layout(binding = 4) uniform sampler2D curvature;
 
+layout(binding = 0) uniform UniformData {
+    mat4 _view;
+    mat4 _inv_view;
+    mat4 _virtual_view;
+    mat4 _proj;
+    vec2 _near_far_plane;
+    vec3 sun_direction;
+} ubo;
+
 layout( push_constant ) uniform constants
 {
     mat4  model;
@@ -27,11 +36,11 @@ void main() {
     vec3 world_normal = normalize(mat3(transpose((pc.model))) * obj_normal); // normals are in object space not tangent space
 
     switch (pc.visualization_mode) {
-        case 0: // shading            
+        case 0: // shading      
             outColor = texture(albedo, inUV) * max(
                 dot(
                     world_normal, 
-                    normalize(vec3(0, 0, 1))
+                    ubo.sun_direction
                 ), 0
             );
             break;

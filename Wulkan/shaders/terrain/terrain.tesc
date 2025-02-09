@@ -11,6 +11,7 @@ layout(binding = 0) uniform UniformData {
     mat4 virtual_view;
     mat4 proj;
     vec2 near_far_plane;
+    vec3 _sun_direction;
 } ubo;
 
 layout(binding = 1) uniform sampler2D height_map;

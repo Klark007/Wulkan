@@ -1,5 +1,8 @@
 #include "Gui.h"
 
+#include "glm/gtc/type_ptr.hpp"
+
+#include <iostream> // TODO throw error
 static void check_imgui_result(VkResult result) {
 	if (result) {
 		std::cout << std::string(string_VkResult(result)) + ";\n" + " IMGUI Vulkan error" << std::endl;
@@ -85,32 +88,32 @@ void GUI::draw_gui(const VKW_CommandBuffer& cmd)
 	ImGui::Begin("Wulkan GUI");  // creates window
 
 	{
-		if (ImGui::CollapsingHeader("Settings")) {
-			if (ImGui::TreeNode("Camera movement")) {
-				ImGui::SliderFloat("Movement speed", &data.camera_movement_speed, 5.0f, 50.0f);
-				ImGui::SliderFloat("Rotation speed", &data.camera_rotation_speed, 0.0005f, 0.005f);
+		if (ImGui::CollapsingHeader("Camera movement")) {
+			ImGui::SliderFloat("Movement speed", &data.camera_movement_speed, 5.0f, 50.0f);
+			ImGui::SliderFloat("Rotation speed", &data.camera_rotation_speed, 0.0005f, 0.005f);
 
-				ImGui::TreePop();
-			}
+		}
 
-			if (ImGui::TreeNode("Terrain")) {
-				ImGui::SliderFloat("Tesselation scale", &data.terrain_tesselation, 1.0f, 50.0f);
-				ImGui::SliderFloat("Maximum Tesselation ammount", &data.max_terrain_tesselation, 1.0f, 100.0f);
-				ImGui::SliderFloat("Height Scale", &data.terrain_height_scale, 0.1f, 1.0f);
-				ImGui::SliderFloat("Texture Derivative epsilon", &data.terrain_texture_eps, 0.01f, 1.0f);
+		if (ImGui::CollapsingHeader("Terrain")) {
+			ImGui::SliderFloat("Tesselation scale", &data.terrain_tesselation, 1.0f, 50.0f);
+			ImGui::SliderFloat("Maximum Tesselation ammount", &data.max_terrain_tesselation, 1.0f, 100.0f);
+			ImGui::SliderFloat("Height Scale", &data.terrain_height_scale, 0.1f, 1.0f);
+			ImGui::SliderFloat("Texture Derivative epsilon", &data.terrain_texture_eps, 0.01f, 1.0f);
 
-				ImGui::Checkbox("Show Wireframe", &data.terrain_wireframe_mode);
+			ImGui::Checkbox("Show Wireframe", &data.terrain_wireframe_mode);
 
-				constexpr const char* visualization_modes[] = { "Shaded", "Level", "Height", "Normals", "Error"};
-				static int selected_vis = 0;
-				if (ImGui::TreeNode("Visualization mode")) {
-					ImGui::ListBox("Mode", &selected_vis, visualization_modes, IM_ARRAYSIZE(visualization_modes));
-					data.terrain_vis_mode = static_cast<TerrainVisualizationMode>(selected_vis);
+			constexpr const char* visualization_modes[] = { "Shaded", "Level", "Height", "Normals", "Error"};
+			static int selected_vis = 0;
+			if (ImGui::TreeNode("Visualization mode")) {
+				ImGui::ListBox("Mode", &selected_vis, visualization_modes, IM_ARRAYSIZE(visualization_modes));
+				data.terrain_vis_mode = static_cast<TerrainVisualizationMode>(selected_vis);
 					
-					ImGui::TreePop();
-				}
 				ImGui::TreePop();
 			}
+		}
+
+		if (ImGui::CollapsingHeader("Shading")) {
+			ImGui::SliderFloat3("Sun direction", glm::value_ptr(data.sun_direction), -1.0f, 1.0f);
 		}
 
 		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);

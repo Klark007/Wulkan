@@ -535,6 +535,7 @@ void Engine::update_uniforms()
 	uniform.virtual_view = camera.generate_virtual_view_mat();
 
 	uniform.near_far_plane = glm::vec2(camera.get_near_plane(), camera.get_far_plane());
+	uniform.sun_direction = glm::normalize(gui_input.sun_direction);
 
 	memcpy(uniform_buffers.at(current_frame).get_mapped_address(), &uniform, sizeof(UniformStruct));
 }

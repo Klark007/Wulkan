@@ -14,8 +14,6 @@
 
 #include "Terrain.h"
 
-#include "iostream"
-
 struct GUI_Input {
 	float camera_rotation_speed = 0.001f;
 	float camera_movement_speed = 25.0f;
@@ -26,6 +24,8 @@ struct GUI_Input {
 	float terrain_texture_eps = 1.0f;
 	bool terrain_wireframe_mode = false;
 	TerrainVisualizationMode terrain_vis_mode = TerrainVisualizationMode::Shaded;
+
+	glm::vec3 sun_direction = glm::vec3(0, 0, 1);
 };
 
 class GUI : public VKW_Object

@@ -1,3 +1,4 @@
+#include <iostream>
 #include "engine/Engine.h"
 
 const uint32_t WIDTH = 800;
