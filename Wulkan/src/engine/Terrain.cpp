@@ -170,7 +170,7 @@ void Terrain::precompute_curvature(const VKW_Device& device, const VKW_CommandPo
 	// compute pipeline
 	VKW_ComputePipeline pipeline{};
 	pipeline.add_descriptor_sets({ compute_layout });
-	pipeline.init(&device, "shaders/curvature_comp.spv");
+	pipeline.init(&device, "shaders/terrain/curvature_comp.spv");
 
 	VKW_CommandBuffer command_buffer{};
 	command_buffer.init(

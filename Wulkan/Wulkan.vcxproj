@@ -172,13 +172,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\compile.bat" />
-    <None Include="shaders\curvature.comp" />
-    <None Include="shaders\environment.frag" />
-    <None Include="shaders\environment.vert" />
-    <None Include="shaders\terrain.frag" />
-    <None Include="shaders\terrain.tesc" />
-    <None Include="shaders\terrain.tese" />
-    <None Include="shaders\terrain.vert" />
     <None Include="src\engine\vk_wrap\README.md" />
   </ItemGroup>
   <ItemGroup>

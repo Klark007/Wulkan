@@ -66,10 +66,10 @@ inline void EnvironmentMap::draw(const VKW_CommandBuffer& command_buffer, uint32
 inline VKW_GraphicsPipeline EnvironmentMap::create_pipeline(const VKW_Device* device, Texture& color_rt, Texture& depth_rt, const SharedEnvironmentData& shared_environment_data)
 {
 	VKW_Shader vert_shader{};
-	vert_shader.init(device, "shaders/environment_vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+	vert_shader.init(device, "shaders/environment_maps/environment_vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
 
 	VKW_Shader frag_shader{};
-	frag_shader.init(device, "shaders/environment_frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+	frag_shader.init(device, "shaders/environment_maps/environment_frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 
 	VKW_GraphicsPipeline graphics_pipeline{};
 

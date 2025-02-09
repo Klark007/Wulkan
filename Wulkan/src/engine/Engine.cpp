@@ -316,8 +316,8 @@ void Engine::init_data()
 		&mirror_texture_sampler,
 		&shared_terrain_data,
 
-		//"textures/terrain/heightmap.png",
-		"textures/terrain/test/height_test4.png",
+		"textures/terrain/heightmap.png",
+		//"textures/terrain/test/height_test4.png",
 		"textures/terrain/texture.png",
 		"textures/terrain/normal.png",
 		256							// resolution of mesh
