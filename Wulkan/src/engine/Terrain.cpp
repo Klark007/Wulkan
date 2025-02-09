@@ -69,7 +69,7 @@ void Terrain::init(const VKW_Device& device, const VKW_CommandPool& graphics_poo
 		&device,
 		height_map.get_width(),
 		height_map.get_height(),
-		Texture::find_format(device, Texture_Type::Tex_Colortarget),
+		Texture::find_format(device, Texture_Type::Tex_Float),
 		VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
 		sharing_exlusive()
 	);

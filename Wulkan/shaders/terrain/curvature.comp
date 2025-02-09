@@ -1,12 +1,10 @@
 #version 460
 
-//size of a workgroup for compute
 layout (local_size_x = 16, local_size_y = 16) in;
 
 layout(binding = 0) uniform sampler2D height_map;
 
-//descriptor bindings for the pipeline
-layout(rgba16f, binding = 1) uniform image2D image;
+layout(rg16f, binding = 1) uniform image2D curvature;
 
 
 float sample_height_map(ivec2 tex_coord, ivec2 size) {
@@ -36,7 +34,7 @@ float s_der_y(ivec2 uv, ivec2 dir1, ivec2 dir2, ivec2 size) {
 void main() 
 {
     ivec2 texel_coord = ivec2(gl_GlobalInvocationID.xy);
-	ivec2 size = imageSize(image);
+	ivec2 size = imageSize(curvature);
 
     if(texel_coord.x < size.x && texel_coord.y < size.y)
     {
@@ -51,8 +49,8 @@ void main()
         // mean curvature
         float H = (h_uu * (1 + h_v*h_v) - 2*h_uv*h_u*h_v + h_vv * (1 + h_u*h_u)) / (2*pow(1 + h_u*h_u + h_v*h_v, 1.5));   
 
-        vec4 color = vec4(abs(H), 0, 0, 1.0);
+        vec4 color = vec4(abs(H), 0, 0, 0.0);
     
-        imageStore(image, texel_coord, color);
+        imageStore(curvature, texel_coord, color);
     }
 }

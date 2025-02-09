@@ -18,8 +18,8 @@ enum Texture_Type
 	Tex_HDR_RGBA, // create RGBA with high dynamic range texture
 
 	Tex_Colortarget, // creates target used for rendering 
-	Tex_D   // create depth texture
-
+	Tex_D,   // create depth texture
+	Tex_Float // single channel float for computations such as curvature
 };
 
 // Texture with managing VkImage, VkImageView and Memory
@@ -143,6 +143,8 @@ inline std::vector<VkFormat> Texture::potential_formats(Texture_Type type)
 		return { VK_FORMAT_R32G32B32A32_SFLOAT };
 	case Tex_Colortarget:
 		return { VK_FORMAT_R16G16B16A16_SFLOAT };
+	case Tex_Float:
+		return { VK_FORMAT_R16_SFLOAT };
 	default:
 		throw NotImplementedException(std::format("Unknown type {}", (unsigned int) type), __FILE__, __LINE__);
 	}
@@ -159,6 +161,7 @@ inline VkFormatFeatureFlags Texture::required_format_features(Texture_Type type)
 	case Tex_RGBA:
 	case Tex_HDR_RGBA:
 		return VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT | VK_FORMAT_FEATURE_TRANSFER_DST_BIT;
+	case Tex_Float:
 	case Tex_Colortarget:
 		return
 			VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT |
