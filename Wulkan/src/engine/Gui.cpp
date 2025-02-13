@@ -2,12 +2,8 @@
 
 #include "glm/gtc/type_ptr.hpp"
 
-#include <iostream> // TODO throw error
 static void check_imgui_result(VkResult result) {
-	if (result) {
-		std::cout << std::string(string_VkResult(result)) + ";\n" + " IMGUI Vulkan error" << std::endl;
-		abort();
-	}
+	VK_CHECK_ET(result, RuntimeException, "IMGUI Vulkan error");
 }
 
 void GUI::init(GLFWwindow* window, const VKW_Instance& instance, const VKW_Device& device, const VKW_Queue& graphics_queue, const VKW_DescriptorPool& descriptor_pool, const VKW_Swapchain* vkw_swapchain)
