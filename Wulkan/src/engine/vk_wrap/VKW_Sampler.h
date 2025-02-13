@@ -10,10 +10,11 @@ class VKW_Sampler : public VKW_Object
 {
 public:
 	VKW_Sampler();
-	void init(const VKW_Device* vkw_device);
+	void init(const VKW_Device* vkw_device, const std::string& obj_name);
 	void del() override;
 private:
 	const VKW_Device* device;
+	std::string name;
 	VkSampler sampler;
 
 	// reasonable defaults which can be overloaded before calling init

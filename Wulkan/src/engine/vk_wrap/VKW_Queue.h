@@ -12,9 +12,10 @@ class VKW_Queue
 {
 public:
 	VKW_Queue() = default;
-	void init(const VKW_Device& device, vkb::QueueType type);
+	void init(const VKW_Device& device, vkb::QueueType type, const std::string& obj_name);
 private:
 	VkQueue queue;
+	std::string name;
 	uint32_t family_idx;
 public:
 	inline VkQueue get_queue() const { return queue; };

@@ -14,9 +14,10 @@ VKW_Sampler::VKW_Sampler()
 	anisotropic_sampling = VK_TRUE;
 }
 
-void VKW_Sampler::init(const VKW_Device* vkw_device)
+void VKW_Sampler::init(const VKW_Device* vkw_device, const std::string& obj_name)
 {
 	device = vkw_device;
+	name = obj_name;
 
 	VkSamplerCreateInfo sampler_info{};
 	sampler_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -38,7 +39,8 @@ void VKW_Sampler::init(const VKW_Device* vkw_device)
 	sampler_info.minLod = 0;
 	sampler_info.maxLod = 0;
 
-	VK_CHECK_ET(vkCreateSampler(*device, &sampler_info, VK_NULL_HANDLE, &sampler), RuntimeException, "Failed to create texture sampler");
+	VK_CHECK_ET(vkCreateSampler(*device, &sampler_info, VK_NULL_HANDLE, &sampler), RuntimeException, std::format("Failed to create texture sampler ({})", name));
+	device->name_object((uint64_t)sampler, VK_OBJECT_TYPE_SAMPLER, name);
 }
 
 void VKW_Sampler::del()

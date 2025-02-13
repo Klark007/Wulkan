@@ -14,7 +14,7 @@ void SharedEnvironmentData::init(const VKW_Device* device)
 		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 		VK_SHADER_STAGE_FRAGMENT_BIT
 	);
-	descriptor_set_layout.init(device);
+	descriptor_set_layout.init(device, "Environment Desc Layout");
 
 	push_constant.init(VK_SHADER_STAGE_VERTEX_BIT);
 }
@@ -28,10 +28,10 @@ void EnvironmentMap::init(const VKW_Device& device, const VKW_CommandPool& graph
 {
 	shared_data = shared_environment_data;
 
-	cube_map = create_cube_map_from_path(&device, &graphics_pool, path, Tex_HDR_RGBA);
+	cube_map = create_cube_map_from_path(&device, &graphics_pool, path, Tex_HDR_RGBA, "Environment map");
 
 	for (VKW_DescriptorSet& set : descriptor_sets) {
-		set.init(&device, &descriptor_pool, shared_data->get_descriptor_set_layout());
+		set.init(&device, &descriptor_pool, shared_data->get_descriptor_set_layout(), "Environment Desc Set");
 	}
 
 	// does not have correct normals or uv's as those are not used in the environment map shader

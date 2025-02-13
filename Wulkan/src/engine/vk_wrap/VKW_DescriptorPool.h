@@ -9,11 +9,12 @@ class VKW_DescriptorPool : public VKW_Object
 public:
 	VKW_DescriptorPool() = default;
 	// initializes the pool, before that add descriptors to it
-	void init(const VKW_Device* device, uint32_t max_sets);
+	void init(const VKW_Device* device, uint32_t max_sets, const std::string& obj_name);
 	void reset();
 	void del() override;
 private:
 	const VKW_Device* device;
+	std::string name;
 
 	VkDescriptorPool descriptor_pool;
 	std::vector<VkDescriptorPoolSize> pool_size;

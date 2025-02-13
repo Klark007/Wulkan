@@ -39,7 +39,7 @@ void SharedTerrainData::init(const VKW_Device* device)
 		VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_FRAGMENT_BIT
 	);
 
-	descriptor_set_layout.init(device);
+	descriptor_set_layout.init(device, "Terrain Desc Layout");
 	// end create create descriptor set layout
 
 	push_constant.init(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT | VK_SHADER_STAGE_FRAGMENT_BIT , 0);
@@ -62,7 +62,8 @@ void Terrain::init(const VKW_Device& device, const VKW_CommandPool& graphics_poo
 		&device,
 		&graphics_pool,
 		height_path,
-		Texture_Type::Tex_R
+		Texture_Type::Tex_R,
+		"Terrain Height map"
 	);
 
 	curvatue.init(
@@ -71,7 +72,8 @@ void Terrain::init(const VKW_Device& device, const VKW_CommandPool& graphics_poo
 		height_map.get_height(),
 		Texture::find_format(device, Texture_Type::Tex_Float),
 		VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-		sharing_exlusive()
+		sharing_exlusive(),
+		"Terrain Curvature"
 	);
 
 	// Compute curvature as a preprocessing step
@@ -82,14 +84,16 @@ void Terrain::init(const VKW_Device& device, const VKW_CommandPool& graphics_poo
 		&device,
 		&graphics_pool,
 		albedo_path,
-		Texture_Type::Tex_RGB
+		Texture_Type::Tex_RGB,
+		"Terrain Albedo"
 	);
 
 	normal_map = create_texture_from_path(
 		&device,
 		&graphics_pool,
 		normal_path,
-		Texture_Type::Tex_RGB
+		Texture_Type::Tex_RGB,
+		"Terrain Normals"
 	);
 
 	// create cpu mesh
@@ -118,7 +122,7 @@ void Terrain::init(const VKW_Device& device, const VKW_CommandPool& graphics_poo
 	}
 
 	for (VKW_DescriptorSet& set : descriptor_sets) {
-		set.init(&device, &descriptor_pool, shared_data->get_descriptor_set_layout());
+		set.init(&device, &descriptor_pool, shared_data->get_descriptor_set_layout(), "Terrain Desc Set");
 	}
 	
 	mesh.init(device, transfer_pool, terrain_vertices, terrain_indices);
@@ -155,10 +159,10 @@ void Terrain::precompute_curvature(const VKW_Device& device, const VKW_CommandPo
 		VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, // supports load, store and atomic operations
 		VK_SHADER_STAGE_COMPUTE_BIT
 	);
-	compute_layout.init(&device);
+	compute_layout.init(&device, "Curvature Desc Layout");
 
 	VKW_DescriptorSet compute_desc_set{};
-	compute_desc_set.init(&device, &descriptor_pool, compute_layout);
+	compute_desc_set.init(&device, &descriptor_pool, compute_layout, "Curvature Desc Set");
 
 	// transition layout of curvatue
 	curvatue.transition_layout(&graphics_pool, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
@@ -170,13 +174,14 @@ void Terrain::precompute_curvature(const VKW_Device& device, const VKW_CommandPo
 	// compute pipeline
 	VKW_ComputePipeline pipeline{};
 	pipeline.add_descriptor_sets({ compute_layout });
-	pipeline.init(&device, "shaders/terrain/curvature_comp.spv");
+	pipeline.init(&device, "shaders/terrain/curvature_comp.spv", "Curvature compute pipeline");
 
 	VKW_CommandBuffer command_buffer{};
 	command_buffer.init(
 		&device,
 		&graphics_pool,
-		true
+		true,
+		"Terrain Curvature CMD"
 	);
 
 	// execute

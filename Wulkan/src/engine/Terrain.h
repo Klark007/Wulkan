@@ -122,16 +122,16 @@ inline void Terrain::draw(const VKW_CommandBuffer& command_buffer, uint32_t curr
 inline VKW_GraphicsPipeline Terrain::create_pipeline(const VKW_Device* device, Texture& color_rt, Texture& depth_rt, const SharedTerrainData& shared_terrain_data, bool wireframe_mode)
 {
 	VKW_Shader terrain_vert_shader{};
-	terrain_vert_shader.init(device, "shaders/terrain/terrain_vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+	terrain_vert_shader.init(device, "shaders/terrain/terrain_vert.spv", VK_SHADER_STAGE_VERTEX_BIT, "Terrain vertex shader");
 
 	VKW_Shader terrain_frag_shader{};
-	terrain_frag_shader.init(device, "shaders/terrain/terrain_frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+	terrain_frag_shader.init(device, "shaders/terrain/terrain_frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT, "Terrain fragment shader");
 
 	VKW_Shader tess_ctrl_shader{};
-	tess_ctrl_shader.init(device, "shaders/terrain/terrain_tesc.spv", VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT);
+	tess_ctrl_shader.init(device, "shaders/terrain/terrain_tesc.spv", VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, "Terrain tesselation control shader");
 
 	VKW_Shader tess_eval_shader{};
-	tess_eval_shader.init(device, "shaders/terrain/terrain_tese.spv", VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT);
+	tess_eval_shader.init(device, "shaders/terrain/terrain_tese.spv", VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, "Terrain tesselation evaluation shader");
 
 	VKW_GraphicsPipeline graphics_pipeline{};
 	
@@ -154,7 +154,7 @@ inline VKW_GraphicsPipeline Terrain::create_pipeline(const VKW_Device* device, T
 	graphics_pipeline.set_color_attachment_format(color_rt.get_format());
 	graphics_pipeline.set_depth_attachment_format(depth_rt.get_format());
 
-	graphics_pipeline.init(device);
+	graphics_pipeline.init(device, "Terrain graphics pipeline");
 
 	terrain_vert_shader.del();
 	terrain_frag_shader.del();

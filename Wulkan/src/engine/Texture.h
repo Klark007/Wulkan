@@ -29,11 +29,12 @@ class Texture : public VKW_Object
 public:
 	Texture() = default;
 	// create an image (and memory) but not load it (to be used as attachment), if we want to load an image, use create_texture_from_path
-	void init(const VKW_Device* vkw_device, unsigned int width, unsigned int height, VkFormat format, VkImageUsageFlags usage, SharingInfo sharing_info, VkImageCreateFlags flags = 0, uint32_t array_layers = 1);
+	void init(const VKW_Device* vkw_device, unsigned int width, unsigned int height, VkFormat format, VkImageUsageFlags usage, SharingInfo sharing_info, const std::string& obj_name, VkImageCreateFlags flags = 0, uint32_t array_layers = 1);
 	void del() override;
 
 private:
 	const VKW_Device* device;
+	std::string name;
 	VmaAllocator allocator;
 	VmaAllocation allocation;
 	
@@ -81,11 +82,11 @@ public:
 // creates a texture from a path, needs graphics command pool as input argument as we are waiting on a stage not present supported in transfer queues (in transition_layout)
 // Low-dynamic range images are created with the nr channels dictated by the type (1,3,4)
 // High dynamic range images are always 4 channels
-Texture create_texture_from_path(const VKW_Device* device, const VKW_CommandPool* command_pool, const std::string& path, Texture_Type type);
+Texture create_texture_from_path(const VKW_Device* device, const VKW_CommandPool* command_pool, const std::string& path, Texture_Type type, const std::string& name);
 
 // create a cube map from a path containing a %. % sign will be replaced with (+|-) (X|Y|Z) to get the 6 faces
 // Currently only supports hdr images (exr files)
-Texture create_cube_map_from_path(const VKW_Device* device, const VKW_CommandPool* command_pool, const std::string& path, Texture_Type type);
+Texture create_cube_map_from_path(const VKW_Device* device, const VKW_CommandPool* command_pool, const std::string& path, Texture_Type type, const std::string& name);
 
 inline VkFormat Texture::find_format(const VKW_Device& device, Texture_Type type)
 {

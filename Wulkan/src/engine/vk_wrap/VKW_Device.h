@@ -24,10 +24,11 @@ public:
 	VKW_Device() = default;
 	// if we want to require extension features, we need to set build to false and call build before using the VKW_Device
 	// get_dedicated_queue vs get_queue  if no dedicated one was found
-	void init(VKW_Instance* vkw_instance, const VKW_Surface& surface, std::vector<const char*> device_extensions, Required_Device_Features required_features, bool build=true);
+	void init(VKW_Instance* vkw_instance, const VKW_Surface& surface, std::vector<const char*> device_extensions, Required_Device_Features required_features, const std::string& obj_name, bool build=true);
 	void del() override;
 private:
 	VKW_Instance* instance;
+	std::string name;
 
 	vkb::PhysicalDevice physical_device;
 	vkb::Device device;
@@ -41,6 +42,8 @@ public:
 	void add_extension_features(T features);
 
 	void select_and_build();
+
+	inline void name_object(uint64_t object_handle, VkObjectType object_type, const std::string& name) const;
 
 	inline vkb::Device get_vkb_device() const { return device; };
 	inline VkDevice get_device() const { return device.device; };
@@ -56,4 +59,15 @@ template<class T>
 inline void VKW_Device::add_extension_features(T features)
 {
 	selector->add_required_extension_features(features);
+}
+
+inline void VKW_Device::name_object(uint64_t object_handle, VkObjectType object_type, const std::string& name) const
+{
+	VkDebugUtilsObjectNameInfoEXT  name_info = {};
+	name_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+	name_info.objectHandle = object_handle;
+	name_info.objectType = object_type;
+	name_info.pObjectName = name.c_str();
+
+	vkSetDebugUtilsObjectNameEXT(device, &name_info);
 }

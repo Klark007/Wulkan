@@ -16,8 +16,9 @@ It also handles:
  * Sharing modes
 
 */
-void VKW_Swapchain::init(GLFWwindow* window, const VKW_Device& device, const VKW_Queue* queue, VkSwapchainKHR old_swapchain)
+void VKW_Swapchain::init(GLFWwindow* window, const VKW_Device& device, const VKW_Queue* queue, const std::string& obj_name, VkSwapchainKHR old_swapchain)
 {
+    name = obj_name;
     present_queue = queue;
 
     vkb::SwapchainBuilder builder{ device.get_vkb_device() };
@@ -42,6 +43,8 @@ void VKW_Swapchain::init(GLFWwindow* window, const VKW_Device& device, const VKW
     swapchain = vkb_swapchain.swapchain;
     images = get_images();
     image_views = get_image_views();
+
+    device.name_object((uint64_t)swapchain, VK_OBJECT_TYPE_SWAPCHAIN_KHR, name);
 }
 
 void VKW_Swapchain::del()
@@ -59,7 +62,7 @@ void VKW_Swapchain::recreate(GLFWwindow* window, const VKW_Device& device)
     vkb_swapchain.destroy_image_views(image_views);
     vkb::Swapchain old_swapchain = vkb_swapchain;
     
-    init(window, device, present_queue, old_swapchain);
+    init(window, device, present_queue, name, old_swapchain);
 
     vkb::destroy_swapchain(old_swapchain);
 }

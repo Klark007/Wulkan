@@ -1,8 +1,9 @@
 #include "VKW_ComputePipeline.h"
 
-void VKW_ComputePipeline::init(const VKW_Device* vkw_device, const std::string& shader_path)
+void VKW_ComputePipeline::init(const VKW_Device* vkw_device, const std::string& shader_path, const std::string& obj_name)
 {
 	device = vkw_device;
+	name = obj_name;
 
 	VkComputePipelineCreateInfo pipeline_info{};
 	pipeline_info.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
@@ -10,7 +11,7 @@ void VKW_ComputePipeline::init(const VKW_Device* vkw_device, const std::string& 
 
 	// Compute shader associated with pipeline
 	VKW_Shader compute_shader{};
-	compute_shader.init(device, shader_path, VK_SHADER_STAGE_COMPUTE_BIT);
+	compute_shader.init(device, shader_path, VK_SHADER_STAGE_COMPUTE_BIT, "Curvature compute shader");
 	pipeline_info.stage = compute_shader.get_info();
 
 	// Pipeline layout
@@ -23,17 +24,20 @@ void VKW_ComputePipeline::init(const VKW_Device* vkw_device, const std::string& 
 	layout_info.pSetLayouts = descriptor_set_layouts.data();
 	layout_info.setLayoutCount = static_cast<uint32_t>(descriptor_set_layouts.size());
 
-	VK_CHECK_ET(vkCreatePipelineLayout(*device, &layout_info, nullptr, &layout), RuntimeException, "Failed to create compute pipeline layout");
+	VK_CHECK_ET(vkCreatePipelineLayout(*device, &layout_info, nullptr, &layout), RuntimeException, std::format("Failed to create compute pipeline layout ({})", name + " layout"));
 	pipeline_info.layout = layout;
 	
 
 	VK_CHECK_ET(
 		vkCreateComputePipelines(*device, VK_NULL_HANDLE, 1, &pipeline_info, VK_NULL_HANDLE, &compute_pipeline),
 		RuntimeException,
-		"Failed to create compute pipeline"
+		std::format("Failed to create compute pipeline ({})", name)
 	);
 
 	compute_shader.del();
+
+	device->name_object((uint64_t)compute_pipeline, VK_OBJECT_TYPE_PIPELINE, name);
+	device->name_object((uint64_t)layout, VK_OBJECT_TYPE_PIPELINE_LAYOUT, name + " layout");
 }
 
 void VKW_ComputePipeline::del()

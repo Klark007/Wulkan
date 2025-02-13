@@ -4,14 +4,15 @@ void Mesh::init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, 
 {
 	// create gpu side buffer storing vertices
 	VkDeviceSize vertex_buffer_size = sizeof(Vertex) * vertices.size();
-	VKW_Buffer vertex_staging_buffer = create_staging_buffer(&device, vertex_buffer_size, vertices.data(), vertex_buffer_size);
+	VKW_Buffer vertex_staging_buffer = create_staging_buffer(&device, vertex_buffer_size, vertices.data(), vertex_buffer_size, "Vertex staging buffer");
 
 	vertex_buffer.init(
 		&device,
 		vertex_buffer_size,
 		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
 		sharing_exlusive(),
-		false
+		false,
+		"Mesh vertex buffer"
 	);
 
 	vertex_buffer.copy(&transfer_pool, vertex_staging_buffer);
@@ -20,14 +21,15 @@ void Mesh::init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, 
 
 	// create gpu side buffer storing indices
 	VkDeviceSize index_buffer_size = sizeof(uint32_t) * indices.size();
-	VKW_Buffer index_staging_buffer = create_staging_buffer(&device, index_buffer_size, indices.data(), index_buffer_size);
+	VKW_Buffer index_staging_buffer = create_staging_buffer(&device, index_buffer_size, indices.data(), index_buffer_size, "Index staging buffer");
 
 	index_buffer.init(
 		&device,
 		index_buffer_size,
 		VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
 		sharing_exlusive(),
-		false
+		false,
+		"Mesh index buffer"
 	);
 
 	index_buffer.copy(&transfer_pool, index_staging_buffer);

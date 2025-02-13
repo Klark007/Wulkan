@@ -11,7 +11,7 @@ class VKW_Swapchain : public VKW_Object
 {
 public:
 	VKW_Swapchain() = default;
-	void init(struct GLFWwindow* window, const VKW_Device& device, const VKW_Queue* present_queue, VkSwapchainKHR old_swapchain = VK_NULL_HANDLE);
+	void init(struct GLFWwindow* window, const VKW_Device& device, const VKW_Queue* present_queue, const std::string& obj_name, VkSwapchainKHR old_swapchain = VK_NULL_HANDLE);
 	void del() override;
 
 	void recreate(struct GLFWwindow* window, const VKW_Device& device);
@@ -20,6 +20,7 @@ public:
 	bool present(const std::vector<VkSemaphore>& wait_semaphores, uint32_t image_idx) const;
 private:
 	VkSwapchainKHR swapchain;
+	std::string name;
 	vkb::Swapchain vkb_swapchain;
 	std::vector<VkImage> images;
 	std::vector<VkImageView> image_views;

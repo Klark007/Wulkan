@@ -8,13 +8,14 @@
 #include <format>
 
 
-void Texture::init(const VKW_Device* vkw_device, unsigned int w, unsigned int h, VkFormat f, VkImageUsageFlags usage, SharingInfo sharing_info, VkImageCreateFlags flags, uint32_t array_layers)
+void Texture::init(const VKW_Device* vkw_device, unsigned int w, unsigned int h, VkFormat f, VkImageUsageFlags usage, SharingInfo sharing_info, const std::string& obj_name, VkImageCreateFlags flags, uint32_t array_layers)
 {
 	device = vkw_device;
 	allocator = device->get_allocator();
 	width = w;
 	height = h;
 	format = f;
+	name = obj_name;
 
 	VkImageCreateInfo image_info{};
 	image_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -47,8 +48,10 @@ void Texture::init(const VKW_Device* vkw_device, unsigned int w, unsigned int h,
 
 	VmaAllocationInfo alloc_info;
 
-	VK_CHECK_ET(vmaCreateImage(allocator, &image_info, &alloc_create_info, &image, &allocation, &alloc_info), RuntimeException, "Failed to allocate image");
+	VK_CHECK_ET(vmaCreateImage(allocator, &image_info, &alloc_create_info, &image, &allocation, &alloc_info), RuntimeException, std::format("Failed to allocate image ({})", name));
 	memory = alloc_info.deviceMemory;
+
+	device->name_object((uint64_t)image, VK_OBJECT_TYPE_IMAGE, name);
 }
 
 void Texture::del()
@@ -86,7 +89,8 @@ VkImageView Texture::get_image_view(VkImageAspectFlags aspect_flag, VkImageViewT
 		view_info.subresourceRange.layerCount = array_layers;
 
 		VkImageView image_view;
-		VK_CHECK_ET(vkCreateImageView(*device, &view_info, nullptr, &image_view), RuntimeException, std::format("Failed to create image view for aspect {}", aspect_flag));
+		VK_CHECK_ET(vkCreateImageView(*device, &view_info, nullptr, &image_view), RuntimeException, std::format("Failed to create image ({}) view for aspect {}", name, aspect_flag));
+		device->name_object((uint64_t)image_view, VK_OBJECT_TYPE_IMAGE_VIEW, name + " view");
 
 		image_views[pair] = image_view;
 		return image_view;
@@ -99,7 +103,8 @@ void Texture::transition_layout(const VKW_CommandPool* command_pool, VkImageLayo
 	command_buffer.init(
 		device,
 		command_pool,
-		true
+		true,
+		"Layout Transition Single Use CMD"
 	);
 	command_buffer.begin_single_use();
 	
@@ -190,7 +195,6 @@ void Texture::transition_layout(const VKW_CommandBuffer& command_buffer, VkImage
 	depency_info.imageMemoryBarrierCount = 1;
 
 	vkCmdPipelineBarrier2(command_buffer, &depency_info);
-
 }
 
 void Texture::copy(const VKW_CommandBuffer& command_buffer, VkImage src_texture, VkImage dst_texture, VkExtent2D src_size, VkExtent2D dst_size, VkImageAspectFlags aspect)
@@ -267,7 +271,7 @@ stbi_uc* load_image(const std::string& path, int& width, int& height, int& chann
 }
 
 
-Texture create_texture_from_path(const VKW_Device* device, const VKW_CommandPool* command_pool, const std::string& path, Texture_Type type) {
+Texture create_texture_from_path(const VKW_Device* device, const VKW_CommandPool* command_pool, const std::string& path, Texture_Type type, const std::string& name) {
 	VkFormat format = Texture::find_format(*device, type);
 
 	size_t type_start = path.rfind(".")+1;
@@ -282,7 +286,7 @@ Texture create_texture_from_path(const VKW_Device* device, const VKW_CommandPool
 		float* rgba = load_exr_image(path, width, height, channels);
 		
 		VkDeviceSize image_size = width * height * channels * sizeof(float);
-		staging_buffer = create_staging_buffer(device, image_size, rgba, image_size);
+		staging_buffer = create_staging_buffer(device, image_size, rgba, image_size, "EXR staging buffer");
 
 		free(rgba);
 	} else {
@@ -290,7 +294,7 @@ Texture create_texture_from_path(const VKW_Device* device, const VKW_CommandPool
 		stbi_uc* pixels = load_image(path, width, height, channels, format);
 
 		VkDeviceSize image_size = width * height * channels * sizeof(stbi_uc);
-		staging_buffer = create_staging_buffer(device, image_size, pixels, image_size);
+		staging_buffer = create_staging_buffer(device, image_size, pixels, image_size, "Image staging buffer");
 	
 		stbi_image_free(pixels);
 	}
@@ -301,7 +305,8 @@ Texture create_texture_from_path(const VKW_Device* device, const VKW_CommandPool
 		width, height,
 		format,
 		VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-		sharing_exlusive() // exclusively owned by graphics queue
+		sharing_exlusive(), // exclusively owned by graphics queue
+		name
 	);
 
 
@@ -309,7 +314,8 @@ Texture create_texture_from_path(const VKW_Device* device, const VKW_CommandPool
 	command_buffer.init(
 		device,
 		command_pool,
-		true
+		true,
+		"Image creation CMD"
 	);
 
 	command_buffer.begin_single_use();
@@ -353,7 +359,7 @@ Texture create_texture_from_path(const VKW_Device* device, const VKW_CommandPool
 	return texture;
 }
 
-Texture create_cube_map_from_path(const VKW_Device* device, const VKW_CommandPool* command_pool, const std::string& path, Texture_Type type)
+Texture create_cube_map_from_path(const VKW_Device* device, const VKW_CommandPool* command_pool, const std::string& path, Texture_Type type, const std::string& name)
 {
 	VkFormat format = Texture::find_format(*device, type);
 
@@ -392,7 +398,7 @@ Texture create_cube_map_from_path(const VKW_Device* device, const VKW_CommandPoo
 		float* rgba = load_exr_image(paths[0], width, height, channels);
 
 		image_size = width * height * channels * sizeof(float);
-		staging_buffer = create_staging_buffer(device, image_size*6, rgba, image_size);
+		staging_buffer = create_staging_buffer(device, image_size*6, rgba, image_size, "Cube map staging buffer");
 		staging_buffer.map();
 
 		free(rgba);
@@ -419,6 +425,7 @@ Texture create_cube_map_from_path(const VKW_Device* device, const VKW_CommandPoo
 		format,
 		VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
 		sharing_exlusive(), // exclusively owned by graphics queue
+		name,
 		VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,
 		6
 	);
@@ -427,7 +434,8 @@ Texture create_cube_map_from_path(const VKW_Device* device, const VKW_CommandPoo
 	command_buffer.init(
 		device,
 		command_pool,
-		true
+		true,
+		"Cubemap creation CMD"
 	);
 
 	command_buffer.begin_single_use();

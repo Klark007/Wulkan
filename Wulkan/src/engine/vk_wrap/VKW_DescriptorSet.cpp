@@ -1,14 +1,17 @@
 #include "VKW_DescriptorSet.h"
 
-void VKW_DescriptorSetLayout::init(const VKW_Device* vkw_device)
+void VKW_DescriptorSetLayout::init(const VKW_Device* vkw_device, const std::string& obj_name)
 {
 	device = vkw_device;
+	name = obj_name;
 
 	VkDescriptorSetLayoutCreateInfo layout_info{};
 	layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
 	layout_info.pBindings = bindings.data();
 	layout_info.bindingCount = static_cast<uint32_t>(bindings.size());
-	VK_CHECK_ET(vkCreateDescriptorSetLayout(*device, &layout_info, VK_NULL_HANDLE, &layout), RuntimeException, "Failed to create descriptor set layout");
+	
+	VK_CHECK_ET(vkCreateDescriptorSetLayout(*device, &layout_info, VK_NULL_HANDLE, &layout), RuntimeException, std::format("Failed to create descriptor set layout ({})", name));
+	device->name_object((uint64_t)layout, VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT, name);
 }
 
 void VKW_DescriptorSetLayout::del()
@@ -27,9 +30,10 @@ void VKW_DescriptorSetLayout::add_binding(uint32_t binding_slot, VkDescriptorTyp
 	bindings.push_back(binding);
 }
 
-void VKW_DescriptorSet::init(const VKW_Device* vkw_device, const VKW_DescriptorPool* vkw_pool, VKW_DescriptorSetLayout layout)
+void VKW_DescriptorSet::init(const VKW_Device* vkw_device, const VKW_DescriptorPool* vkw_pool, VKW_DescriptorSetLayout layout, const std::string& obj_name)
 {
 	device = vkw_device;
+	name = obj_name;
 	pool = vkw_pool;
 
 	VkDescriptorSetAllocateInfo set_info{};
@@ -41,7 +45,7 @@ void VKW_DescriptorSet::init(const VKW_Device* vkw_device, const VKW_DescriptorP
 
 	set_info.descriptorSetCount = 1;
 
-	VK_CHECK_ET(vkAllocateDescriptorSets(*device, &set_info, &descriptor_set), RuntimeException, "Failed to allocate descriptor set");
+	VK_CHECK_ET(vkAllocateDescriptorSets(*device, &set_info, &descriptor_set), RuntimeException, std::format("Failed to allocate descriptor set", name));
 
 
 	for (const VkDescriptorSetLayoutBinding& binding : layout.get_bindings()) {

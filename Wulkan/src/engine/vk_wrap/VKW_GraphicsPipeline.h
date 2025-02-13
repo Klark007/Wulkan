@@ -11,11 +11,12 @@
 class VKW_GraphicsPipeline : public VKW_Object {
 public:
 	VKW_GraphicsPipeline();
-	void init(const VKW_Device* vkw_device);
+	void init(const VKW_Device* vkw_device, const std::string& obj_name);
 	void del() override;
 	void clear();
 private:
 	const VKW_Device* device;
+	std::string name;
 	VkPipeline graphics_pipeline;
 	VkPipelineLayout layout;
 

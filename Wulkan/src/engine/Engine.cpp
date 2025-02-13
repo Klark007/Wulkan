@@ -282,7 +282,7 @@ void Engine::create_device()
 {
 	Required_Device_Features required_features = get_required_device_features();
 
-	device.init(&instance, surface, get_required_device_extensions(), required_features);;
+	device.init(&instance, surface, get_required_device_extensions(), required_features, "Device");
 	cleanup_queue.add(&device);
 
 	VkPhysicalDeviceProperties deviceProperties;
@@ -293,9 +293,9 @@ void Engine::create_device()
 
 void Engine::create_queues()
 {
-	graphics_queue.init(device, vkb::QueueType::graphics);
-	present_queue.init(device, vkb::QueueType::present);
-	transfer_queue.init(device, vkb::QueueType::transfer);
+	graphics_queue.init(device, vkb::QueueType::graphics, "Graphics queue");
+	present_queue.init(device, vkb::QueueType::present, "Present queue");
+	transfer_queue.init(device, vkb::QueueType::transfer, "Transfer queue");
 	std::cout << "Chosen queues:" << graphics_queue.get_queue_family() << "," << present_queue.get_queue_family() << "," << transfer_queue.get_queue_family() << std::endl;
 }
 
@@ -344,25 +344,25 @@ void Engine::init_data()
 
 void Engine::create_texture_samplers()
 {
-	linear_texture_sampler.init(&device);
+	linear_texture_sampler.init(&device, "Default sampler");
 	cleanup_queue.add(&linear_texture_sampler);
 
 	mirror_texture_sampler.set_address_mode(VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT);
-	mirror_texture_sampler.init(&device);
+	mirror_texture_sampler.init(&device, "Repeat sampler");
 	cleanup_queue.add(&mirror_texture_sampler);
 }
 
 void Engine::create_descriptor_sets()
 {
 	imgui_descriptor_pool.add_type(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1);
-	imgui_descriptor_pool.init(&device, 1);
+	imgui_descriptor_pool.init(&device, 1, "Imgui descriptor pool");
 	cleanup_queue.add(&imgui_descriptor_pool);
 	
 	// each Terrain instance needs MAX_FRAMES_IN_FLIGHT many descriptor sets
 	descriptor_pool.add_layout(shared_terrain_data.get_descriptor_set_layout(), MAX_FRAMES_IN_FLIGHT);
 	descriptor_pool.add_layout(shared_environment_data.get_descriptor_set_layout(), MAX_FRAMES_IN_FLIGHT);
 
-	descriptor_pool.init(&device, MAX_FRAMES_IN_FLIGHT*2);
+	descriptor_pool.init(&device, MAX_FRAMES_IN_FLIGHT*2, "General descriptor pool");
 	cleanup_queue.add(&descriptor_pool);
 }
 
@@ -374,7 +374,8 @@ void Engine::create_uniform_buffers()
 			sizeof(UniformStruct), 
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
 			sharing_exlusive(), 
-			true
+			true,
+			"Uniform buffer"
 		);
 		uniform_buffer.map();
 		cleanup_queue.add(&uniform_buffer);
@@ -389,7 +390,8 @@ void Engine::init_render_targets()
 		swapchain.get_extent().height,
 		Texture::find_format(device, Texture_Type::Tex_Colortarget),
 		VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-		sharing_exlusive()
+		sharing_exlusive(),
+		"Color render target"
 	); // TODO: FIX might add it multiple times to the clean up queue	
 	cleanup_queue.add(&color_render_target);
 
@@ -399,7 +401,8 @@ void Engine::init_render_targets()
 		swapchain.get_extent().height,
 		Texture::find_format(device, Texture_Type::Tex_D),
 		VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-		sharing_exlusive()
+		sharing_exlusive(),
+		"Depth render target"
 	);
 	cleanup_queue.add(&depth_render_target);
 }
@@ -418,7 +421,7 @@ void Engine::create_graphics_pipelines()
 
 void Engine::create_swapchain()
 {
-	swapchain.init(window, device, &present_queue);
+	swapchain.init(window, device, &present_queue, "Swapchain");
 	cleanup_queue.add(&swapchain);
 
 	init_render_targets();
@@ -469,13 +472,13 @@ void Engine::create_command_structs()
 			{},
 		};
 
-		command_structs.at(i).graphics_command_pool.init(&device, &graphics_queue, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+		command_structs.at(i).graphics_command_pool.init(&device, &graphics_queue, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, "Graphics pool");
 		cleanup_queue.add(&command_structs.at(i).graphics_command_pool);
 		
-		command_structs.at(i).transfer_command_pool.init(&device, &transfer_queue, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
+		command_structs.at(i).transfer_command_pool.init(&device, &transfer_queue, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, "Transfer pool");
 		cleanup_queue.add(&command_structs.at(i).transfer_command_pool);
 		
-		command_structs.at(i).graphics_command_buffer.init(&device, &command_structs.at(i).graphics_command_pool, false);
+		command_structs.at(i).graphics_command_buffer.init(&device, &command_structs.at(i).graphics_command_pool, false, "Draw CMD");
 	}
 }
 
@@ -550,6 +553,7 @@ std::vector<const char*> Engine::get_required_instance_extensions()
 	glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
 	std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+	extensions.push_back("VK_EXT_debug_utils");
 
 	return extensions;
 }

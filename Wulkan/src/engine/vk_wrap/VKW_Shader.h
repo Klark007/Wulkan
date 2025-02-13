@@ -9,10 +9,11 @@ class VKW_Shader : public VKW_Object
 {
 public:
 	VKW_Shader() = default;
-	void init(const VKW_Device* device, const std::string& path, VkShaderStageFlagBits stage, const std::string& entry_func = "main");
+	void init(const VKW_Device* device, const std::string& path, VkShaderStageFlagBits stage, const std::string& obj_name, const std::string& entry_func = "main");
 	void del() override;
 private:
 	const VKW_Device* device;
+	std::string name;
 	std::string entry;
 
 	VkShaderModule module;

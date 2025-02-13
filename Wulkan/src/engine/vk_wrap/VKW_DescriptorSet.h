@@ -15,10 +15,11 @@ class VKW_DescriptorSetLayout : public VKW_Object {
 public:
 	VKW_DescriptorSetLayout() = default;
 
-	void init(const VKW_Device* device);
+	void init(const VKW_Device* device, const std::string& obj_name);
 	void del() override;
 private:
 	const VKW_Device* device;
+	std::string name;
 	VkDescriptorSetLayout layout;
 
 	std::vector<VkDescriptorSetLayoutBinding> bindings;
@@ -35,12 +36,13 @@ class VKW_DescriptorSet : public VKW_Object
 public:
 	VKW_DescriptorSet() = default;
 
-	void init(const VKW_Device* device, const VKW_DescriptorPool* pool, VKW_DescriptorSetLayout layout);
+	void init(const VKW_Device* device, const VKW_DescriptorPool* pool, VKW_DescriptorSetLayout layout, const std::string& obj_name);
 	// bind descriptor set to bind point, assumes to be recording commands into the above command buffer
 	void bind(const VKW_CommandBuffer& command_buffer, VkPipelineBindPoint bind_point, VkPipelineLayout layout) const;
 	void del() override;
 private:
 	const VKW_Device* device;
+	std::string name;
 	const VKW_DescriptorPool* pool;
 	VkDescriptorSet descriptor_set;
 

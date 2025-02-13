@@ -1,7 +1,9 @@
 #include "VKW_Queue.h"
 
-void VKW_Queue::init(const VKW_Device& device, vkb::QueueType type)
+void VKW_Queue::init(const VKW_Device& device, vkb::QueueType type, const std::string& obj_name)
 {
+	name = obj_name;
+
 	vkb::Device vkb_device = device.get_vkb_device();
 	vkb::Result<VkQueue> queue_result {{}};
 	vkb::Result<uint32_t> idx_result {{}};
@@ -18,12 +20,14 @@ void VKW_Queue::init(const VKW_Device& device, vkb::QueueType type)
 	}
 	
 	if (!queue_result) {
-		throw SetupException("Failed to select a queue: " + queue_result.error().message(), __FILE__, __LINE__);
+		throw SetupException(std::format("Failed to select a queue ({}): {}", name, queue_result.error().message()), __FILE__, __LINE__);
 	}
 	if (!idx_result) {
-		throw SetupException("Failed to select a queue family: " + idx_result.error().message(), __FILE__, __LINE__);
+		throw SetupException(std::format("Failed to select a queue family ({}): {}", name, idx_result.error().message()), __FILE__, __LINE__);
 	}
 
 	queue = queue_result.value();
 	family_idx = idx_result.value();
+
+	device.name_object((uint64_t)queue, VK_OBJECT_TYPE_QUEUE, name);
 }

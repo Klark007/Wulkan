@@ -6,9 +6,10 @@ VKW_GraphicsPipeline::VKW_GraphicsPipeline()
 	clear();
 }
 
-void VKW_GraphicsPipeline::init(const VKW_Device* vkw_device)
+void VKW_GraphicsPipeline::init(const VKW_Device* vkw_device, const std::string& obj_name)
 {
 	device = vkw_device;
+	name = obj_name;
 
 	VkGraphicsPipelineCreateInfo pipeline_info{};
 	pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -68,10 +69,12 @@ void VKW_GraphicsPipeline::init(const VKW_Device* vkw_device)
 	pipeline_layout_info.pSetLayouts = descriptor_set_layouts.data();
 	pipeline_layout_info.setLayoutCount = static_cast<uint32_t>(descriptor_set_layouts.size());
 
-	VK_CHECK_ET(vkCreatePipelineLayout(*device, &pipeline_layout_info, nullptr, &layout), RuntimeException, "Failed to create graphics pipeline layout");
+	VK_CHECK_ET(vkCreatePipelineLayout(*device, &pipeline_layout_info, nullptr, &layout), RuntimeException, std::format("Failed to create graphics pipeline layout ({})", name + " layout"));
 	pipeline_info.layout = layout;
 
-	VK_CHECK_ET(vkCreateGraphicsPipelines(*device, VK_NULL_HANDLE, 1, &pipeline_info, VK_NULL_HANDLE, &graphics_pipeline), RuntimeException, "Failed to create graphics pipeline");
+	VK_CHECK_ET(vkCreateGraphicsPipelines(*device, VK_NULL_HANDLE, 1, &pipeline_info, VK_NULL_HANDLE, &graphics_pipeline), RuntimeException, std::format("Failed to create graphics pipeline ({})", name));
+	device->name_object((uint64_t)graphics_pipeline, VK_OBJECT_TYPE_PIPELINE, name);
+	device->name_object((uint64_t)layout, VK_OBJECT_TYPE_PIPELINE_LAYOUT, name +" layout");
 }
 
 void VKW_GraphicsPipeline::del()

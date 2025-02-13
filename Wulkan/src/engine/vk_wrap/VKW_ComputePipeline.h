@@ -11,10 +11,11 @@
 class VKW_ComputePipeline : public VKW_Object {
 public:
 	VKW_ComputePipeline() = default;
-	void init(const VKW_Device* vkw_device, const std::string& shader_path);
+	void init(const VKW_Device* vkw_device, const std::string& shader_path, const std::string& obj_name);
 	void del() override;
 private:
 	const VKW_Device* device;
+	std::string name;
 	VkPipeline compute_pipeline;
 	VkPipelineLayout layout;
 

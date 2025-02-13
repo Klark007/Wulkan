@@ -9,7 +9,7 @@ class VKW_CommandBuffer
 {
 public:
 	VKW_CommandBuffer() = default;
-	void init(const VKW_Device* vkw_device, const VKW_CommandPool* vkw_command_pool, bool single_use);
+	void init(const VKW_Device* vkw_device, const VKW_CommandPool* vkw_command_pool, bool single_use, const std::string& obj_name);
 
 	void begin_single_use();
 	// submits command buffer and waits for the queue to be idle. WARNING: could take long
@@ -25,6 +25,7 @@ public:
 	void submit(const std::vector<VkSemaphore>& wait_semaphores, const std::vector<VkPipelineStageFlags>& wait_stages, const std::vector<VkSemaphore>& signal_semaphores, VkFence fence) const;
 private:
 	const VKW_Device* device;
+	std::string name;
 	const VKW_CommandPool* command_pool;
 	const VKW_Queue* queue;
 

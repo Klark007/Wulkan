@@ -12,7 +12,7 @@ class VKW_Buffer : public VKW_Object
 public:
 	VKW_Buffer() = default;
 	// treating properties as required
-	void init(const VKW_Device* device, VkDeviceSize size, VkBufferUsageFlags usage, SharingInfo info, bool mappable);
+	void init(const VKW_Device* device, VkDeviceSize size, VkBufferUsageFlags usage, SharingInfo info, bool mappable, const std::string& obj_name);
 	void del() override;
 
 	void copy(const void* data, size_t data_size, size_t offset=0); // copies data into VKW_Buffer (copies data_size many bytes from data to mapped_address + offset)
@@ -21,6 +21,7 @@ public:
 	void unmap();
 private:
 	const VKW_Device* device;
+	std::string name;
 
 	VmaAllocator allocator;
 
@@ -40,4 +41,4 @@ public:
 	inline void* get_mapped_address() const { return mapped_address; }; // returns mapped address or null if not mapped
 };
 
-VKW_Buffer create_staging_buffer(const VKW_Device* device, VkDeviceSize buffer_size, const void* data, size_t data_size);
+VKW_Buffer create_staging_buffer(const VKW_Device* device, VkDeviceSize buffer_size, const void* data, size_t data_size, const std::string name="Staging buffer");
