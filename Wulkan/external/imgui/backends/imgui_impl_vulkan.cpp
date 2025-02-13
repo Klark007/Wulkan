@@ -84,6 +84,9 @@
 
 #include "imgui.h"
 #ifndef IMGUI_DISABLE
+// MODIFICATION
+#define IMGUI_IMPL_VULKAN_USE_VOLK
+// END MODIFICATION
 #include "imgui_impl_vulkan.h"
 #include <stdio.h>
 #ifndef IM_MAX

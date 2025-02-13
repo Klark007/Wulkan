@@ -35,8 +35,8 @@ void VKW_Device::del()
 void VKW_Device::init_allocator()
 {
 	VmaVulkanFunctions vulkan_functions = {};
-	vulkan_functions.vkGetInstanceProcAddr = &vkGetInstanceProcAddr;
-	vulkan_functions.vkGetDeviceProcAddr = &vkGetDeviceProcAddr;
+	vulkan_functions.vkGetInstanceProcAddr = vkGetInstanceProcAddr;
+	vulkan_functions.vkGetDeviceProcAddr = vkGetDeviceProcAddr;
 
 	VmaAllocatorCreateInfo allocator_info = {};
 	// needed so that vma allocated buffers can be used for vkGetBufferDeviceAddress

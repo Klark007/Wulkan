@@ -1,8 +1,6 @@
 #pragma once
 
 #include "imgui.h"
-#include "backends/imgui_impl_glfw.h"
-#include "backends/imgui_impl_vulkan.h"
 
 #include "vk_wrap/VKW_Object.h"
 #include "vk_wrap/VKW_Instance.h"

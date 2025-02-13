@@ -117,6 +117,9 @@
     <ClCompile Include="src\engine\EnvironmentMap.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="external\Volk\volk.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\compile.bat">

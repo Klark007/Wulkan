@@ -1,5 +1,8 @@
 #include "Gui.h"
 
+#define IMGUI_IMPL_VULKAN_USE_VOLK
+#include "backends/imgui_impl_glfw.h"
+#include "backends/imgui_impl_vulkan.h"
 #include "glm/gtc/type_ptr.hpp"
 
 static void check_imgui_result(VkResult result) {

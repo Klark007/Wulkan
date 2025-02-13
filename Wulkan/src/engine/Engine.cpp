@@ -241,6 +241,8 @@ void Engine::init_glfw()
 
 void Engine::init_vulkan()
 {
+	VK_CHECK_ET(volkInitialize(), RuntimeException, "Failed to initialize volk");
+
 	init_instance();
 	create_surface();
 	create_device();
@@ -388,7 +390,7 @@ void Engine::init_render_targets()
 		Texture::find_format(device, Texture_Type::Tex_Colortarget),
 		VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
 		sharing_exlusive()
-	); // TODO: FIX might add it multiple times to the clean up queue
+	); // TODO: FIX might add it multiple times to the clean up queue	
 	cleanup_queue.add(&color_render_target);
 
 	depth_render_target.init(

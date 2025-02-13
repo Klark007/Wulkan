@@ -61,6 +61,9 @@ void VKW_Instance::init(const std::string& app_name, std::vector<const char*> in
 	}
 
 	vkb_instance = build_result.value();
+
+	// load required functions
+	volkLoadInstance(vkb_instance.instance);
 }
 
 void VKW_Instance::del()
