@@ -97,7 +97,7 @@ void Engine::update()
 void Engine::draw()
 {
 	const VKW_CommandBuffer& cmd = get_current_command_buffer();
-	cmd.reset();
+	cmd.reset(); // resetting command pool might be more efficient
 
 	// begin command buffer
 	cmd.begin();
@@ -344,7 +344,25 @@ void Engine::init_data()
 	environment_map.set_descriptor_bindings(uniform_buffers, linear_texture_sampler);
 	cleanup_queue.add(&environment_map);
 
-	directional_light.init(glm::vec3(0, 0, 1), glm::vec3(0.8, 0.8, 1), 1.0);
+	std::array<VKW_CommandPool, MAX_FRAMES_IN_FLIGHT> graphic_pools;
+	for (unsigned int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+		graphic_pools.at(i) = command_structs.at(i).graphics_command_pool;
+	}
+	directional_light.init(
+		&device,
+		graphic_pools,
+		glm::vec3(0, 0, 0), // look at for shadow
+		glm::vec3(0, 0, 1), // direction for shadow
+		30, // distance from look at for projection
+		1024,
+		1024,
+		25, // height of orthographic projection
+		0.1,
+		200.0
+	);
+	directional_light.set_color(glm::vec3(0.8, 0.8, 1.0));
+	directional_light.set_intensity(1.0f);
+	//directional_light.init(glm::vec3(0, 0, 1), glm::vec3(0.8, 0.8, 1), 1.0);
 	cleanup_queue.add(&directional_light);
 }
 
@@ -381,7 +399,7 @@ void Engine::create_uniform_buffers()
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
 			sharing_exlusive(), 
 			true,
-			"Uniform buffer"
+			"Main Uniform buffer"
 		);
 		uniform_buffer.map();
 		cleanup_queue.add(&uniform_buffer);
@@ -506,6 +524,10 @@ void Engine::create_sync_structs()
 		VK_CHECK_E(vkCreateSemaphore(device, &semaphore_create_info, nullptr, &sync_structs.at(i).swapchain_semaphore), SetupException);
 		VK_CHECK_E(vkCreateSemaphore(device, &semaphore_create_info, nullptr, &sync_structs.at(i).render_semaphore), SetupException);
 		VK_CHECK_E(vkCreateFence(device, &fence_create_info, nullptr, &sync_structs.at(i).render_fence), SetupException);
+
+		device.name_object((uint64_t)sync_structs.at(i).swapchain_semaphore, VK_OBJECT_TYPE_SEMAPHORE, "Swapchain semaphore");
+		device.name_object((uint64_t)sync_structs.at(i).render_semaphore, VK_OBJECT_TYPE_SEMAPHORE, "Render semaphore");
+		device.name_object((uint64_t)sync_structs.at(i).render_fence, VK_OBJECT_TYPE_FENCE, "Render fence");
 	}
 }
 
@@ -550,9 +572,8 @@ void Engine::update_uniforms()
 
 	uniform.near_far_plane = glm::vec2(camera.get_near_plane(), camera.get_far_plane());
 	
-	DirectionalData directional_light_data = directional_light.get_shader_data();
-	uniform.sun_direction = directional_light_data.direction;
-	uniform.sun_color = directional_light_data.color;
+	uniform.sun_direction = directional_light.get_direction();
+	uniform.sun_color = directional_light.get_color();
 
 	memcpy(uniform_buffers.at(current_frame).get_mapped_address(), &uniform, sizeof(UniformStruct));
 }

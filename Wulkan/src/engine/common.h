@@ -24,6 +24,22 @@
 
 constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 2;
 
+struct UniformStruct {
+    alignas(16) glm::mat4 view;
+    alignas(16) glm::mat4 inv_view;
+    alignas(16) glm::mat4 virtual_view;
+    alignas(16) glm::mat4 proj;
+    alignas(8) glm::vec2 near_far_plane;
+    alignas(8) glm::vec2 sun_direction;
+    alignas(16) glm::vec4 sun_color;
+};
+
+// std430
+struct PushConstants {
+    alignas(8) VkDeviceAddress vertex_buffer;
+    alignas(16) glm::mat4 model;
+};
+
 #ifdef NDEBUG
 const bool enable_validation_layers = false;
 #else

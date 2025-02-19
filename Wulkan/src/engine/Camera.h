@@ -29,7 +29,7 @@ public:
 	inline void set_pitch(float pitch);
 	inline void set_near_plane(float near) { z_near = near; };
 	inline void set_far_plane(float far) { z_far = far; };
-	inline void set_orthographic_projection_size(float size) { ortho_size = size; };
+	inline void set_orthographic_projection_height(float h) { ortho_height = h; };
 private:
 	glm::vec3 position;
 
@@ -41,7 +41,7 @@ private:
 	float foc_x = -1; // set to invalid values if camera is constructed using fov and not focal length x and y
 	float foc_y = -1;
 	float fov;
-	float ortho_size;
+	float ortho_height;
 	float z_near;
 	float z_far;
 
@@ -130,7 +130,8 @@ inline glm::mat4 Camera::generate_projection_mat() const {
 
 inline glm::mat4 Camera::generate_ortho_mat() const
 {
-	return glm::ortho(-ortho_size, ortho_size, -ortho_size, ortho_size, z_near, z_far);
+	float aspect = get_aspect_ratio();
+	return glm::ortho(-ortho_height * aspect, ortho_height * aspect, -ortho_height, ortho_height, z_near, z_far);
 }
 
 // calculate dir given yaw and pitch
