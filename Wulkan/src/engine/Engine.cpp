@@ -89,6 +89,8 @@ void Engine::update()
 	terrain.set_texture_eps(gui_input.terrain_texture_eps);
 	terrain.set_visualization_mode(gui_input.terrain_vis_mode);
 
+	directional_light.set_direction(glm::normalize(gui_input.sun_direction));
+
 	update_uniforms();
 }
 
@@ -138,17 +140,14 @@ void Engine::draw()
 
 		// draw terrain
 		{
-			VKW_GraphicsPipeline& pipeline = terrain_depth_pipeline; // (gui_input.terrain_wireframe_mode) ? terrain_wireframe_pipeline : terrain_pipeline;
+			VKW_GraphicsPipeline& pipeline = (gui_input.terrain_wireframe_mode) ? terrain_wireframe_pipeline : terrain_pipeline;
 			pipeline.set_render_size(swapchain.get_extent());
 
-			
-			/*
 			pipeline.set_color_attachment(
 				color_render_target.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT),
 				false,
 				{ {1.0f, 0.0f, 1.0f, 1.0f} }
 			);
-			*/
 			
 
 			pipeline.set_depth_attachment(
@@ -344,6 +343,9 @@ void Engine::init_data()
 	);
 	environment_map.set_descriptor_bindings(uniform_buffers, linear_texture_sampler);
 	cleanup_queue.add(&environment_map);
+
+	directional_light.init(glm::vec3(0, 0, 1), glm::vec3(0.8, 0.8, 1), 1.0);
+	cleanup_queue.add(&directional_light);
 }
 
 void Engine::create_texture_samplers()
@@ -547,7 +549,10 @@ void Engine::update_uniforms()
 	uniform.virtual_view = camera.generate_virtual_view_mat();
 
 	uniform.near_far_plane = glm::vec2(camera.get_near_plane(), camera.get_far_plane());
-	uniform.sun_direction = glm::normalize(gui_input.sun_direction);
+	
+	DirectionalData directional_light_data = directional_light.get_shader_data();
+	uniform.sun_direction = directional_light_data.direction;
+	uniform.sun_color = directional_light_data.color;
 
 	memcpy(uniform_buffers.at(current_frame).get_mapped_address(), &uniform, sizeof(UniformStruct));
 }

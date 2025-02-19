@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../vk_types.h"
+#include "../common.h"
 #include "VKW_Object.h"
 
 class VKW_Instance : public VKW_Object {

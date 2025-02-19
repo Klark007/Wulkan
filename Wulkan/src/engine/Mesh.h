@@ -1,6 +1,6 @@
 #pragma once
 
-#include "vk_types.h"
+#include "common.h"
 
 #include "Shape.h"
 #include "vk_wrap/VKW_Device.h"

@@ -19,6 +19,9 @@
 #include <map>
 #include <functional>
 
+#define _USE_MATH_DEFINES
+#include <math.h>
+
 constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 2;
 
 #ifdef NDEBUG
@@ -35,6 +38,8 @@ struct SharingInfo {
 inline constexpr SharingInfo sharing_exlusive() {
     return { VK_SHARING_MODE_EXCLUSIVE, {} };
 };
+
+glm::vec2 dir_to_spherical(const glm::vec3& dir);
 
 #define VK_CHECK(x)                                                     \
     do {                                                                \

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "vk_types.h"
+#include "common.h"
 
 #include <stb_image.h>
 #include "vk_wrap/VKW_Object.h"

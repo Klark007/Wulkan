@@ -135,6 +135,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\engine\common.cpp" />
+    <ClCompile Include="src\engine\DirectionalLight.cpp" />
     <ClCompile Include="external\Volk\volk.c" />
     <ClCompile Include="src\engine\EnvironmentMap.cpp" />
     <ClCompile Include="external\miniz\miniz.c" />
@@ -176,6 +178,7 @@
     <None Include="src\engine\vk_wrap\README.md" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\engine\DirectionalLight.h" />
     <ClInclude Include="src\engine\EnvironmentMap.h" />
     <ClInclude Include="external\include\tinyexr.h" />
     <ClInclude Include="external\miniz\miniz.h" />
@@ -199,7 +202,7 @@
     <ClInclude Include="src\engine\Camera.h" />
     <ClInclude Include="src\engine\Profiler.h" />
     <ClInclude Include="src\engine\Shape.h" />
-    <ClInclude Include="src\engine\vk_types.h" />
+    <ClInclude Include="src\engine\common.h" />
     <ClInclude Include="src\engine\vk_wrap\VKW_Object.h" />
     <ClInclude Include="src\engine\vk_wrap\VKW_Instance.h" />
     <ClInclude Include="src\engine\vk_wrap\VKW_Surface.h" />

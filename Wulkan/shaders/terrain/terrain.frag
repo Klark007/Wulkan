@@ -16,7 +16,8 @@ layout(binding = 0) uniform UniformData {
     mat4 _virtual_view;
     mat4 _proj;
     vec2 _near_far_plane;
-    vec3 sun_direction;
+    vec2 sun_direction;
+    vec4 sun_color;
 } ubo;
 
 layout( push_constant ) uniform constants
@@ -31,18 +32,23 @@ layout( push_constant ) uniform constants
 
 layout(location = 0) out vec4 outColor;
 
+vec3 spherical_to_dir(vec2 sph);
+
 void main() {
     vec3 obj_normal = normalize((texture(normal_map, inUV).rgb - vec3(0.5, 0.5, 0)) * vec3(2,2,1));
     vec3 world_normal = normalize(mat3(transpose((pc.model))) * obj_normal); // normals are in object space not tangent space
 
     switch (pc.visualization_mode) {
         case 0: // shading      
-            outColor = texture(albedo, inUV) * max(
+            float cos_theata =  max(
                 dot(
                     world_normal, 
-                    ubo.sun_direction
+                    spherical_to_dir(ubo.sun_direction)
                 ), 0
             );
+
+            vec4 ambient = texture(albedo, inUV) * 0.05;
+            outColor = texture(albedo, inUV) * ubo.sun_color * cos_theata + ambient;
             break;
         case 1: // tesselation level
             outColor = inColor;
@@ -63,4 +69,18 @@ void main() {
             outColor = vec4(1,0,1,1);
             break;
     }
+}
+
+vec3 spherical_to_dir(vec2 sph) {
+    float cos_theta = cos(sph.x);
+    float sin_theta = sin(sph.x);
+
+    float cos_phi = cos(sph.y);
+    float sin_phi = sin(sph.y);
+
+    return vec3(
+        sin_theta * cos_phi,
+        sin_theta * sin_phi,
+        cos_theta
+    );
 }

@@ -2,7 +2,7 @@
 
 
 /* BIG TODO's:
- 	Disable safety checks if compiled in Release mode
+ 	Disable safety checks if compiled in Release mode?
 */
 
 #include "vk_wrap/VKW_Instance.h"
@@ -29,6 +29,7 @@
 #include "Mesh.h"
 #include "Terrain.h"
 #include "EnvironmentMap.h"
+#include "DirectionalLight.h"
 
 #include "Gui.h"
 
@@ -58,7 +59,8 @@ struct UniformStruct {
 	alignas(16) glm::mat4 virtual_view;
 	alignas(16) glm::mat4 proj;
 	alignas(8) glm::vec2 near_far_plane;
-	alignas(16) glm::vec3 sun_direction; // TODO: could be compressed
+	alignas(8) glm::vec2 sun_direction;
+	alignas(16) glm::vec4 sun_color;
 };
 
 // std430
@@ -135,6 +137,7 @@ public: // TODO: remove public
 	Texture color_render_target;
 	Texture depth_render_target;
 
+
 	VKW_GraphicsPipeline terrain_pipeline;
 	VKW_GraphicsPipeline terrain_depth_pipeline;
 	VKW_GraphicsPipeline terrain_wireframe_pipeline;
@@ -149,8 +152,13 @@ public: // TODO: remove public
 	SharedTerrainData shared_terrain_data;
 	Terrain terrain;
 
+	// Environment map
 	SharedEnvironmentData shared_environment_data;
 	EnvironmentMap environment_map;
+
+	// Directional light
+	DirectionalLight directional_light;
+
 
 	// Input into shaders
 	VKW_DescriptorPool imgui_descriptor_pool;

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "vk_types.h"
+#include "common.h"
 #include "Shape.h"
 #include "Mesh.h"
 #include "Texture.h"
