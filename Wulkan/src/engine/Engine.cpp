@@ -138,14 +138,18 @@ void Engine::draw()
 
 		// draw terrain
 		{
-			VKW_GraphicsPipeline& pipeline = (gui_input.terrain_wireframe_mode) ? terrain_wireframe_pipeline : terrain_pipeline;
+			VKW_GraphicsPipeline& pipeline = terrain_depth_pipeline; // (gui_input.terrain_wireframe_mode) ? terrain_wireframe_pipeline : terrain_pipeline;
 			pipeline.set_render_size(swapchain.get_extent());
 
+			
+			/*
 			pipeline.set_color_attachment(
 				color_render_target.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT),
 				false,
 				{ {1.0f, 0.0f, 1.0f, 1.0f} }
 			);
+			*/
+			
 
 			pipeline.set_depth_attachment(
 				depth_render_target.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT),
@@ -412,8 +416,11 @@ void Engine::create_graphics_pipelines()
 	terrain_pipeline = Terrain::create_pipeline(&device, color_render_target, depth_render_target, shared_terrain_data);
 	cleanup_queue.add(&terrain_pipeline);
 
-	terrain_wireframe_pipeline = Terrain::create_pipeline(&device, color_render_target, depth_render_target, shared_terrain_data, true);
+	terrain_wireframe_pipeline = Terrain::create_pipeline(&device, color_render_target, depth_render_target, shared_terrain_data, false, true); // wireframe but not depth only
 	cleanup_queue.add(&terrain_wireframe_pipeline);
+
+	terrain_depth_pipeline = Terrain::create_pipeline(&device, color_render_target, depth_render_target, shared_terrain_data, true);
+	cleanup_queue.add(&terrain_depth_pipeline);
 
 	environment_map_pipeline = EnvironmentMap::create_pipeline(&device, color_render_target, depth_render_target, shared_environment_data);
 	cleanup_queue.add(&environment_map_pipeline);

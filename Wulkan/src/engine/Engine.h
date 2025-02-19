@@ -136,7 +136,9 @@ public: // TODO: remove public
 	Texture depth_render_target;
 
 	VKW_GraphicsPipeline terrain_pipeline;
+	VKW_GraphicsPipeline terrain_depth_pipeline;
 	VKW_GraphicsPipeline terrain_wireframe_pipeline;
+
 	VKW_GraphicsPipeline environment_map_pipeline;
 
 	// general sampler for texture (Linear sampling, repeat address mode)
