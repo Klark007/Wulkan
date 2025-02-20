@@ -103,11 +103,9 @@ public:
 	
 	void set_render_size(VkExtent2D extend);
 
-	// sets the dynamic viewport (with extend set by set_render_size), expects to be in an active render pass
+	// sets the dynamic state (viewport and scissor; with extend set by set_render_size), expects to be in an active render pass
 	// Todo could later also set min and max depth for inverted zbuffer
-	inline void set_dynamic_viewport(const VKW_CommandBuffer& cmd) const { vkCmdSetViewport(cmd, 0, 1, &viewport);  };
-	// sets the dynamic scissor (with extend set by set_render_size), expects to be in an active render pass
-	inline void set_dynamic_scissor(const VKW_CommandBuffer& cmd) const { vkCmdSetScissor(cmd, 0, 1, &scissor); };
+	inline void set_dynamic_state(const VKW_CommandBuffer& cmd);
 
 	inline operator VkPipeline() const { return graphics_pipeline; };
 	inline VkPipeline get_pipeline() const { return graphics_pipeline; };
@@ -176,4 +174,10 @@ template<class T>
 inline void VKW_GraphicsPipeline::add_push_constant(VKW_PushConstant<T> push_const)
 {
 	push_consts_range.push_back(push_const.get_range());
+}
+
+inline void VKW_GraphicsPipeline::set_dynamic_state(const VKW_CommandBuffer& cmd)
+{
+	vkCmdSetViewport(cmd, 0, 1, &viewport);
+	vkCmdSetScissor(cmd, 0, 1, &scissor);
 }

@@ -130,9 +130,7 @@ void Engine::draw()
 				pipeline.begin_rendering(shadow_cmd);
 				{
 					pipeline.bind(shadow_cmd);
-
-					pipeline.set_dynamic_viewport(shadow_cmd);
-					pipeline.set_dynamic_scissor(shadow_cmd);
+					pipeline.set_dynamic_state(shadow_cmd);
 
 					terrain.draw(shadow_cmd, current_frame, pipeline);
 				}
@@ -188,8 +186,8 @@ void Engine::draw()
 				{
 					pipeline.bind(cmd);
 
-					pipeline.set_dynamic_viewport(cmd);
-					pipeline.set_dynamic_scissor(cmd);
+					// TODO: set dynamic state
+					pipeline.set_dynamic_state(cmd);
 					environment_map.draw(cmd, current_frame, pipeline);
 				}
 				pipeline.end_rendering(cmd);
@@ -218,8 +216,8 @@ void Engine::draw()
 				{
 					pipeline.bind(cmd);
 
-					pipeline.set_dynamic_viewport(cmd);
-					pipeline.set_dynamic_scissor(cmd);
+					pipeline.set_dynamic_state(cmd);
+					
 					terrain.draw(cmd, current_frame, pipeline);
 				}
 				pipeline.end_rendering(cmd);
