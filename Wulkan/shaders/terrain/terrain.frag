@@ -5,10 +5,10 @@ layout(location = 1) in vec2 inUV;
 layout(location = 2) in vec3 inNormal;
 layout(location = 3) in vec4 inColor;
 
-layout(binding = 1) uniform sampler2D height_map;
-layout(binding = 2) uniform sampler2D albedo;
-layout(binding = 3) uniform sampler2D normal_map;
-layout(binding = 4) uniform sampler2D curvature;
+layout(binding = 2) uniform sampler2D height_map;
+layout(binding = 3) uniform sampler2D albedo;
+layout(binding = 4) uniform sampler2D normal_map;
+layout(binding = 5) uniform sampler2D curvature;
 
 layout(binding = 0) uniform UniformData {
     mat4 _view;

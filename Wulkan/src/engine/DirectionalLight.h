@@ -9,10 +9,9 @@
 #include "Texture.h"
 #include "Camera.h"
 
-// used for shader
-struct DirectionalData {
-	alignas(16) glm::vec4 color;
-	alignas(8) glm::vec2 direction;
+// TODO NAMING
+struct ShadowDepthOnlyUniformData {
+	alignas(16) glm::mat4 view_proj;
 };
 
 class DirectionalLight : public VKW_Object
@@ -47,10 +46,18 @@ public: // TODO: REMOVE public
 
 	Texture depth_rt;
 public:
-	void set_direction(glm::vec3 direction) { dir = dir_to_spherical(direction); };
+	inline void set_direction(glm::vec3 direction);
 	void set_color(glm::vec3 color) { col = color; };
 	void set_intensity(float intensity) { str = intensity; };
+	
 
-	inline glm::vec4 get_color() const { return glm::vec4(col, 1) * str; };
-	inline glm::vec2 get_direction() const { return dir; };
+	glm::vec4 get_color() const { return glm::vec4(col, 1) * str; };
+	glm::vec2 get_direction() const { return dir; };
 };
+
+inline void DirectionalLight::set_direction(glm::vec3 direction)
+{
+	dir = dir_to_spherical(direction);
+
+	shadow_camera.set_dir(-direction);
+}

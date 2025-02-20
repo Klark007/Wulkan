@@ -96,104 +96,163 @@ void Engine::update()
 
 void Engine::draw()
 {
-	const VKW_CommandBuffer& cmd = get_current_command_buffer();
-	cmd.reset(); // resetting command pool might be more efficient
-
-	// begin command buffer
-	cmd.begin();
 	
 	{
-		// initial layout transitions
-		Texture::transition_layout(cmd, color_render_target, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-		Texture::transition_layout(cmd, depth_render_target, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+		ShadowDepthOnlyUniformData uniform{};
+		glm::mat4 proj = directional_light.shadow_camera.generate_ortho_mat();
+		proj[1][1] *= -1; // see https://community.khronos.org/t/confused-when-using-glm-for-projection/108548/2 for reason for the multiplication
 
-		// draw environment map
+		glm::mat4 view = directional_light.shadow_camera.generate_view_mat();
+		uniform.view_proj = proj * view;
+
+		memcpy(directional_light.uniform_buffers.at(current_frame).get_mapped_address(), &uniform, sizeof(UniformStruct));
+
+
+		const VKW_CommandBuffer& shadow_cmd = directional_light.cmds.at(current_frame);
+		shadow_cmd.reset();
+		shadow_cmd.begin();
+		
+
 		{
-			
-			VKW_GraphicsPipeline& pipeline = environment_map_pipeline;
-			pipeline.set_render_size(swapchain.get_extent());
+			Texture::transition_layout(shadow_cmd, directional_light.depth_rt, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
-			// would theoretically not need to clear the screen
-			pipeline.set_color_attachment(
-				color_render_target.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT),
-				true,
-				{ {0.2f, 0.2f, 0.2f, 1.0f} }
-			);
-
-			pipeline.set_depth_attachment(
-				depth_render_target.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT),
-				true,
-				1.0f
-			);
-			
-			pipeline.begin_rendering(cmd);
+			// draw using depth only pipelines
 			{
-				pipeline.bind(cmd);
+				VKW_GraphicsPipeline& pipeline = terrain_depth_pipeline;
+				pipeline.set_render_size(directional_light.depth_rt.get_extent());
 
-				pipeline.set_dynamic_viewport(cmd);
-				pipeline.set_dynamic_scissor(cmd);
-				environment_map.draw(cmd, current_frame, pipeline);
+				pipeline.set_depth_attachment(
+					directional_light.depth_rt.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT),
+					true,
+					1.0f
+				);
+
+				pipeline.begin_rendering(shadow_cmd);
+				{
+					pipeline.bind(shadow_cmd);
+
+					pipeline.set_dynamic_viewport(shadow_cmd);
+					pipeline.set_dynamic_scissor(shadow_cmd);
+
+					terrain.draw(shadow_cmd, current_frame, pipeline);
+				}
+				pipeline.end_rendering(shadow_cmd);
 			}
-			pipeline.end_rendering(cmd);
+
+
+			Texture::transition_layout(shadow_cmd, directional_light.depth_rt, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
 		}
-		
 
-		// draw terrain
-		{
-			VKW_GraphicsPipeline& pipeline = (gui_input.terrain_wireframe_mode) ? terrain_wireframe_pipeline : terrain_pipeline;
-			pipeline.set_render_size(swapchain.get_extent());
-
-			pipeline.set_color_attachment(
-				color_render_target.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT),
-				false,
-				{ {1.0f, 0.0f, 1.0f, 1.0f} }
-			);
-			
-
-			pipeline.set_depth_attachment(
-				depth_render_target.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT),
-				false,
-				1.0f
-			);
-
-			pipeline.begin_rendering(cmd);
-			{
-				pipeline.bind(cmd);
-
-				pipeline.set_dynamic_viewport(cmd);
-				pipeline.set_dynamic_scissor(cmd);
-				terrain.draw(cmd, current_frame, pipeline);
-			}
-			pipeline.end_rendering(cmd);
-		}
-		
-		// transitions for copy into swapchain images
-		Texture::transition_layout(cmd, color_render_target, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-		Texture::transition_layout(cmd, swapchain.images_at(current_swapchain_image_idx), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-
-		// copy (both have swapchain extent resolution
-		Texture::copy(cmd, color_render_target, swapchain.images_at(current_swapchain_image_idx), swapchain.get_extent(), swapchain.get_extent());
-
-		
-		// transition for imgui
-		Texture::transition_layout(cmd, swapchain.images_at(current_swapchain_image_idx), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-
-		// draw imgui
-		gui.draw(cmd, current_swapchain_image_idx);
-
-
-		// transition for present
-		Texture::transition_layout(cmd, swapchain.images_at(current_swapchain_image_idx), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+		shadow_cmd.submit(
+			{ },
+			{ },
+			{ directional_light.shadow_semaphores.at(current_frame) },
+			VK_NULL_HANDLE
+		);
 	}
-	
-	// end and submit command buffer
 
-	cmd.submit(
-		{ get_current_swapchain_semaphore() },
-		{ VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT },
-		{ get_current_render_semaphore() },
-		get_current_render_fence()
-	);
+	{
+
+		const VKW_CommandBuffer& cmd = get_current_command_buffer();
+		cmd.reset(); // resetting command pool might be more efficient
+
+		// begin command buffer
+		cmd.begin();
+	
+		{
+			// initial layout transitions
+			Texture::transition_layout(cmd, color_render_target, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+			Texture::transition_layout(cmd, depth_render_target, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL); // TODO check if necessary for depth each frame
+
+			// draw environment map
+			{
+			
+				VKW_GraphicsPipeline& pipeline = environment_map_pipeline;
+				pipeline.set_render_size(swapchain.get_extent());
+
+				// would theoretically not need to clear the screen
+				pipeline.set_color_attachment(
+					color_render_target.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT),
+					true,
+					{ {0.2f, 0.2f, 0.2f, 1.0f} }
+				);
+
+				pipeline.set_depth_attachment(
+					depth_render_target.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT),
+					true,
+					1.0f
+				);
+			
+				pipeline.begin_rendering(cmd);
+				{
+					pipeline.bind(cmd);
+
+					pipeline.set_dynamic_viewport(cmd);
+					pipeline.set_dynamic_scissor(cmd);
+					environment_map.draw(cmd, current_frame, pipeline);
+				}
+				pipeline.end_rendering(cmd);
+			}
+		
+
+			// draw terrain
+			{
+				VKW_GraphicsPipeline& pipeline = (gui_input.terrain_wireframe_mode) ? terrain_wireframe_pipeline : terrain_pipeline;
+				pipeline.set_render_size(swapchain.get_extent());
+
+				pipeline.set_color_attachment(
+					color_render_target.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT),
+					false,
+					{ {1.0f, 0.0f, 1.0f, 1.0f} }
+				);
+			
+
+				pipeline.set_depth_attachment(
+					depth_render_target.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT),
+					false,
+					1.0f
+				);
+
+				pipeline.begin_rendering(cmd);
+				{
+					pipeline.bind(cmd);
+
+					pipeline.set_dynamic_viewport(cmd);
+					pipeline.set_dynamic_scissor(cmd);
+					terrain.draw(cmd, current_frame, pipeline);
+				}
+				pipeline.end_rendering(cmd);
+			}
+		
+			// transitions for copy into swapchain images
+			Texture::transition_layout(cmd, color_render_target, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+			Texture::transition_layout(cmd, swapchain.images_at(current_swapchain_image_idx), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+			// copy (both have swapchain extent resolution
+			Texture::copy(cmd, color_render_target, swapchain.images_at(current_swapchain_image_idx), swapchain.get_extent(), swapchain.get_extent());
+
+		
+			// transition for imgui
+			Texture::transition_layout(cmd, swapchain.images_at(current_swapchain_image_idx), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+			// draw imgui
+			gui.draw(cmd, current_swapchain_image_idx);
+
+
+			// transition for present
+			Texture::transition_layout(cmd, swapchain.images_at(current_swapchain_image_idx), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+		}
+	
+		// end and submit command buffer
+
+		cmd.submit(
+			{ get_current_swapchain_semaphore(), directional_light.shadow_semaphores.at(current_frame) },
+			{ VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT },
+			{ get_current_render_semaphore() },
+			get_current_render_fence()
+		);
+	}
 	
 }
 
@@ -313,37 +372,6 @@ void Engine::init_shared_data()
 
 void Engine::init_data()
 {
-	terrain.init(
-		device,
-		get_current_graphics_pool(),
-		get_current_transfer_pool(),
-		descriptor_pool,
-		&mirror_texture_sampler,
-		&shared_terrain_data,
-
-		"textures/terrain/heightmap.png",
-		//"textures/terrain/test/height_test4.png",
-		"textures/terrain/texture.png",
-		"textures/terrain/normal.png",
-		256							// resolution of mesh
-	);
-	terrain.set_descriptor_bindings(uniform_buffers);
-	cleanup_queue.add(&terrain);
-
-	environment_map.init(
-		device,
-		get_current_graphics_pool(),
-		get_current_transfer_pool(),
-		descriptor_pool,
-		&shared_environment_data,
-
-		"textures/environment_maps/day_cube_map_%.exr"
-		//"textures/environment_maps/rogland_clear_night_%.exr"
-		//"textures/environment_maps/test/test_%.exr"
-	);
-	environment_map.set_descriptor_bindings(uniform_buffers, linear_texture_sampler);
-	cleanup_queue.add(&environment_map);
-
 	std::array<VKW_CommandPool, MAX_FRAMES_IN_FLIGHT> graphic_pools;
 	for (unsigned int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 		graphic_pools.at(i) = command_structs.at(i).graphics_command_pool;
@@ -364,6 +392,38 @@ void Engine::init_data()
 	directional_light.set_intensity(1.0f);
 	//directional_light.init(glm::vec3(0, 0, 1), glm::vec3(0.8, 0.8, 1), 1.0);
 	cleanup_queue.add(&directional_light);
+
+	// terrain needs directional light to be initiated due to it relying on it's uniform buffer
+	terrain.init(
+		device,
+		get_current_graphics_pool(),
+		get_current_transfer_pool(),
+		descriptor_pool,
+		&mirror_texture_sampler,
+		&shared_terrain_data,
+
+		"textures/terrain/heightmap.png",
+		//"textures/terrain/test/height_test4.png",
+		"textures/terrain/texture.png",
+		"textures/terrain/normal.png",
+		256							// resolution of mesh
+	);
+	terrain.set_descriptor_bindings(uniform_buffers, directional_light.uniform_buffers);
+	cleanup_queue.add(&terrain);
+
+	environment_map.init(
+		device,
+		get_current_graphics_pool(),
+		get_current_transfer_pool(),
+		descriptor_pool,
+		&shared_environment_data,
+
+		"textures/environment_maps/day_cube_map_%.exr"
+		//"textures/environment_maps/rogland_clear_night_%.exr"
+		//"textures/environment_maps/test/test_%.exr"
+	);
+	environment_map.set_descriptor_bindings(uniform_buffers, linear_texture_sampler);
+	cleanup_queue.add(&environment_map);
 }
 
 void Engine::create_texture_samplers()

@@ -11,30 +11,37 @@ void SharedTerrainData::init(const VKW_Device* device)
 		VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT | VK_SHADER_STAGE_FRAGMENT_BIT
 	);
 
-	// terrain texture and sampler
+	// uniform buffer for rendering depth for shadow map
 	descriptor_set_layout.add_binding(
 		1,
+		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+		VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT
+	);
+
+	// terrain texture and sampler
+	descriptor_set_layout.add_binding(
+		2,
 		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 		VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT | VK_SHADER_STAGE_FRAGMENT_BIT
 	);
 
 	// albedo
 	descriptor_set_layout.add_binding(
-		2,
+		3,
 		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 		VK_SHADER_STAGE_FRAGMENT_BIT
 	);
 
 	// normal map
 	descriptor_set_layout.add_binding(
-		3,
+		4,
 		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 		VK_SHADER_STAGE_FRAGMENT_BIT
 	);
 
 	// curvature map
 	descriptor_set_layout.add_binding(
-		4,
+		5,
 		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 		VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_FRAGMENT_BIT
 	);
@@ -128,17 +135,18 @@ void Terrain::init(const VKW_Device& device, const VKW_CommandPool& graphics_poo
 	mesh.init(device, transfer_pool, terrain_vertices, terrain_indices);
 }
 
-void Terrain::set_descriptor_bindings(const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& uniform_buffers)
+void Terrain::set_descriptor_bindings(const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& general_ubo, const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& shadow_map_ubo)
 {
 	// set the bindings
 	for (unsigned int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 		const VKW_DescriptorSet& set = descriptor_sets.at(i);
 
-		set.update(0, uniform_buffers.at(i));
-		set.update(1, height_map.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), *texture_sampler);
-		set.update(2, albedo.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), *texture_sampler);
-		set.update(3, normal_map.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), *texture_sampler);
-		set.update(4, curvatue.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), *texture_sampler);
+		set.update(0, general_ubo.at(i));
+		set.update(1, shadow_map_ubo.at(i));
+		set.update(2, height_map.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), *texture_sampler);
+		set.update(3, albedo.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), *texture_sampler);
+		set.update(4, normal_map.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), *texture_sampler);
+		set.update(5, curvatue.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), *texture_sampler);
 	}
 }
 

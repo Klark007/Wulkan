@@ -15,8 +15,8 @@ layout(binding = 0) uniform UniformData {
     vec4 _sun_color;
 } ubo;
 
-layout(binding = 1) uniform sampler2D height_map;
-layout(binding = 4) uniform sampler2D curvature;
+layout(binding = 2) uniform sampler2D height_map;
+layout(binding = 5) uniform sampler2D curvature;
 
 layout( push_constant ) uniform constants
 {

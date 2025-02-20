@@ -18,12 +18,13 @@ void DirectionalLight::init(const VKW_Device* vkw_device, const std::array<VKW_C
 	shadow_camera = Camera(destination + direction * distance, destination, shadow_res_x, shadow_res_y, glm::radians(45.0f), near_plane, far_plane);
 	shadow_camera.set_orthographic_projection_height(orthographic_height);
 
+	// TODO: Array texture for each cascade
 	depth_rt.init(
 		device,
 		shadow_res_x,
 		shadow_res_y,
 		Texture::find_format(*device, Texture_Type::Tex_D),
-		VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+		VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
 		sharing_exlusive(),
 		"Directional light shadow map"
 	);
@@ -33,15 +34,18 @@ void DirectionalLight::init(const VKW_Device* vkw_device, const std::array<VKW_C
 
 	for (unsigned int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 		VK_CHECK_ET(vkCreateSemaphore(*device, &semaphore_create_info, nullptr, &shadow_semaphores.at(i)), SetupException, "Failed to create a semaphore for the directional shadow maps");
+		device->name_object((uint64_t)shadow_semaphores.at(i), VK_OBJECT_TYPE_SEMAPHORE, "Shadow map semaphore");
 
 		uniform_buffers.at(i).init(
 			device,
-			sizeof(UniformStruct),
+			sizeof(ShadowDepthOnlyUniformData),
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			sharing_exlusive(),
 			true,
 			"Shadow Uniform buffer"
 		);
+		uniform_buffers.at(i).map();
+
 
 		cmds.at(i).init(device, &graphics_pools.at(i), false, "Shadow CMD");
 

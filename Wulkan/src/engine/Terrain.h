@@ -62,7 +62,7 @@ class Terrain : public Shape
 public:
 	Terrain() = default;
 	void init(const VKW_Device& device, const VKW_CommandPool& graphics_pool, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, const VKW_Sampler* sampler, SharedTerrainData* shared_terrain_data, const std::string& height_path, const std::string& albedo_path, const std::string& normal_path, uint32_t mesh_res);
-	void set_descriptor_bindings(const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& uniform_buffers);
+	void set_descriptor_bindings(const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& general_ubo, const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& shadow_map_ubo);
 	void del() override;
 
 	inline void draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame, const VKW_GraphicsPipeline& pipeline) override;
@@ -131,7 +131,12 @@ inline VKW_GraphicsPipeline Terrain::create_pipeline(const VKW_Device* device, T
 	tess_ctrl_shader.init(device, "shaders/terrain/terrain_tesc.spv", VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, "Terrain tesselation control shader");
 
 	VKW_Shader tess_eval_shader{};
-	tess_eval_shader.init(device, "shaders/terrain/terrain_tese.spv", VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, "Terrain tesselation evaluation shader");
+	if (!depth_only) {
+		tess_eval_shader.init(device, "shaders/terrain/terrain_tese.spv", VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, "Terrain tesselation evaluation shader");
+	}
+	else {
+		tess_eval_shader.init(device, "shaders/terrain/terrain_depth_tese.spv", VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, "Terrain tesselation evaluation shader");
+	}
 
 	VKW_GraphicsPipeline graphics_pipeline{};
 	

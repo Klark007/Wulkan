@@ -138,10 +138,10 @@ void Texture::transition_layout(const VKW_CommandBuffer& command_buffer, VkImage
 	barrier.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
 
 	VkImageAspectFlags aspect = 0;
-	if (new_layout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL) {
+	if (new_layout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL || initial_layout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL) {
 		aspect = VK_IMAGE_ASPECT_DEPTH_BIT;
 	}
-	else if (new_layout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
+	else if (new_layout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL || initial_layout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
 		aspect = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
 	}
 	else {

@@ -76,6 +76,7 @@ public:
 	inline VkFormat get_format() const { return format; };
 	inline unsigned int get_width() const { return width; };
 	inline unsigned int get_height() const { return height; };
+	inline VkExtent2D get_extent() const { return { width,height }; };
 };
 
 
@@ -156,7 +157,7 @@ inline VkFormatFeatureFlags Texture::required_format_features(Texture_Type type)
 	{
 	case Tex_D:
 	case Tex_DS:
-		return VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT;
+		return VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT;
 	case Tex_R:
 	case Tex_RGB:
 	case Tex_RGBA:

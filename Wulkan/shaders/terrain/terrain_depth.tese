@@ -5,15 +5,9 @@ layout(location = 0) in vec2 inUV[];
 layout(location = 1) in vec3 inNormal[];
 layout(location = 2) in vec4 inColor[];
 
-layout(binding = 0) uniform UniformData {
-    mat4 view;
-    mat4 _inv_view;
-    mat4 _virtual_view;
-    mat4 proj;
-    vec2 _near_far_plane;
-    vec2 _sun_direction;
-    vec4 _sun_color;
-} ubo;
+layout(binding = 1) uniform UniformData {
+    mat4 view_proj;
+} depth_ubo;
 
 layout(binding = 2) uniform sampler2D height_map;
 
@@ -46,7 +40,7 @@ void main()
     pos.z = texture(height_map, outUV).r * pc.height_scale;
 
     model_height = pos.z;
-    gl_Position = ubo.proj * ubo.view * pc.model * pos;
+    gl_Position = depth_ubo.view_proj * pc.model * pos;
 
     vec3 normal1 = normalize(mix(inNormal[0], inNormal[1], gl_TessCoord.x));
     vec3 normal2 = normalize(mix(inNormal[3], inNormal[2], gl_TessCoord.x));
