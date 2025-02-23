@@ -12,8 +12,10 @@
 enum Texture_Type
 {
 	Tex_DS,  // create depth & stencil texture
-	Tex_R,   // create R only texture
+	Tex_R,   // create R only texture (sRGB, conversion to linear done)
+	Tex_R_Linear,   // create R only texture without sRGB to linear conversion of Tex_R
 	Tex_RGB, // create RGB texture
+	Tex_RGB_Linear, // create RGB texture without sRGB to linear conversion
 	Tex_RGBA, // create RGBA texture
 	Tex_HDR_RGBA, // create RGBA with high dynamic range texture
 
@@ -112,10 +114,13 @@ inline int Texture::get_stbi_channels(VkFormat format)
 	switch (format)
 	{
 	case VK_FORMAT_R8_SRGB:
+	case VK_FORMAT_R8_UNORM:
 		return STBI_grey;
 	case VK_FORMAT_R8G8B8_SRGB:
+	case VK_FORMAT_R8G8B8_UNORM:
 		return STBI_rgb;
 	case VK_FORMAT_R8G8B8A8_SRGB:
+	case VK_FORMAT_R8G8B8A8_UNORM:
 		return STBI_rgb_alpha;
 	case VK_FORMAT_D32_SFLOAT:
 	case VK_FORMAT_D32_SFLOAT_S8_UINT:
@@ -137,8 +142,12 @@ inline std::vector<VkFormat> Texture::potential_formats(Texture_Type type)
 		return { VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT };
 	case Tex_R:
 		return { VK_FORMAT_R8_SRGB, VK_FORMAT_R8G8B8_SRGB, VK_FORMAT_R8G8B8A8_SRGB };
+	case Tex_R_Linear:
+		return { VK_FORMAT_R8_UNORM, VK_FORMAT_R8G8B8_UNORM, VK_FORMAT_R8G8B8A8_UNORM };
 	case Tex_RGB:
 		return { VK_FORMAT_R8G8B8_SRGB, VK_FORMAT_R8G8B8A8_SRGB };
+	case Tex_RGB_Linear:
+		return { VK_FORMAT_R8G8B8_UNORM, VK_FORMAT_R8G8B8A8_UNORM };
 	case Tex_RGBA:
 		return { VK_FORMAT_R8G8B8A8_SRGB };
 	case Tex_HDR_RGBA:
@@ -159,7 +168,9 @@ inline VkFormatFeatureFlags Texture::required_format_features(Texture_Type type)
 	case Tex_DS:
 		return VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT;
 	case Tex_R:
+	case Tex_R_Linear:
 	case Tex_RGB:
+	case Tex_RGB_Linear:
 	case Tex_RGBA:
 	case Tex_HDR_RGBA:
 		return VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT | VK_FORMAT_FEATURE_TRANSFER_DST_BIT;
