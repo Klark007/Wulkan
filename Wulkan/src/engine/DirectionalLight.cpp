@@ -14,8 +14,10 @@ void DirectionalLight::init(const VKW_Device* vkw_device, const std::array<VKW_C
 	device = vkw_device;
 	graphics_pools = pools;
 	cast_shadows = true;
+	dest = destination;
+	dist = distance;
 
-	shadow_camera = Camera(destination + direction * distance, destination, shadow_res_x, shadow_res_y, glm::radians(45.0f), near_plane, far_plane);
+	shadow_camera = Camera(dest + direction * dist, dest, shadow_res_x, shadow_res_y, glm::radians(45.0f), near_plane, far_plane);
 	shadow_camera.set_orthographic_projection_height(orthographic_height);
 
 	// TODO: Array texture for each cascade

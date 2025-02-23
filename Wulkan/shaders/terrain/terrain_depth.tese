@@ -6,7 +6,7 @@ layout(location = 1) in vec3 inNormal[];
 layout(location = 2) in vec4 inColor[];
 
 layout(binding = 1) uniform UniformData {
-    mat4 view_proj;
+    mat4 proj_view;
 } depth_ubo;
 
 layout(binding = 2) uniform sampler2D height_map;
@@ -22,16 +22,11 @@ layout( push_constant ) uniform constants
     int _visualization_mode;
 } pc;
 
-layout(location = 0) out float model_height;
-layout(location = 1) out vec2 outUV;
-layout(location = 2) out vec3 outNormal;
-layout(location = 3) out vec4 outColor;
-
 void main()
 {
     vec2 uv1 = mix(inUV[0], inUV[1], gl_TessCoord.x);
 	vec2 uv2 = mix(inUV[3], inUV[2], gl_TessCoord.x);
-	outUV = mix(uv1, uv2, gl_TessCoord.y);
+	vec2 outUV = mix(uv1, uv2, gl_TessCoord.y);
 
     vec4 pos1 = mix(gl_in[0].gl_Position, gl_in[1].gl_Position, gl_TessCoord.x);
 	vec4 pos2 = mix(gl_in[3].gl_Position, gl_in[2].gl_Position, gl_TessCoord.x);
@@ -39,15 +34,6 @@ void main()
 
     pos.z = texture(height_map, outUV).r * pc.height_scale;
 
-    model_height = pos.z;
-    gl_Position = depth_ubo.view_proj * pc.model * pos;
-
-    vec3 normal1 = normalize(mix(inNormal[0], inNormal[1], gl_TessCoord.x));
-    vec3 normal2 = normalize(mix(inNormal[3], inNormal[2], gl_TessCoord.x));
-    outNormal = normalize(mix(normal1, normal2, gl_TessCoord.y));
-
-    vec4 color1 = mix(inColor[0], inColor[1], gl_TessCoord.x);
-    vec4 color2 = mix(inColor[3], inColor[2], gl_TessCoord.x);
-    outColor = mix(color1, color2, gl_TessCoord.y);
+    gl_Position = depth_ubo.proj_view * pc.model * pos;
 }
 

@@ -18,7 +18,7 @@ struct GUI_Input {
 
 	float terrain_tesselation = 0.1f;
 	float max_terrain_tesselation = 16.0f;
-	float terrain_height_scale = 0.6f;
+	float terrain_height_scale = 0.8f;
 	float terrain_texture_eps = 1.0f;
 	bool terrain_wireframe_mode = false;
 	TerrainVisualizationMode terrain_vis_mode = TerrainVisualizationMode::Shaded;

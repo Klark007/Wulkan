@@ -103,7 +103,7 @@ void Engine::draw()
 		proj[1][1] *= -1; // see https://community.khronos.org/t/confused-when-using-glm-for-projection/108548/2 for reason for the multiplication
 
 		glm::mat4 view = directional_light.shadow_camera.generate_view_mat();
-		uniform.view_proj = proj * view;
+		uniform.proj_view = proj * view;
 
 		memcpy(directional_light.uniform_buffers.at(current_frame).get_mapped_address(), &uniform, sizeof(UniformStruct));
 
@@ -377,14 +377,15 @@ void Engine::init_data()
 	directional_light.init(
 		&device,
 		graphic_pools,
+		
 		glm::vec3(0, 0, 0), // look at for shadow
 		glm::vec3(0, 0, 1), // direction for shadow
 		30, // distance from look at for projection
 		1024,
 		1024,
-		25, // height of orthographic projection
+		40, // height of orthographic projection
 		0.1,
-		200.0
+		50.0
 	);
 	directional_light.set_color(glm::vec3(0.8, 0.8, 1.0));
 	directional_light.set_intensity(1.0f);
@@ -406,7 +407,7 @@ void Engine::init_data()
 		"textures/terrain/normal.png",
 		256							// resolution of mesh
 	);
-	terrain.set_descriptor_bindings(uniform_buffers, directional_light.uniform_buffers);
+	terrain.set_descriptor_bindings(uniform_buffers, directional_light.uniform_buffers, directional_light.depth_rt, linear_texture_sampler);
 	cleanup_queue.add(&terrain);
 
 	environment_map.init(
@@ -632,7 +633,14 @@ void Engine::update_uniforms()
 	
 	uniform.sun_direction = directional_light.get_direction();
 	uniform.sun_color = directional_light.get_color();
-
+	
+	{
+		glm::mat4 proj = directional_light.shadow_camera.generate_ortho_mat();
+		proj[1][1] *= -1; // see https://community.khronos.org/t/confused-when-using-glm-for-projection/108548/2 for reason for the multiplication
+		glm::mat4 view = directional_light.shadow_camera.generate_view_mat();
+		uniform.sun_proj_view = proj * view;
+	}
+	
 	memcpy(uniform_buffers.at(current_frame).get_mapped_address(), &uniform, sizeof(UniformStruct));
 }
 

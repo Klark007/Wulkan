@@ -6,15 +6,19 @@ layout(location = 2) in vec3 inNormal[];
 layout(location = 3) in vec4 inColor[];
 
 layout(binding = 0) uniform UniformData {
-    mat4 view;
+    mat4 _view;
     mat4 _inv_view;
-    mat4 virtual_view;
-    mat4 proj;
+    mat4 _virtual_view;
+    mat4 _proj;
     vec2 near_far_plane;
     vec2 _sun_direction;
     vec4 _sun_color;
     mat4 _sun_proj_view;
 } ubo;
+
+layout(binding = 1) uniform DepthUniformData {
+    mat4 proj_view;
+} depth_ubo;
 
 layout(binding = 2) uniform sampler2D height_map;
 layout(binding = 5) uniform sampler2D curvature;
@@ -100,7 +104,7 @@ void main()
 
 bool is_culled() {
     // extract frustum planes in object space https://www.gamedevs.org/uploads/fast-extraction-viewing-frustum-planes-from-world-view-projection-matrix.pdf
-    mat4 MVP = ubo.proj * ubo.virtual_view * pc.model;
+    mat4 MVP = depth_ubo.proj_view * pc.model;
     
     vec4 left = vec4(0);
     for (int i = 0; i < 4; i++) {
@@ -173,7 +177,7 @@ bool is_culled() {
 
 vec4 project_point(vec4 p, vec2 uv) {
     p.z = texture(height_map, uv).r * pc.height_scale;
-    vec4 proj_p = ubo.proj * ubo.virtual_view * pc.model * p;
+    vec4 proj_p = depth_ubo.proj_view * pc.model * p;
     proj_p = proj_p / proj_p.w;
 
     return proj_p;

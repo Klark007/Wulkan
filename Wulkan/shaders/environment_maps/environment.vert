@@ -26,6 +26,7 @@ layout(binding = 0) uniform UniformData {
     vec2 _near_far_plane;
 	vec2 _sun_direction;
 	vec4 _sun_color;
+	mat4 _sun_proj_view;
 } ubo;
 
 layout(location = 0) out vec3 outUVW;

@@ -13,6 +13,7 @@ layout(binding = 0) uniform UniformData {
     vec2 _near_far_plane;
     vec2 _sun_direction;
     vec4 _sun_color;
+    mat4 _sun_proj_view;
 } ubo;
 
 layout(binding = 2) uniform sampler2D height_map;
@@ -28,10 +29,12 @@ layout( push_constant ) uniform constants
     int _visualization_mode;
 } pc;
 
-layout(location = 0) out float model_height;
+layout(location = 0) out vec3 outWorldPos;
 layout(location = 1) out vec2 outUV;
 layout(location = 2) out vec3 outNormal;
 layout(location = 3) out vec4 outColor;
+layout(location = 4) out float model_height;
+
 
 void main()
 {
@@ -46,6 +49,7 @@ void main()
     pos.z = texture(height_map, outUV).r * pc.height_scale;
 
     model_height = pos.z;
+    outWorldPos = (pc.model * pos).xyz;
     gl_Position = ubo.proj * ubo.view * pc.model * pos;
 
     vec3 normal1 = normalize(mix(inNormal[0], inNormal[1], gl_TessCoord.x));

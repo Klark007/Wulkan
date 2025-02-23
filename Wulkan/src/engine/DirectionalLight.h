@@ -11,7 +11,7 @@
 
 // TODO NAMING
 struct ShadowDepthOnlyUniformData {
-	alignas(16) glm::mat4 view_proj;
+	alignas(16) glm::mat4 proj_view;
 };
 
 class DirectionalLight : public VKW_Object
@@ -34,6 +34,9 @@ private:
 
 	bool cast_shadows;
 	const VKW_Device* device;
+
+	glm::vec3 dest;
+	float dist;
 
 public: // TODO: REMOVE public
 	Camera shadow_camera;
@@ -59,5 +62,6 @@ inline void DirectionalLight::set_direction(glm::vec3 direction)
 {
 	dir = dir_to_spherical(direction);
 
-	shadow_camera.set_dir(-direction);
+	shadow_camera.set_pos(dest + direction * dist);
+	shadow_camera.look_at(dest);
 }

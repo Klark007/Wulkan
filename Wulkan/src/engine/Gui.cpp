@@ -101,7 +101,7 @@ void GUI::draw_gui(const VKW_CommandBuffer& cmd)
 
 			ImGui::Checkbox("Show Wireframe", &data.terrain_wireframe_mode);
 
-			constexpr const char* visualization_modes[] = { "Shaded", "Level", "Height", "Normals", "Error"};
+			constexpr const char* visualization_modes[] = { "Shaded", "Level", "Height", "Normals", "Error", "Shadow map depth"};
 			static int selected_vis = 0;
 			if (ImGui::TreeNode("Visualization mode")) {
 				ImGui::ListBox("Mode", &selected_vis, visualization_modes, IM_ARRAYSIZE(visualization_modes));
