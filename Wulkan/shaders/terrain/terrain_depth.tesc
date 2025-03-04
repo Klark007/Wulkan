@@ -218,7 +218,7 @@ vec4 compute_tesselation_level() {
 
         float linear_depth = map(linearize_depth(project_point(vec4(inPos[i],1), inUV[i]).z), ubo.near_far_plane.x, ubo.near_far_plane.y, 0, 1);
 
-        res[i] = abs_h / nr_samples * inout_bezier(1 - linear_depth);
+        res[i] = abs_h / nr_samples;
     }
 
     return res;
