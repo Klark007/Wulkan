@@ -24,7 +24,6 @@ layout( push_constant ) uniform constants
     mat4 model;
     float tesselation_strength;
     float max_tesselation;
-    float height_scale;
     float texture_eps;
     int visualization_mode;
     int _cascade_idx;
@@ -139,14 +138,14 @@ bool is_culled() {
     // bounding box
     float eps = 0.01; // bias as texture is only sampled at the vertices of the patch
     vec3 min_pos = inPos[0];
-    min_pos.z = (texture(height_map, inUV[0]).r - eps) * pc.height_scale;
+    min_pos.z = (texture(height_map, inUV[0]).r - eps);
 
     vec3 max_pos = inPos[0];
-    max_pos.z = (texture(height_map, inUV[0]).r + eps) * pc.height_scale;
+    max_pos.z = (texture(height_map, inUV[0]).r + eps);
     
     for (int i=1; i < 4; i++) {
         vec3 pos = inPos[i];
-        pos.z = texture(height_map, inUV[i]).r * pc.height_scale;
+        pos.z = texture(height_map, inUV[i]).r;
 
         min_pos = min(min_pos, pos);
         max_pos = max(max_pos, pos);
@@ -173,7 +172,7 @@ bool is_culled() {
 }
 
 vec4 project_point(vec4 p, vec2 uv) {
-    p.z = texture(height_map, uv).r * pc.height_scale;
+    p.z = texture(height_map, uv).r;
     vec4 proj_p = ubo.proj * ubo.virtual_view * pc.model * p;
     proj_p = proj_p / proj_p.w;
 

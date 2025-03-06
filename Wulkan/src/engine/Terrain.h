@@ -5,9 +5,6 @@
 #include "Mesh.h"
 #include "Texture.h"
 
-// TODO: Per Shape model transform
-#include <glm/gtc/matrix_transform.hpp>
-
 #include "vk_wrap/VKW_GraphicsPipeline.h"
 
 struct TerrainVertexPushConstants {
@@ -28,7 +25,6 @@ struct TerrainPushConstants {
 
 	alignas(4) float tesselation_strength;
 	alignas(4) float max_tesselation;
-	alignas(4) float height_scale;
 	alignas(4) float texture_eps;
 
 	alignas(4) TerrainVisualizationMode visualization_mode;
@@ -81,7 +77,6 @@ private:
 
 	float tesselation_strength;
 	float max_tesselation;
-	float height_scale;
 	float texture_eps;
 
 	TerrainVisualizationMode visualization_mode;
@@ -94,7 +89,6 @@ public:
 	
 	inline void set_tesselation_strength(float strength) { tesselation_strength = strength; }; // multiplicative factor of the tesselation level computed
 	inline void set_max_tesselation(float max) { max_tesselation = max; }; // maximum tesselation level
-	inline void set_height_scale(float scale) { height_scale = scale; }; // scale the terrain height by an additional factor
 	inline void set_texture_eps(float eps) { texture_eps = eps; }; // used for delta u,v for computing texture derivatives and curvature
 	inline void set_visualization_mode(TerrainVisualizationMode mode) { visualization_mode = mode; }; // switch between shading and debug views
 };
@@ -104,10 +98,9 @@ inline void Terrain::draw(const VKW_CommandBuffer& command_buffer, uint32_t curr
 	descriptor_sets.at(current_frame).bind(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get_layout());
 
 	shared_data->get_pc().update({
-		glm::scale(glm::rotate(glm::mat4(1), 0.0f, glm::vec3(1,0,0)), glm::vec3(25.0,25.0,25.0)),
+		model,
 		tesselation_strength,
 		max_tesselation,
-		height_scale,
 		texture_eps,
 		visualization_mode,
 		cascade_idx

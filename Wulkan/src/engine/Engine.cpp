@@ -85,7 +85,9 @@ void Engine::update()
 
 	terrain.set_tesselation_strength(gui_input.terrain_tesselation);
 	terrain.set_max_tesselation(gui_input.max_terrain_tesselation);
-	terrain.set_height_scale(gui_input.terrain_height_scale);
+	terrain.set_model_matrix(
+		glm::scale(glm::mat4(1), glm::vec3(25.0, 25.0, 25.0 * gui_input.terrain_height_scale))
+	);
 	terrain.set_texture_eps(gui_input.terrain_texture_eps);
 	terrain.set_visualization_mode(gui_input.terrain_vis_mode);
 

@@ -5,7 +5,7 @@ layout(location = 1) in vec2 inUV[];
 
 layout(binding = 1) uniform DepthUniformData {
     mat4 proj_views[4];
-    float cascade_splits[4];
+    float _cascade_splits[4];
 } depth_ubo;
 
 layout(binding = 2) uniform sampler2D height_map;
@@ -16,7 +16,6 @@ layout( push_constant ) uniform constants
     mat4 model;
     float tesselation_strength;
     float max_tesselation;
-    float height_scale;
     float texture_eps;
     int visualization_mode;
     int cascade_idx;
@@ -99,14 +98,14 @@ bool is_culled() {
     // bounding box
     float eps = 0.01; // bias as texture is only sampled at the vertices of the patch
     vec3 min_pos = inPos[0];
-    min_pos.z = (texture(height_map, inUV[0]).r - eps) * pc.height_scale;
+    min_pos.z = (texture(height_map, inUV[0]).r - eps);
 
     vec3 max_pos = inPos[0];
-    max_pos.z = (texture(height_map, inUV[0]).r + eps) * pc.height_scale;
+    max_pos.z = (texture(height_map, inUV[0]).r + eps);
     
     for (int i=1; i < 4; i++) {
         vec3 pos = inPos[i];
-        pos.z = texture(height_map, inUV[i]).r * pc.height_scale;
+        pos.z = texture(height_map, inUV[i]).r;
 
         min_pos = min(min_pos, pos);
         max_pos = max(max_pos, pos);

@@ -24,7 +24,6 @@ layout( push_constant ) uniform constants
     mat4 model;
     float _tesselation_strength;
     float _max_tesselation;
-    float height_scale;
     float _texture_eps;
     int _visualization_mode;
     int _cascade_idx;
@@ -47,7 +46,7 @@ void main()
 	vec4 pos2 = mix(gl_in[3].gl_Position, gl_in[2].gl_Position, gl_TessCoord.x);
 	vec4 pos = mix(pos1, pos2, gl_TessCoord.y);
 
-    pos.z = texture(height_map, outUV).r * pc.height_scale;
+    pos.z = texture(height_map, outUV).r;
 
     model_height = pos.z;
     outWorldPos = (pc.model * pos).xyz;

@@ -5,7 +5,7 @@ layout(location = 0) in vec2 inUV[];
 
 layout(binding = 1) uniform DepthUniformData {
     mat4 proj_views[4];
-    float cascade_splits[4];
+    float _cascade_splits[4];
 } depth_ubo;
 
 layout(binding = 2) uniform sampler2D height_map;
@@ -16,7 +16,6 @@ layout( push_constant ) uniform constants
     mat4 model;
     float _tesselation_strength;
     float _max_tesselation;
-    float height_scale;
     float _texture_eps;
     int _visualization_mode;
     int cascade_idx;
@@ -32,7 +31,7 @@ void main()
 	vec4 pos2 = mix(gl_in[3].gl_Position, gl_in[2].gl_Position, gl_TessCoord.x);
 	vec4 pos = mix(pos1, pos2, gl_TessCoord.y);
 
-    pos.z = texture(height_map, outUV).r * pc.height_scale;
+    pos.z = texture(height_map, outUV).r;
 
     gl_Position = depth_ubo.proj_views[pc.cascade_idx] * pc.model * pos;
 }

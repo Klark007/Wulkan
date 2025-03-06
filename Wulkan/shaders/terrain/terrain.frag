@@ -29,7 +29,6 @@ layout( push_constant ) uniform constants
     mat4  model;
     float _tesselation_strength;
     float _max_tesselation;
-    float height_scale;
     float _texture_eps;
     int visualization_mode;
     int _cascade_idx;
@@ -84,8 +83,8 @@ void main() {
             outColor = vec4(abs(obj_normal), 1);//texture(normal_map, inUV);
             break;
         case 4: // error
-            float texture_height = texture(height_map, inUV).r * pc.height_scale;
-            float err = (model_height - texture_height) / pc.height_scale;
+            float texture_height = texture(height_map, inUV).r;
+            float err = (model_height - texture_height);
             float res = abs(err);
             outColor = vec4(vec3(res)*100, 1);
             break;
