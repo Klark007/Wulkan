@@ -2,19 +2,6 @@
 
 layout(location = 0) in vec3 inPos[];
 layout(location = 1) in vec2 inUV[];
-layout(location = 2) in vec3 inNormal[];
-layout(location = 3) in vec4 inColor[];
-
-layout(binding = 0) uniform UniformData {
-    mat4 _view;
-    mat4 _inv_view;
-    mat4 _virtual_view;
-    mat4 _proj;
-    vec2 near_far_plane;
-    vec2 _sun_direction;
-    vec4 _sun_color;
-    mat4 _sun_proj_view;
-} ubo;
 
 layout(binding = 1) uniform DepthUniformData {
     mat4 proj_views[4];
@@ -38,20 +25,6 @@ layout( push_constant ) uniform constants
 layout (vertices = 4) out;
 
 layout(location = 0) out vec2 outUV[4];
-layout(location = 1) out vec3 outNormal[4];
-layout(location = 2) out vec4 outColor[4];
-
-vec4 debug_level(float str) {
-    if (str < pc.max_tesselation / 4) {
-        return vec4(0,1,0,1);
-    } else if (str < pc.max_tesselation / 2) {
-        return vec4(0,1,1,1);
-    } else if (str < 3 * pc.max_tesselation / 4) {
-        return vec4(0,0,1,1);
-    } else {
-        return vec4(1,0,0,1);
-    }
-}
 
 vec4 compute_tesselation_level();
 bool is_culled();
@@ -84,8 +57,6 @@ void main()
     gl_out[gl_InvocationID].gl_Position =  gl_in[gl_InvocationID].gl_Position;
 
     outUV[gl_InvocationID] = inUV[gl_InvocationID];
-    outNormal[gl_InvocationID] = inNormal[gl_InvocationID];   
-    outColor[gl_InvocationID] = inColor[gl_InvocationID];
 }
 
 bool is_culled() {
