@@ -32,6 +32,7 @@ struct TerrainPushConstants {
 	alignas(4) float texture_eps;
 
 	alignas(4) TerrainVisualizationMode visualization_mode;
+	alignas(4) int cascade_idx;
 };
 
 // singleton shared between all Terrain instances
@@ -108,7 +109,8 @@ inline void Terrain::draw(const VKW_CommandBuffer& command_buffer, uint32_t curr
 		max_tesselation,
 		height_scale,
 		texture_eps,
-		visualization_mode
+		visualization_mode,
+		cascade_idx
 	});
 	shared_data->get_pc().push(command_buffer, pipeline.get_layout());
 

@@ -23,7 +23,7 @@ struct GUI_Input {
 	bool terrain_wireframe_mode = false;
 	TerrainVisualizationMode terrain_vis_mode = TerrainVisualizationMode::Shaded;
 
-	glm::vec3 sun_direction = glm::vec3(0, 0, 1);
+	glm::vec3 sun_direction = glm::vec3(0, 0.8, 0.5);
 	float depth_bias = 40000.0f;
 	float slope_depth_bias = 0.1f;
 };

@@ -68,11 +68,11 @@ void Texture::del()
 	}
 }
 
-VkImageView Texture::get_image_view(VkImageAspectFlags aspect_flag, VkImageViewType type, uint32_t array_layers)
+VkImageView Texture::get_image_view(VkImageAspectFlags aspect_flag, VkImageViewType type, uint32_t base_layer, uint32_t array_layers)
 {
-	std::pair<VkImageAspectFlags, VkImageViewType> pair = std::make_pair(aspect_flag, type);
-	if (image_views.contains(pair)) {
-		return image_views[pair];
+	std::tuple<VkImageAspectFlags, VkImageViewType, int> tuple = std::make_tuple(aspect_flag, type, base_layer);
+	if (image_views.contains(tuple)) {
+		return image_views[tuple];
 	} else {
 		VkImageViewCreateInfo view_info{};
 		view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -85,14 +85,14 @@ VkImageView Texture::get_image_view(VkImageAspectFlags aspect_flag, VkImageViewT
 		view_info.subresourceRange.baseMipLevel = 0;
 		view_info.subresourceRange.levelCount = 1;
 	
-		view_info.subresourceRange.baseArrayLayer = 0;
+		view_info.subresourceRange.baseArrayLayer = base_layer;
 		view_info.subresourceRange.layerCount = array_layers;
 
 		VkImageView image_view;
 		VK_CHECK_ET(vkCreateImageView(*device, &view_info, nullptr, &image_view), RuntimeException, std::format("Failed to create image ({}) view for aspect {}", name, aspect_flag));
 		device->name_object((uint64_t)image_view, VK_OBJECT_TYPE_IMAGE_VIEW, name + " view");
 
-		image_views[pair] = image_view;
+		image_views[tuple] = image_view;
 		return image_view;
 	}
 }

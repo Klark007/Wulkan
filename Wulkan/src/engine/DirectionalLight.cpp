@@ -28,7 +28,9 @@ void DirectionalLight::init(const VKW_Device* vkw_device, const std::array<VKW_C
 		Texture::find_format(*device, Texture_Type::Tex_D),
 		VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
 		sharing_exlusive(),
-		"Directional light shadow map"
+		"Directional light shadow map",
+		0,
+		4
 	);
 
 	VkSemaphoreCreateInfo semaphore_create_info{};

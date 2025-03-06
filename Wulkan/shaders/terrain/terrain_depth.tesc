@@ -17,7 +17,8 @@ layout(binding = 0) uniform UniformData {
 } ubo;
 
 layout(binding = 1) uniform DepthUniformData {
-    mat4 proj_view;
+    mat4 proj_views[4];
+    float cascade_splits[4];
 } depth_ubo;
 
 layout(binding = 2) uniform sampler2D height_map;
@@ -31,6 +32,7 @@ layout( push_constant ) uniform constants
     float height_scale;
     float texture_eps;
     int visualization_mode;
+    int cascade_idx;
 } pc;
 
 layout (vertices = 4) out;
@@ -82,29 +84,13 @@ void main()
     gl_out[gl_InvocationID].gl_Position =  gl_in[gl_InvocationID].gl_Position;
 
     outUV[gl_InvocationID] = inUV[gl_InvocationID];
-    outNormal[gl_InvocationID] = inNormal[gl_InvocationID];
-    
-    switch (pc.visualization_mode) {
-        case 0: // shading
-            outColor[gl_InvocationID] = inColor[gl_InvocationID];
-            break;
-        case 1: // tesselation level
-            outColor[gl_InvocationID] = debug_level(
-                min(
-                    compute_tesselation_level() * pc.tesselation_strength, 
-                    pc.max_tesselation
-                )[gl_InvocationID]
-            );
-            break;
-        default: // Not implemented modes or modes where color is computed in the fragment shader (pink) 
-            outColor[gl_InvocationID] = vec4(1,0,1,1);
-            break;
-    } 
+    outNormal[gl_InvocationID] = inNormal[gl_InvocationID];   
+    outColor[gl_InvocationID] = inColor[gl_InvocationID];
 }
 
 bool is_culled() {
     // extract frustum planes in object space https://www.gamedevs.org/uploads/fast-extraction-viewing-frustum-planes-from-world-view-projection-matrix.pdf
-    mat4 MVP = depth_ubo.proj_view * pc.model;
+    mat4 MVP = depth_ubo.proj_views[pc.cascade_idx] * pc.model;
     
     vec4 left = vec4(0);
     for (int i = 0; i < 4; i++) {
@@ -175,27 +161,6 @@ bool is_culled() {
     return false;
 }
 
-vec4 project_point(vec4 p, vec2 uv) {
-    p.z = texture(height_map, uv).r * pc.height_scale;
-    vec4 proj_p = depth_ubo.proj_view * pc.model * p;
-    proj_p = proj_p / proj_p.w;
-
-    return proj_p;
-}
-
-float linearize_depth(float d)
-{
-    return ubo.near_far_plane.x * ubo.near_far_plane.y / (ubo.near_far_plane.y + d * (ubo.near_far_plane.x - ubo.near_far_plane.y));
-}
-
-float map(float value, float min1, float max1, float min2, float max2) {
-  return min2 + (value - min1) * (max2 - min2) / (max1 - min1);
-}
-
-float inout_bezier(float x) {
-    return x * x * (3 - 2*x);
-}
-
 vec4 compute_tesselation_level() {
     // 1 pixel distance sample is a bad estimate of derivatives / curvature at a patches vertex
     vec2 epsilon = vec2(inUV[2] - inUV[0]) * pc.texture_eps;
@@ -216,8 +181,7 @@ vec4 compute_tesselation_level() {
             }
         }
 
-        float linear_depth = map(linearize_depth(project_point(vec4(inPos[i],1), inUV[i]).z), ubo.near_far_plane.x, ubo.near_far_plane.y, 0, 1);
-
+        
         res[i] = abs_h / nr_samples;
     }
 

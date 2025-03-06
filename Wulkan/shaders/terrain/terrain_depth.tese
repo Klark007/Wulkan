@@ -5,8 +5,9 @@ layout(location = 0) in vec2 inUV[];
 layout(location = 1) in vec3 inNormal[];
 layout(location = 2) in vec4 inColor[];
 
-layout(binding = 1) uniform UniformData {
-    mat4 proj_view;
+layout(binding = 1) uniform DepthUniformData {
+    mat4 proj_views[4];
+    float cascade_splits[4];
 } depth_ubo;
 
 layout(binding = 2) uniform sampler2D height_map;
@@ -20,6 +21,7 @@ layout( push_constant ) uniform constants
     float height_scale;
     float _texture_eps;
     int _visualization_mode;
+    int cascade_idx;
 } pc;
 
 void main()
@@ -34,6 +36,6 @@ void main()
 
     pos.z = texture(height_map, outUV).r * pc.height_scale;
 
-    gl_Position = depth_ubo.proj_view * pc.model * pos;
+    gl_Position = depth_ubo.proj_views[pc.cascade_idx] * pc.model * pos;
 }
 

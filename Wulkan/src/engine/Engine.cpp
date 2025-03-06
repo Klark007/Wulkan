@@ -103,7 +103,9 @@ void Engine::draw()
 		proj[1][1] *= -1; // see https://community.khronos.org/t/confused-when-using-glm-for-projection/108548/2 for reason for the multiplication
 
 		glm::mat4 view = directional_light.shadow_camera.generate_view_mat();
-		uniform.proj_view = proj * view;
+		for (uint32_t i = 0; i < 4; i++) {
+			uniform.proj_view[i] = proj * view;
+		}
 
 		memcpy(directional_light.uniform_buffers.at(current_frame).get_mapped_address(), &uniform, sizeof(UniformStruct));
 
@@ -121,21 +123,24 @@ void Engine::draw()
 				VKW_GraphicsPipeline& pipeline = terrain_depth_pipeline;
 				pipeline.set_render_size(directional_light.depth_rt.get_extent());
 
-				pipeline.set_depth_attachment(
-					directional_light.depth_rt.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT),
-					true,
-					1.0f
-				);
+				for (uint32_t i = 0; i < 4; i++) {
+					pipeline.set_depth_attachment(
+						directional_light.depth_rt.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D, i, 1),
+						true,
+						1.0f
+					);
 
-				pipeline.begin_rendering(shadow_cmd);
-				{
-					pipeline.bind(shadow_cmd);
-					pipeline.set_dynamic_state(shadow_cmd);
-					pipeline.set_depth_bias(gui_input.depth_bias, gui_input.slope_depth_bias, shadow_cmd);
+					pipeline.begin_rendering(shadow_cmd);
+					{
+						pipeline.bind(shadow_cmd);
+						pipeline.set_dynamic_state(shadow_cmd);
+						pipeline.set_depth_bias(gui_input.depth_bias, gui_input.slope_depth_bias, shadow_cmd);
 
-					terrain.draw(shadow_cmd, current_frame, pipeline);
+						terrain.set_cascade_idx(i);
+						terrain.draw(shadow_cmd, current_frame, pipeline);
+					}
+					pipeline.end_rendering(shadow_cmd);
 				}
-				pipeline.end_rendering(shadow_cmd);
 			}
 
 

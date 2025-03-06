@@ -77,7 +77,7 @@ void EnvironmentMap::set_descriptor_bindings(const std::array<VKW_Buffer, MAX_FR
 		const VKW_DescriptorSet& set = descriptor_sets.at(i);
 
 		set.update(0, uniform_buffers.at(i));
-		set.update(1, cube_map.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_CUBE, 6), texture_sampler);
+		set.update(1, cube_map.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_CUBE, 0, 6), texture_sampler);
 	}
 }
 

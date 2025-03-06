@@ -43,7 +43,7 @@ private:
 	VkImage image;
 	VkDeviceMemory memory;
 
-	std::map<std::pair<VkImageAspectFlags, VkImageViewType>, VkImageView> image_views;
+	std::map<std::tuple<VkImageAspectFlags, VkImageViewType, int>, VkImageView> image_views;
 
 	unsigned int width, height;
 	VkFormat format;
@@ -71,7 +71,7 @@ public:
 	inline static int get_stbi_channels(VkFormat format);
 
 	// gets image view of aspect with specific type (assumes one view per aspect flag, image view type combiniation)
-	VkImageView get_image_view(VkImageAspectFlags aspect_flag, VkImageViewType type = VK_IMAGE_VIEW_TYPE_2D, uint32_t array_layers = 1);
+	VkImageView get_image_view(VkImageAspectFlags aspect_flag, VkImageViewType type = VK_IMAGE_VIEW_TYPE_2D, uint32_t base_layer = 0, uint32_t array_layers = 1);
 
 	inline VkImage get_image() const { return image; };
 	inline operator VkImage() const { return image; };

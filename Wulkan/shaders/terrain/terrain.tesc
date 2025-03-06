@@ -27,6 +27,7 @@ layout( push_constant ) uniform constants
     float height_scale;
     float texture_eps;
     int visualization_mode;
+    int _cascade_idx;
 } pc;
 
 layout (vertices = 4) out;

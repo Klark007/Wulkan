@@ -27,6 +27,7 @@ layout( push_constant ) uniform constants
     float height_scale;
     float _texture_eps;
     int _visualization_mode;
+    int _cascade_idx;
 } pc;
 
 layout(location = 0) out vec3 outWorldPos;
