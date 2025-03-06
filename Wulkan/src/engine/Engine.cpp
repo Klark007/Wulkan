@@ -131,6 +131,7 @@ void Engine::draw()
 				{
 					pipeline.bind(shadow_cmd);
 					pipeline.set_dynamic_state(shadow_cmd);
+					pipeline.set_depth_bias(gui_input.depth_bias, gui_input.slope_depth_bias, shadow_cmd);
 
 					terrain.draw(shadow_cmd, current_frame, pipeline);
 				}
@@ -381,8 +382,8 @@ void Engine::init_data()
 		glm::vec3(0, 0, 0), // look at for shadow
 		glm::vec3(0, 0, 1), // direction for shadow
 		30, // distance from look at for projection
-		1024,
-		1024,
+		4*1024,
+		4*1024,
 		40, // height of orthographic projection
 		0.1,
 		50.0
@@ -498,7 +499,7 @@ void Engine::create_graphics_pipelines()
 	terrain_wireframe_pipeline = Terrain::create_pipeline(&device, color_render_target, depth_render_target, shared_terrain_data, false, true); // wireframe but not depth only
 	cleanup_queue.add(&terrain_wireframe_pipeline);
 
-	terrain_depth_pipeline = Terrain::create_pipeline(&device, color_render_target, depth_render_target, shared_terrain_data, true);
+	terrain_depth_pipeline = Terrain::create_pipeline(&device, color_render_target, depth_render_target, shared_terrain_data, true, false, true);
 	cleanup_queue.add(&terrain_depth_pipeline);
 
 	environment_map_pipeline = EnvironmentMap::create_pipeline(&device, color_render_target, depth_render_target, shared_environment_data);

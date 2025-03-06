@@ -113,6 +113,8 @@ void GUI::draw_gui(const VKW_CommandBuffer& cmd)
 
 		if (ImGui::CollapsingHeader("Shading")) {
 			ImGui::SliderFloat3("Sun direction", glm::value_ptr(data.sun_direction), -1.0f, 1.0f);
+			ImGui::SliderFloat("Constant depth bias", &data.depth_bias, 1e4, 1e5);
+			ImGui::SliderFloat("Slope depth bias", &data.slope_depth_bias, 1e-2, 1e1);
 		}
 
 		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);

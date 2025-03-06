@@ -24,6 +24,8 @@ struct GUI_Input {
 	TerrainVisualizationMode terrain_vis_mode = TerrainVisualizationMode::Shaded;
 
 	glm::vec3 sun_direction = glm::vec3(0, 0, 1);
+	float depth_bias = 40000.0f;
+	float slope_depth_bias = 0.1f;
 };
 
 class GUI : public VKW_Object

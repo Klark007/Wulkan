@@ -25,6 +25,7 @@ private:
 	// the following fields can be configured (before calling init)
 	VkPipelineInputAssemblyStateCreateInfo input_assembly; // define topology such as triangles, points, lines
 	VkPipelineRasterizationStateCreateInfo rasterizer; // rasterization state such as depth bias, wireframe, backface culling
+	bool dynamic_depth_bias;
 	VkPipelineDepthStencilStateCreateInfo depth_stencil; // depth and stencil testing
 	bool tesselation_enabled;
 	VkPipelineTessellationStateCreateInfo tesselation; // tesselation state
@@ -67,7 +68,10 @@ public:
 	inline void set_wireframe_mode(bool use_wireframe=true);
 	// set culling settings
 	inline void set_culling_mode(VkCullModeFlags culling_mode=VK_CULL_MODE_BACK_BIT, VkFrontFace front_face=VK_FRONT_FACE_COUNTER_CLOCKWISE);
-	
+	// enable depth bias (either called before init if not dynamic or during the command recording if enable_dynamic_depth_bias was called)
+	inline void set_depth_bias(float const_bias, float slope_factor, const std::optional<VKW_CommandBuffer>& cmd = {});
+	inline void enable_dynamic_depth_bias();
+
 	// enable depth testing (by default closer values are smaller, not always preferred: see https://developer.nvidia.com/blog/visualizing-depth-precision/)
 	inline void enable_depth_test(VkCompareOp compare_op = VK_COMPARE_OP_LESS);
 	// enables writing to depth buffer
@@ -132,6 +136,25 @@ inline void VKW_GraphicsPipeline::set_culling_mode(VkCullModeFlags culling_mode,
 {
 	rasterizer.cullMode = culling_mode;
 	rasterizer.frontFace = front_face;
+}
+
+inline void VKW_GraphicsPipeline::set_depth_bias(float const_bias, float slope_factor, const std::optional<VKW_CommandBuffer>& cmd)
+{
+	if (dynamic_depth_bias) {
+		assert(cmd.has_value());
+		vkCmdSetDepthBias(cmd.value(), const_bias, 0, slope_factor);
+	} else {
+		rasterizer.depthBiasEnable = VK_TRUE;
+		rasterizer.depthBiasConstantFactor = const_bias;
+		rasterizer.depthBiasSlopeFactor = slope_factor;
+		rasterizer.depthBiasClamp = 0;
+	}
+}
+
+inline void VKW_GraphicsPipeline::enable_dynamic_depth_bias()
+{
+	rasterizer.depthBiasEnable = VK_TRUE;
+	dynamic_depth_bias = true;
 }
 
 inline void VKW_GraphicsPipeline::enable_depth_test(VkCompareOp compare_op)

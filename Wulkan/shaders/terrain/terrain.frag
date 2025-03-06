@@ -51,7 +51,7 @@ void main() {
                 dot(
                     world_normal, 
                     spherical_to_dir(ubo.sun_direction)
-                ), 0.05
+                ), 0.1
             );
 
             vec4 shadow_coord = ubo.sun_proj_view * vec4(inWorldPos, 1.0);
@@ -133,12 +133,10 @@ float shadow(vec4 shadow_coord) {
         float dist = texture(shadow_map, texCoord).r;
 
         // bias to avoid acne
-        if (dist <= shadow_coord.z - 5e-3) {
+        if (dist <= shadow_coord.z) {
             // in shadow
-            return 0.05;
+            return 0.1;
         }
-
-        return 2;
     }
 
     return 1;
