@@ -14,15 +14,22 @@ layout(binding = 5) uniform sampler2D curvature;
 layout(binding = 6) uniform sampler2D shadow_map;
 
 layout(binding = 0) uniform UniformData {
-    mat4 _view;
+    mat4 view;
     mat4 _inv_view;
     mat4 _virtual_view;
     mat4 _proj;
     vec2 near_far_plane;
     vec2 sun_direction;
     vec4 sun_color;
-    mat4 sun_proj_view;
 } ubo;
+
+#define SHADOW_MAP_CASCADE_COUNT 4
+
+layout(binding = 1) uniform CascadeUniformData {
+    mat4 proj_views[SHADOW_MAP_CASCADE_COUNT];
+    vec4 cascade_splits;
+} depth_ubo;
+
 
 layout( push_constant ) uniform constants
 {
@@ -54,7 +61,7 @@ void main() {
                 ), 0.1
             );
 
-            vec4 shadow_coord = ubo.sun_proj_view * vec4(inWorldPos, 1.0);
+            vec4 shadow_coord = depth_ubo.proj_views[0] * vec4(inWorldPos, 1.0);
             shadow_coord /= shadow_coord.w;
             float in_shadow = shadow(shadow_coord);
 
@@ -89,7 +96,7 @@ void main() {
             outColor = vec4(vec3(res)*100, 1);
             break;
         case 5: // linear depth from shadow map
-            vec4 s_coord = ubo.sun_proj_view * vec4(inWorldPos, 1.0);
+            vec4 s_coord = depth_ubo.proj_views[0] * vec4(inWorldPos, 1.0);
             s_coord /= s_coord.w;
             if (
                 -1 <= s_coord.x && s_coord.x <= 1 && 
@@ -101,6 +108,35 @@ void main() {
                 outColor = vec4(vec3(linearize_depth(texture(shadow_map, texCoord).r)), 1);
             } else {
                 outColor = vec4(1,0,1,1);
+            }
+            break;
+        case 6: // shadow map cascade
+            vec4 view_pos = ubo.view * vec4(inWorldPos, 1.0);
+            
+            uint cascade_idx = 4;
+            for (uint i = 0; i < SHADOW_MAP_CASCADE_COUNT; i++) {
+                if (-view_pos.z < depth_ubo.cascade_splits[i]) {
+                    cascade_idx = i;
+                    break;
+                }
+            }
+            
+            switch (cascade_idx) {
+                case 0:
+                    outColor = vec4(1,0,0,1);
+                    break;
+                case 1:
+                    outColor = vec4(1,1,0,1);
+                    break;
+                case 2:
+                    outColor = vec4(0,1,0,1);
+                    break;
+                case 3:
+                    outColor = vec4(0,0,1,1);
+                    break;
+                case 4:
+                    outColor = vec4(1,0,1,1);
+                    break;
             }
             break;
         default:

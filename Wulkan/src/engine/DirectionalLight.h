@@ -11,8 +11,8 @@
 
 // TODO NAMING
 struct ShadowDepthOnlyUniformData {
-	alignas(16) glm::mat4 proj_view[4];
-	alignas(4) float split_planes[4];
+	alignas(64) glm::mat4 proj_view[4];
+	alignas(16) float split_planes[4];
 };
 
 class DirectionalLight : public VKW_Object

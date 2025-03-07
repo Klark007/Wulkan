@@ -18,6 +18,7 @@ enum TerrainVisualizationMode {
 	Normal,
 	Error,
 	ShadowDepth,
+	ShadowCascade,
 };
 
 struct TerrainPushConstants {

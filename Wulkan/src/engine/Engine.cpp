@@ -104,12 +104,23 @@ void Engine::draw()
 		glm::mat4 proj = directional_light.shadow_camera.generate_ortho_mat();
 		proj[1][1] *= -1; // see https://community.khronos.org/t/confused-when-using-glm-for-projection/108548/2 for reason for the multiplication
 
+		float near_plane = camera.get_near_plane();
+		float far_plane = camera.get_far_plane();
+		float lambda = 0.5;
+
+		int N = 4;
+		for (int i = 1; i <= N; i++) {
+			float ratio = ((float)i) / N;
+			uniform.split_planes[i-1] = lambda * near_plane * powf(far_plane / near_plane, ratio)
+									+ (1 - lambda) * (near_plane + ratio * (far_plane - near_plane));
+		}
+
 		glm::mat4 view = directional_light.shadow_camera.generate_view_mat();
 		for (uint32_t i = 0; i < 4; i++) {
 			uniform.proj_view[i] = proj * view;
 		}
 
-		memcpy(directional_light.uniform_buffers.at(current_frame).get_mapped_address(), &uniform, sizeof(UniformStruct));
+		memcpy(directional_light.uniform_buffers.at(current_frame).get_mapped_address(), &uniform, sizeof(ShadowDepthOnlyUniformData));
 
 
 		const VKW_CommandBuffer& shadow_cmd = directional_light.cmds.at(current_frame);
