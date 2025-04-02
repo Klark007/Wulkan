@@ -29,6 +29,7 @@
 #include "Mesh.h"
 #include "Terrain.h"
 #include "EnvironmentMap.h"
+#include "Line.h"
 #include "DirectionalLight.h"
 
 #include "Gui.h"
@@ -103,8 +104,8 @@ private:
 
 	void update_uniforms(); // updates uniform buffers (Pushconstant's are changed per object so not in this call)
 
-	std::vector<const char*> get_required_instance_extensions();
-	std::vector<const char*> get_required_device_extensions();
+	inline std::vector<const char*> get_required_instance_extensions();
+	inline std::vector<const char*> get_required_device_extensions();
 	Required_Device_Features get_required_device_features();
 
 public: // TODO: remove public
@@ -128,6 +129,9 @@ public: // TODO: remove public
 
 	VKW_GraphicsPipeline environment_map_pipeline;
 
+	VKW_GraphicsPipeline line_pipeline;
+
+
 	// general sampler for texture (Linear sampling, repeat address mode)
 	VKW_Sampler linear_texture_sampler;
 	VKW_Sampler mirror_texture_sampler;
@@ -139,6 +143,10 @@ public: // TODO: remove public
 	// Environment map
 	SharedEnvironmentData shared_environment_data;
 	EnvironmentMap environment_map;
+
+	// Lines (for debugging etc)
+	SharedLineData shared_line_data;
+	std::array<Line,4> debug_lines;
 
 	// Directional light
 	DirectionalLight directional_light;

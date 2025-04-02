@@ -142,6 +142,7 @@
     <ClCompile Include="external\miniz\miniz.c" />
     <ClCompile Include="external\vk-bootstrap\VkBootstrap.cpp" />
     <ClCompile Include="src\engine\Gui.cpp" />
+    <ClCompile Include="src\engine\Line.cpp" />
     <ClCompile Include="src\engine\Mesh.cpp" />
     <ClCompile Include="src\engine\CameraController.cpp" />
     <ClCompile Include="src\engine\Engine.cpp" />
@@ -175,9 +176,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\compile.bat" />
+    <None Include="shaders\line\line.frag" />
+    <None Include="shaders\line\line.vert" />
     <None Include="src\engine\vk_wrap\README.md" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\engine\Line.h" />
     <ClInclude Include="src\engine\DirectionalLight.h" />
     <ClInclude Include="src\engine\EnvironmentMap.h" />
     <ClInclude Include="external\include\tinyexr.h" />

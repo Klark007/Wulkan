@@ -18,6 +18,7 @@
 #include <set>
 #include <map>
 #include <functional>
+#include <limits>
 
 #define _USE_MATH_DEFINES
 #include <math.h>

@@ -3,12 +3,11 @@
 #define VMA_IMPLEMENTATION
 #include "vma/vk_mem_alloc.h"
 
-#include <glm/gtc/matrix_transform.hpp>
-
-
 #include <GLFW/glfw3.h>
 
 #include <iostream>
+
+#include <glm/gtc/matrix_transform.hpp> // todo remove
 
 #ifdef NDEBUG
 #else
@@ -98,7 +97,6 @@ void Engine::update()
 
 void Engine::draw()
 {
-	
 	{
 		ShadowDepthOnlyUniformData uniform{};
 		glm::mat4 proj = directional_light.shadow_camera.generate_ortho_mat();
@@ -109,15 +107,80 @@ void Engine::draw()
 		float lambda = 0.5;
 
 		int N = 4;
+		float zero_one_splits[5] = {}; // split planes (inluding near plane) normalized to 0 to 1
+		zero_one_splits[0] = 0;
+
+		std::cout << near_plane << "," << far_plane << std::endl;
+		// formula from original paper
 		for (int i = 1; i <= N; i++) {
 			float ratio = ((float)i) / N;
 			uniform.split_planes[i-1] = lambda * near_plane * powf(far_plane / near_plane, ratio)
 									+ (1 - lambda) * (near_plane + ratio * (far_plane - near_plane));
+			
+			float d = uniform.split_planes[i - 1];
+			// inverted the function to linearize depth as this is already linear atm.
+			zero_one_splits[i] = (near_plane * far_plane / d - far_plane) / (near_plane - far_plane);
 		}
 
-		glm::mat4 view = directional_light.shadow_camera.generate_view_mat();
+				
+		glm::mat4 camera_proj = camera.generate_projection_mat();
+		camera_proj[1][1] *= -1; // see https://community.khronos.org/t/confused-when-using-glm-for-projection/108548/2 for reason for the multiplication
+
+		glm::mat4 camera_view = camera.generate_virtual_view_mat();
+
+		glm::mat4 inv_proj_camera = glm::inverse(camera_proj);
+		glm::mat4 inv_view_camera = glm::inverse(camera_view);
+		glm::mat4 inv_proj_view_camera = glm::inverse(camera_proj * camera_view);
+		
+		glm::mat4 light_view = directional_light.shadow_camera.generate_view_mat();
+
+		for (int cascade_idx = 0; cascade_idx < N; cascade_idx++) {
+			// compute corner points of frustum p
+			glm::vec3 frustumNDC[8] = {
+				glm::vec3(-1.0f,  1.0f, zero_one_splits[cascade_idx]),
+				glm::vec3(1.0f,  1.0f,  zero_one_splits[cascade_idx]),
+				glm::vec3(1.0f, -1.0f,  zero_one_splits[cascade_idx]),
+				glm::vec3(-1.0f, -1.0f,  zero_one_splits[cascade_idx]),
+				glm::vec3(-1.0f,  1.0f,  zero_one_splits[cascade_idx+1]),
+				glm::vec3(1.0f,  1.0f,   zero_one_splits[cascade_idx + 1]),
+				glm::vec3(1.0f, -1.0f,   zero_one_splits[cascade_idx + 1]),
+				glm::vec3(-1.0f, -1.0f,   zero_one_splits[cascade_idx + 1]),
+			};
+
+			glm::vec3 frustum_light[8] = {};
+			glm::vec3 min_v = glm::vec3(std::numeric_limits<float>::max());
+			glm::vec3 max_v = glm::vec3(std::numeric_limits<float>::min());
+
+			std::vector<glm::vec3> debug_frustum{};
+			for (int i = 0; i < 8; i++) {				
+				glm::vec4 frustum_world_space = inv_proj_view_camera * glm::vec4(frustumNDC[i], 1);
+				frustum_world_space /= frustum_world_space.w;
+
+				debug_frustum.push_back(glm::vec3(frustum_world_space));
+				
+				/*
+				glm::vec4 frustum_light_view = proj * light_view * frustum_world_space;
+				frustum_light_view /= frustum_light_view.w;
+
+				frustum_light[i] = glm::vec3(frustum_light_view);
+
+				min_v = glm::min(min_v, frustum_light[i]);
+				max_v = glm::max(max_v, frustum_light[i]);
+				*/
+			}
+			debug_lines.at(cascade_idx).update_vertices(debug_frustum);
+
+			//std::cout << cascade_idx << ":" << min_v.z << ";" << max_v.z << std::endl << std::endl;
+			//glm::mat4 P_z = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, near_plane, max_v.z);
+			//std::cout << frustum_light[4].x << "," << frustum_light[4].y << "," << frustum_light[4].z << std::endl;
+			//std::cout << std::endl;
+
+		}
+
+
+
 		for (uint32_t i = 0; i < 4; i++) {
-			uniform.proj_view[i] = proj * view;
+			uniform.proj_view[i] = proj * light_view;
 		}
 
 		memcpy(directional_light.uniform_buffers.at(current_frame).get_mapped_address(), &uniform, sizeof(ShadowDepthOnlyUniformData));
@@ -205,7 +268,6 @@ void Engine::draw()
 				{
 					pipeline.bind(cmd);
 
-					// TODO: set dynamic state
 					pipeline.set_dynamic_state(cmd);
 					environment_map.draw(cmd, current_frame, pipeline);
 				}
@@ -238,6 +300,37 @@ void Engine::draw()
 					pipeline.set_dynamic_state(cmd);
 					
 					terrain.draw(cmd, current_frame, pipeline);
+				}
+				pipeline.end_rendering(cmd);
+			}
+
+			// draw lines
+			{
+				VKW_GraphicsPipeline& pipeline = line_pipeline;
+				pipeline.set_render_size(swapchain.get_extent());
+
+				pipeline.set_color_attachment(
+					color_render_target.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT),
+					false,
+					{ {1.0f, 0.0f, 1.0f, 1.0f} }
+				);
+
+
+				pipeline.set_depth_attachment(
+					depth_render_target.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT),
+					false,
+					1.0f
+				);
+
+				pipeline.begin_rendering(cmd);
+				{
+					pipeline.bind(cmd);
+
+					pipeline.set_dynamic_state(cmd);
+
+					for (int i = 0; i < 4; i++) {
+						debug_lines.at(i).draw(cmd, current_frame, pipeline);
+					}
 				}
 				pipeline.end_rendering(cmd);
 			}
@@ -385,6 +478,9 @@ void Engine::init_shared_data()
 
 	shared_environment_data.init(&device);
 	cleanup_queue.add(&shared_environment_data);
+
+	shared_line_data.init(&device);
+	cleanup_queue.add(&shared_line_data);
 }
 
 void Engine::init_data()
@@ -442,6 +538,37 @@ void Engine::init_data()
 	);
 	environment_map.set_descriptor_bindings(uniform_buffers, linear_texture_sampler);
 	cleanup_queue.add(&environment_map);
+
+	std::array<glm::vec4, 4> colors = {
+		glm::vec4(1,0,0,1),
+		glm::vec4(1,1,0,1),
+		glm::vec4(0,1,0,1),
+		glm::vec4(0,0,1,1)
+	};
+	for (int i = 0; i < 4; i++) {
+		Line& line = debug_lines.at(i);
+		line.init(
+			device,
+			get_current_transfer_pool(),
+			descriptor_pool,
+			&shared_line_data,
+			{ 
+				glm::vec3(0,0,0), glm::vec3(1, 0, 0),  glm::vec3(1, 1, 0),  glm::vec3(0, 1, 0),
+				glm::vec3(0,0,1), glm::vec3(1, 0, 1),  glm::vec3(1, 1, 1),  glm::vec3(0, 1, 1) 
+			},
+			{
+				0, 1, 1, 2, 2, 3, 3, 0,
+				0, 4, 1, 5, 2, 6, 3, 7,
+				4, 5, 5, 6, 6, 7, 7, 4
+			},
+			colors.at(i)
+		);
+		line.set_descriptor_bindings(uniform_buffers);
+		line.set_model_matrix(
+			glm::mat4(1)
+		);
+		cleanup_queue.add(&line);
+	}
 }
 
 void Engine::create_texture_samplers()
@@ -463,8 +590,9 @@ void Engine::create_descriptor_sets()
 	// each Terrain instance needs MAX_FRAMES_IN_FLIGHT many descriptor sets
 	descriptor_pool.add_layout(shared_terrain_data.get_descriptor_set_layout(), MAX_FRAMES_IN_FLIGHT);
 	descriptor_pool.add_layout(shared_environment_data.get_descriptor_set_layout(), MAX_FRAMES_IN_FLIGHT);
+	descriptor_pool.add_layout(shared_line_data.get_descriptor_set_layout(), MAX_FRAMES_IN_FLIGHT*4);
 
-	descriptor_pool.init(&device, MAX_FRAMES_IN_FLIGHT*2, "General descriptor pool");
+	descriptor_pool.init(&device, MAX_FRAMES_IN_FLIGHT*6, "General descriptor pool");
 	cleanup_queue.add(&descriptor_pool);
 }
 
@@ -522,6 +650,9 @@ void Engine::create_graphics_pipelines()
 
 	environment_map_pipeline = EnvironmentMap::create_pipeline(&device, color_render_target, depth_render_target, shared_environment_data);
 	cleanup_queue.add(&environment_map_pipeline);
+
+	line_pipeline = Line::create_pipeline(&device, color_render_target, depth_render_target, shared_line_data);
+	cleanup_queue.add(&line_pipeline);
 }
 
 void Engine::create_swapchain()

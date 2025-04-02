@@ -126,12 +126,17 @@
     <ClCompile Include="src\engine\common.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\engine\Line.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\compile.bat">
       <Filter>Source Files</Filter>
     </None>
     <None Include="src\engine\vk_wrap\README.md" />
+    <None Include="shaders\line\line.frag" />
+    <None Include="shaders\line\line.vert" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\engine\CameraController.h">
@@ -261,6 +266,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\engine\DirectionalLight.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\engine\Line.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

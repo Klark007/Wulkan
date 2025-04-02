@@ -16,7 +16,7 @@ layout(binding = 6) uniform sampler2D shadow_map;
 layout(binding = 0) uniform UniformData {
     mat4 view;
     mat4 _inv_view;
-    mat4 _virtual_view;
+    mat4 virtual_view;
     mat4 _proj;
     vec2 near_far_plane;
     vec2 sun_direction;
@@ -111,7 +111,7 @@ void main() {
             }
             break;
         case 6: // shadow map cascade
-            vec4 view_pos = ubo.view * vec4(inWorldPos, 1.0);
+            vec4 view_pos = ubo.virtual_view * vec4(inWorldPos, 1.0);
             
             uint cascade_idx = 4;
             for (uint i = 0; i < SHADOW_MAP_CASCADE_COUNT; i++) {
