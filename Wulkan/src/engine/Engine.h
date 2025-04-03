@@ -30,6 +30,7 @@
 #include "Terrain.h"
 #include "EnvironmentMap.h"
 #include "Line.h"
+#include "Frustum.h"
 #include "DirectionalLight.h"
 
 #include "Gui.h"
@@ -147,6 +148,7 @@ public: // TODO: remove public
 	// Lines (for debugging etc)
 	SharedLineData shared_line_data;
 	std::array<Line,4> debug_lines;
+	Frustum light_frustum;
 
 	// Directional light
 	DirectionalLight directional_light;

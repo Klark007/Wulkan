@@ -135,6 +135,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\engine\Frustum.cpp" />
     <ClCompile Include="src\engine\common.cpp" />
     <ClCompile Include="src\engine\DirectionalLight.cpp" />
     <ClCompile Include="external\Volk\volk.c" />
@@ -181,6 +182,7 @@
     <None Include="src\engine\vk_wrap\README.md" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\engine\Frustum.h" />
     <ClInclude Include="src\engine\Line.h" />
     <ClInclude Include="src\engine\DirectionalLight.h" />
     <ClInclude Include="src\engine\EnvironmentMap.h" />
