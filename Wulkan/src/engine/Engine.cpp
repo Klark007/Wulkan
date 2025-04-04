@@ -151,6 +151,11 @@ void Engine::draw()
 			glm::vec3 max_v = glm::vec3(std::numeric_limits<float>::min());
 
 			std::vector<glm::vec3> debug_frustum{};
+
+			// should use near and far plane of shadow camera
+			glm::mat4 P = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, near_plane, far_plane);
+			P[1][1] *= -1;
+
 			for (int i = 0; i < 8; i++) {				
 				glm::vec4 frustum_world_space = inv_proj_view_camera * glm::vec4(frustumNDC[i], 1);
 				frustum_world_space /= frustum_world_space.w;
@@ -158,7 +163,7 @@ void Engine::draw()
 				debug_frustum.push_back(glm::vec3(frustum_world_space));
 				
 
-				glm::vec4 frustum_light_view = proj * light_view * frustum_world_space;
+				glm::vec4 frustum_light_view = P * light_view * frustum_world_space;
 				frustum_light_view /= frustum_light_view.w;
 
 				frustum_light[i] = glm::vec3(frustum_light_view);
@@ -168,16 +173,30 @@ void Engine::draw()
 			}
 			debug_lines.at(cascade_idx).update_vertices(debug_frustum);
 
-			//glm::mat4 P_z = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, near_plane, max_v.z);
+			// should use near and far plane of shadow camera
+			glm::mat4 P_z = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, near_plane, max_v.z * far_plane);
+			P_z[1][1] *= -1;
+
+			glm::mat4 C = glm::mat4(1);
+			float S_x = 2 / (max_v.x - min_v.x);
+			float S_y = 2 / (max_v.y - min_v.y);
+			C[0][0] = S_x;
+			C[1][1] = S_y;
+			C[3][0] = -0.5 * (max_v.x + min_v.x) * S_x;
+			C[3][1] = -0.5 * (max_v.y + min_v.y) * S_y;
 			
-			light_frustum.set_camera_matrix(proj * light_view);
+			light_frustums.at(cascade_idx).set_camera_matrix(C * P_z * light_view);
+			uniform.proj_view[cascade_idx] = C * P_z * light_view;
 		}
-
-
-
+		/*
+		uniform.proj_view[0] = proj * light_view;
+		light_frustums.at(0).set_camera_matrix(proj * light_view);
+		*/
+		/*
 		for (uint32_t i = 0; i < 4; i++) {
 			uniform.proj_view[i] = proj * light_view;
 		}
+		*/
 
 		memcpy(directional_light.uniform_buffers.at(current_frame).get_mapped_address(), &uniform, sizeof(ShadowDepthOnlyUniformData));
 
@@ -326,8 +345,8 @@ void Engine::draw()
 
 					for (int i = 0; i < 4; i++) {
 						debug_lines.at(i).draw(cmd, current_frame, pipeline);
+						light_frustums.at(i).draw(cmd, current_frame, pipeline);
 					}
-					light_frustum.draw(cmd, current_frame, pipeline);
 				}
 				pipeline.end_rendering(cmd);
 			}
@@ -492,7 +511,7 @@ void Engine::init_data()
 		
 		glm::vec3(0, 0, 0), // look at for shadow
 		glm::vec3(0, 0, 1), // direction for shadow
-		30, // distance from look at for projection
+		50, // distance from look at for projection
 		4*1024,
 		4*1024,
 		40, // height of orthographic projection
@@ -565,21 +584,24 @@ void Engine::init_data()
 			glm::mat4(1)
 		);
 		cleanup_queue.add(&line);
+
+		Frustum& light_frustum = light_frustums.at(i);
+		light_frustum.init(
+			device,
+			get_current_transfer_pool(),
+			descriptor_pool,
+			&shared_line_data,
+			glm::mat4(1),
+			colors.at(i)
+		);
+		light_frustum.set_descriptor_bindings(uniform_buffers);
+		light_frustum.set_model_matrix(
+			glm::mat4(1)
+		);
+		cleanup_queue.add(&light_frustum);
 	}
 
-	light_frustum.init(
-		device,
-		get_current_transfer_pool(),
-		descriptor_pool,
-		&shared_line_data,
-		glm::mat4(1),
-		glm::vec4(1, 0, 1, 1)
-	);
-	light_frustum.set_descriptor_bindings(uniform_buffers);
-	light_frustum.set_model_matrix(
-		glm::mat4(1)
-	);
-	cleanup_queue.add(&light_frustum);
+	
 }
 
 void Engine::create_texture_samplers()
@@ -601,9 +623,9 @@ void Engine::create_descriptor_sets()
 	// each Terrain instance needs MAX_FRAMES_IN_FLIGHT many descriptor sets
 	descriptor_pool.add_layout(shared_terrain_data.get_descriptor_set_layout(), MAX_FRAMES_IN_FLIGHT);
 	descriptor_pool.add_layout(shared_environment_data.get_descriptor_set_layout(), MAX_FRAMES_IN_FLIGHT);
-	descriptor_pool.add_layout(shared_line_data.get_descriptor_set_layout(), MAX_FRAMES_IN_FLIGHT*5);
+	descriptor_pool.add_layout(shared_line_data.get_descriptor_set_layout(), MAX_FRAMES_IN_FLIGHT*8);
 
-	descriptor_pool.init(&device, MAX_FRAMES_IN_FLIGHT*7, "General descriptor pool");
+	descriptor_pool.init(&device, MAX_FRAMES_IN_FLIGHT*10, "General descriptor pool");
 	cleanup_queue.add(&descriptor_pool);
 }
 

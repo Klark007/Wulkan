@@ -17,7 +17,13 @@ void SharedLineData::del()
 	descriptor_set_layout.del();
 }
 
-void Line::init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, SharedLineData* shared_line_data, const std::vector<glm::vec3>& points, const std::vector<uint32_t>& indices, glm::vec4 color) {
+void Line::init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, SharedLineData* shared_line_data, const std::vector<glm::vec3>& points, const std::vector<uint32_t>& indices, const glm::vec4 color)
+{
+	std::vector<glm::vec4> colors{ points.size(), color };
+	init(device, transfer_pool, descriptor_pool, shared_line_data, points, indices, colors);
+}
+
+void Line::init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, SharedLineData* shared_line_data, const std::vector<glm::vec3>& points, const std::vector<uint32_t>& indices, const std::vector<glm::vec4>& colors) {
 	shared_data = shared_line_data;
 	
 	for (VKW_DescriptorSet& set : descriptor_sets) {
@@ -27,7 +33,7 @@ void Line::init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, 
 	vertices.resize(points.size());
 
 	for (int i = 0; i < points.size(); i++) {
-		vertices.at(i) = { points.at(i), 0, glm::vec3(0,0,0), 0, color };
+		vertices.at(i) = { points.at(i), 0, glm::vec3(0,0,0), 0, colors.at(i)};
 	}
 
 	// in contrast to Mesh, we want to be able to update vertices (but not indices) on a per frame basis

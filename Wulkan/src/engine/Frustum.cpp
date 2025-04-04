@@ -10,7 +10,19 @@ void Frustum::init(const VKW_Device& device, const VKW_CommandPool& transfer_poo
 		4, 5, 5, 6, 6, 7, 7, 4
 	};
 
-	Line::init(device, transfer_pool, descriptor_pool, shared_line_data, points, indices, color);
+	// back side is darker
+	std::vector<glm::vec4> colors = {
+		color * 0.1f,
+		color * 0.1f,
+		color * 0.1f,
+		color * 0.1f,
+		color,
+		color,
+		color,
+		color,
+	};
+
+	Line::init(device, transfer_pool, descriptor_pool, shared_line_data, points, indices, colors);
 	set_camera_matrix(proj_view_mat);
 }
 

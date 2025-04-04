@@ -148,7 +148,7 @@ public: // TODO: remove public
 	// Lines (for debugging etc)
 	SharedLineData shared_line_data;
 	std::array<Line,4> debug_lines;
-	Frustum light_frustum;
+	std::array<Frustum,4> light_frustums;
 
 	// Directional light
 	DirectionalLight directional_light;

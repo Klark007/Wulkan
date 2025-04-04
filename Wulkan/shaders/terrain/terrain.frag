@@ -11,7 +11,7 @@ layout(binding = 2) uniform sampler2D height_map;
 layout(binding = 3) uniform sampler2D albedo;
 layout(binding = 4) uniform sampler2D normal_map;
 layout(binding = 5) uniform sampler2D curvature;
-layout(binding = 6) uniform sampler2D shadow_map;
+layout(binding = 6) uniform sampler2DArray shadow_map;
 
 layout(binding = 0) uniform UniformData {
     mat4 view;
@@ -45,12 +45,21 @@ layout(location = 0) out vec4 outColor;
 
 vec3 spherical_to_dir(vec2 sph);
 float linearize_depth(float d);
-float shadow(vec4 shadow_coord);
+float shadow(uint cascade_idx);
 
 void main() {
     vec3 obj_normal = normalize(texture(normal_map, inUV).rgb * 2 - 1);
     vec3 world_normal = normalize(mat3(transpose((pc.model))) * obj_normal); // normals are in object space not tangent space
     world_normal.y *= -1;
+
+    vec4 view_pos = ubo.virtual_view * vec4(inWorldPos, 1.0); 
+    uint cascade_idx = 4;
+    for (uint i = 0; i < SHADOW_MAP_CASCADE_COUNT; i++) {
+        if (-view_pos.z < depth_ubo.cascade_splits[i]) {
+            cascade_idx = i;
+            break;
+        }
+    }
 
     switch (pc.visualization_mode) {
         case 0: // shading    
@@ -61,9 +70,7 @@ void main() {
                 ), 0.1
             );
 
-            vec4 shadow_coord = depth_ubo.proj_views[0] * vec4(inWorldPos, 1.0);
-            shadow_coord /= shadow_coord.w;
-            float in_shadow = shadow(shadow_coord);
+            float in_shadow = shadow(cascade_idx);
 
             /* Debugging
             if (in_shadow < 1) {
@@ -96,7 +103,7 @@ void main() {
             outColor = vec4(vec3(res)*100, 1);
             break;
         case 5: // linear depth from shadow map
-            vec4 s_coord = depth_ubo.proj_views[0] * vec4(inWorldPos, 1.0);
+            vec4 s_coord = depth_ubo.proj_views[cascade_idx] * vec4(inWorldPos, 1.0);
             s_coord /= s_coord.w;
             if (
                 -1 <= s_coord.x && s_coord.x <= 1 && 
@@ -105,22 +112,12 @@ void main() {
                 0 <= s_coord.w
             ) {
                 vec2 texCoord = (s_coord.xy + vec2(1)) / 2;
-                outColor = vec4(vec3(linearize_depth(texture(shadow_map, texCoord).r)), 1);
+                outColor = vec4(vec3(linearize_depth(texture(shadow_map, vec3(texCoord,cascade_idx)).r)), 1);
             } else {
                 outColor = vec4(1,0,1,1);
             }
             break;
         case 6: // shadow map cascade
-            vec4 view_pos = ubo.virtual_view * vec4(inWorldPos, 1.0);
-            
-            uint cascade_idx = 4;
-            for (uint i = 0; i < SHADOW_MAP_CASCADE_COUNT; i++) {
-                if (-view_pos.z < depth_ubo.cascade_splits[i]) {
-                    cascade_idx = i;
-                    break;
-                }
-            }
-            
             switch (cascade_idx) {
                 case 0:
                     outColor = vec4(1,0,0,1);
@@ -159,14 +156,17 @@ vec3 spherical_to_dir(vec2 sph) {
     );
 }
 
-float shadow(vec4 shadow_coord) {
+float shadow(uint cascade_idx) {
+    vec4 shadow_coord = depth_ubo.proj_views[cascade_idx] * vec4(inWorldPos, 1.0);
+    shadow_coord /= shadow_coord.w;
+
     if (
         -1 <= shadow_coord.x && shadow_coord.x <= 1 && 
         -1 <= shadow_coord.y && shadow_coord.y <= 1 &&
         -1 <= shadow_coord.z && shadow_coord.z <= 1
     ) {
         vec2 texCoord = (shadow_coord.xy + vec2(1)) / 2;
-        float dist = texture(shadow_map, texCoord).r;
+        float dist = texture(shadow_map, vec3(texCoord, cascade_idx)).r;
 
         // bias to avoid acne
         if (dist <= shadow_coord.z) {
