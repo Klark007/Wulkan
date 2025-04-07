@@ -20,6 +20,10 @@ public:
 	void init_time();
 	void update_time();
 
+	// Warning Only exports position and orientation but not intrinsics such as aspect ratio, fov, near and far planes
+	void export_active_camera(const std::string& path);
+	void import_active_camera(const std::string& path);
+
 	inline double get_dt() const { return delta_time; };
 private:
 	GLFWwindow* window;

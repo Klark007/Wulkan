@@ -26,7 +26,7 @@ void Engine::init(unsigned int w, unsigned int h)
 
 	camera = Camera( glm::vec3(0.0, 60.0, 25.0), glm::vec3(0.0, 10.0, 8.0), res_x, res_y, glm::radians(45.0f), 0.1f, 100.0f );
 	camera_controller = CameraController(window, &camera);
-	gui.init(window, instance, device, graphics_queue, imgui_descriptor_pool, &swapchain);
+	gui.init(window, instance, device, graphics_queue, imgui_descriptor_pool, &swapchain, &camera_controller);
 	cleanup_queue.add(&gui);
  }
 
@@ -97,6 +97,7 @@ void Engine::update()
 
 void Engine::draw()
 {
+	// TODO: Use camera controllers active camera
 	{
 		ShadowDepthOnlyUniformData uniform{};
 		glm::mat4 proj = directional_light.shadow_camera.generate_ortho_mat();
@@ -124,14 +125,13 @@ void Engine::draw()
 				
 		glm::mat4 camera_proj = camera.generate_projection_mat();
 		camera_proj[1][1] *= -1; // see https://community.khronos.org/t/confused-when-using-glm-for-projection/108548/2 for reason for the multiplication
-
 		glm::mat4 camera_view = camera.generate_virtual_view_mat();
 
-		glm::mat4 inv_proj_camera = glm::inverse(camera_proj);
-		glm::mat4 inv_view_camera = glm::inverse(camera_view);
 		glm::mat4 inv_proj_view_camera = glm::inverse(camera_proj * camera_view);
 		
 		glm::mat4 light_view = directional_light.shadow_camera.generate_view_mat();
+		float light_near_plane = directional_light.shadow_camera.get_near_plane();
+		float light_far_plane = directional_light.shadow_camera.get_far_plane();
 
 		for (int cascade_idx = 0; cascade_idx < N; cascade_idx++) {
 			// compute corner points of frustum p
@@ -150,19 +150,17 @@ void Engine::draw()
 			glm::vec3 min_v = glm::vec3(std::numeric_limits<float>::max());
 			glm::vec3 max_v = glm::vec3(std::numeric_limits<float>::min());
 
-			std::vector<glm::vec3> debug_frustum{};
+			std::vector<glm::vec3> frustum_points{};
 
-			// should use near and far plane of shadow camera
-			glm::mat4 P = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, near_plane, far_plane);
+			glm::mat4 P = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, light_near_plane, light_far_plane);
 			P[1][1] *= -1;
 
 			for (int i = 0; i < 8; i++) {				
 				glm::vec4 frustum_world_space = inv_proj_view_camera * glm::vec4(frustumNDC[i], 1);
 				frustum_world_space /= frustum_world_space.w;
 
-				debug_frustum.push_back(glm::vec3(frustum_world_space));
+				frustum_points.push_back(glm::vec3(frustum_world_space));
 				
-
 				glm::vec4 frustum_light_view = P * light_view * frustum_world_space;
 				frustum_light_view /= frustum_light_view.w;
 
@@ -171,10 +169,9 @@ void Engine::draw()
 				min_v = glm::min(min_v, frustum_light[i]);
 				max_v = glm::max(max_v, frustum_light[i]);
 			}
-			debug_lines.at(cascade_idx).update_vertices(debug_frustum);
+			camera_split_frustums.at(cascade_idx).update_vertices(frustum_points);
 
-			// should use near and far plane of shadow camera
-			glm::mat4 P_z = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, near_plane, max_v.z * far_plane);
+			glm::mat4 P_z = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, light_near_plane, max_v.z * light_far_plane);
 			P_z[1][1] *= -1;
 
 			glm::mat4 C = glm::mat4(1);
@@ -188,15 +185,6 @@ void Engine::draw()
 			light_frustums.at(cascade_idx).set_camera_matrix(C * P_z * light_view);
 			uniform.proj_view[cascade_idx] = C * P_z * light_view;
 		}
-		/*
-		uniform.proj_view[0] = proj * light_view;
-		light_frustums.at(0).set_camera_matrix(proj * light_view);
-		*/
-		/*
-		for (uint32_t i = 0; i < 4; i++) {
-			uniform.proj_view[i] = proj * light_view;
-		}
-		*/
 
 		memcpy(directional_light.uniform_buffers.at(current_frame).get_mapped_address(), &uniform, sizeof(ShadowDepthOnlyUniformData));
 
@@ -344,7 +332,7 @@ void Engine::draw()
 					pipeline.set_dynamic_state(cmd);
 
 					for (int i = 0; i < 4; i++) {
-						debug_lines.at(i).draw(cmd, current_frame, pipeline);
+						camera_split_frustums.at(i).draw(cmd, current_frame, pipeline);
 						light_frustums.at(i).draw(cmd, current_frame, pipeline);
 					}
 				}
@@ -562,7 +550,7 @@ void Engine::init_data()
 		glm::vec4(0,0,1,1)
 	};
 	for (int i = 0; i < 4; i++) {
-		Line& line = debug_lines.at(i);
+		Line& line = camera_split_frustums.at(i);
 		line.init(
 			device,
 			get_current_transfer_pool(),

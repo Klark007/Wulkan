@@ -182,6 +182,7 @@
     <None Include="src\engine\vk_wrap\README.md" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="external\include\rapidcsv.h" />
     <ClInclude Include="src\engine\Frustum.h" />
     <ClInclude Include="src\engine\Line.h" />
     <ClInclude Include="src\engine\DirectionalLight.h" />

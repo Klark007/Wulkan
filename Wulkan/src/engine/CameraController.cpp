@@ -1,5 +1,7 @@
 #include "CameraController.h"
 
+#include "rapidcsv.h"
+
 CameraController::CameraController(GLFWwindow* window, Camera* camera)
 	: active_camera { camera },
 	  window { window } 
@@ -75,8 +77,8 @@ void CameraController::handle_mouse(double pos_x, double pos_y)
 
 	if (dx != 0 || dy != 0) {
 		// update yaw and pitch of camera
-		active_camera->roll_yaw((float)(active_camera->points_up() ? -dx : dx) * rot_strength);
-		active_camera->roll_pitch((float)(-dy * rot_strength));
+		active_camera->add_yaw((float)(active_camera->points_up() ? -dx : dx) * rot_strength);
+		active_camera->add_pitch((float)(-dy * rot_strength));
 	}
 
 	mouse_pos_x = pos_x;
@@ -95,6 +97,44 @@ void CameraController::update_time()
 	current_time = glfwGetTime();
 	delta_time = current_time - prev_time;
 	prev_time = current_time;
+}
+
+void CameraController::export_active_camera(const std::string& path)
+{
+	rapidcsv::Document file("", rapidcsv::LabelParams(-1, -1));
+
+	glm::vec3 pos = active_camera->get_pos();
+	float yaw, pitch;
+	yaw = active_camera->get_yaw();
+	pitch = active_camera->get_pitch();
+
+	file.InsertRow(0, std::vector<float>{ pos.x, pos.y, pos.z, yaw, pitch });
+
+	file.Save(path);
+}
+
+void CameraController::import_active_camera(const std::string& path)
+{
+	rapidcsv::Document file(path, rapidcsv::LabelParams(-1, -1));
+
+	std::vector<float> row = file.GetRow<float>(0);
+	
+	if (row.size() != 5) {
+		throw IOException(std::format("Failed to import camera from {} expected 5 values in row 0 but got {}", path, row.size()), __FILE__, __LINE__);
+	}
+
+	glm::vec3 pos{
+		row.at(0),
+		row.at(1),
+		row.at(2)
+	};
+
+	float yaw = row.at(3);
+	float pitch = row.at(4);
+
+	active_camera->set_pos(pos);
+	active_camera->set_yaw(yaw);
+	active_camera->set_pitch(pitch);
 }
 
 

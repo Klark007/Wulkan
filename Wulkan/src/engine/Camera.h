@@ -23,8 +23,8 @@ public:
 
 	inline void set_aspect_ratio(unsigned int r_x, unsigned int r_y);
 	inline void set_virtual_camera_enabled(bool enabled);
-	inline void roll_yaw(float d_yaw) { set_yaw(yaw + d_yaw); };
-	inline void roll_pitch(float d_pitch) { set_pitch(pitch + d_pitch); };
+	inline void add_yaw(float d_yaw) { set_yaw(yaw + d_yaw); };
+	inline void add_pitch(float d_pitch) { set_pitch(pitch + d_pitch); };
 	inline void set_yaw(float yaw) { this->yaw = yaw; };
 	inline void set_pitch(float pitch);
 	inline void set_near_plane(float near) { z_near = near; };

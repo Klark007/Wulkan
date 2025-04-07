@@ -5,6 +5,8 @@
  	Disable safety checks if compiled in Release mode?
 */
 
+#include "common.h"
+
 #include "vk_wrap/VKW_Instance.h"
 #include "vk_wrap/VKW_Surface.h"
 #include "vk_wrap/VKW_Device.h"
@@ -147,7 +149,7 @@ public: // TODO: remove public
 
 	// Lines (for debugging etc)
 	SharedLineData shared_line_data;
-	std::array<Line,4> debug_lines;
+	std::array<Line,4> camera_split_frustums;
 	std::array<Frustum,4> light_frustums;
 
 	// Directional light

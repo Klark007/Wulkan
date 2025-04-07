@@ -2,6 +2,7 @@
 
 #include "imgui.h"
 
+#include "CameraController.h"
 #include "vk_wrap/VKW_Object.h"
 #include "vk_wrap/VKW_Instance.h"
 #include "vk_wrap/VKW_Device.h"
@@ -32,13 +33,14 @@ class GUI : public VKW_Object
 {
 public:
 	GUI() = default;
-	void init(GLFWwindow* window, const VKW_Instance& instance, const VKW_Device& device, const VKW_Queue& graphics_queue, const VKW_DescriptorPool& descriptor_pool, const VKW_Swapchain* vkw_swapchain);
+	void init(GLFWwindow* window, const VKW_Instance& instance, const VKW_Device& device, const VKW_Queue& graphics_queue, const VKW_DescriptorPool& descriptor_pool, const VKW_Swapchain* vkw_swapchain, CameraController* camera_controller);
 	void del() override;
 
 	// draws directly into current swap chain image (in format VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
 	void draw(const VKW_CommandBuffer& cmd, uint32_t image_idx);
 private:
 	const VKW_Swapchain* swapchain;
+	CameraController* camera_controller;
 
 	GUI_Input data;
 
