@@ -27,6 +27,7 @@ struct GUI_Input {
 	glm::vec3 sun_direction = glm::vec3(0, 0.8, 0.5);
 	float depth_bias = 40000.0f;
 	float slope_depth_bias = 0.1f;
+	int nr_shadow_cascades = 3;
 };
 
 class GUI : public VKW_Object

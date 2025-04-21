@@ -3,9 +3,10 @@
 layout (quads, fractional_odd_spacing, cw) in;
 layout(location = 0) in vec2 inUV[];
 
+#define MAX_CASCADE_COUNT 4
 layout(binding = 1) uniform DepthUniformData {
-    mat4 proj_views[4];
-    float _cascade_splits[4];
+    mat4 proj_views[MAX_CASCADE_COUNT];
+    float _cascade_splits[MAX_CASCADE_COUNT];
 } depth_ubo;
 
 layout(binding = 2) uniform sampler2D height_map;

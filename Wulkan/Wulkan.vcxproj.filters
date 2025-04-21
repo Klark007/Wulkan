@@ -280,6 +280,9 @@
     <ClInclude Include="external\include\rapidcsv.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\engine\vk_wrap\VKW_SpecializationConstants.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="shaders\terrain.txt" />

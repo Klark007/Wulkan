@@ -1,11 +1,13 @@
 #include "Gui.h"
 
-#include <iostream>
+#include "DirectionalLight.h"
 
 #define IMGUI_IMPL_VULKAN_USE_VOLK
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_vulkan.h"
 #include "glm/gtc/type_ptr.hpp"
+
+#include <iostream>
 
 static void check_imgui_result(VkResult result) {
 	VK_CHECK_ET(result, RuntimeException, "IMGUI Vulkan error");
@@ -131,6 +133,7 @@ void GUI::draw_gui(const VKW_CommandBuffer& cmd)
 			ImGui::SliderFloat3("Sun direction", glm::value_ptr(data.sun_direction), -1.0f, 1.0f);
 			ImGui::SliderFloat("Constant depth bias", &data.depth_bias, 1e4, 1e5);
 			ImGui::SliderFloat("Slope depth bias", &data.slope_depth_bias, 1e-2, 1e1);
+			ImGui::SliderInt("Number of shadow cascades", &data.nr_shadow_cascades, 1, MAX_CASCADE_COUNT);
 		}
 
 		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);

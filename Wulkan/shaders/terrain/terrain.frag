@@ -23,10 +23,11 @@ layout(binding = 0) uniform UniformData {
     vec4 sun_color;
 } ubo;
 
-#define SHADOW_MAP_CASCADE_COUNT 4
+#define MAX_CASCADE_COUNT 4
+layout (constant_id = 0) const int cascade_count = MAX_CASCADE_COUNT;
 
 layout(binding = 1) uniform CascadeUniformData {
-    mat4 proj_views[SHADOW_MAP_CASCADE_COUNT];
+    mat4 proj_views[MAX_CASCADE_COUNT];
     vec4 cascade_splits;
 } depth_ubo;
 
@@ -53,8 +54,8 @@ void main() {
     world_normal.y *= -1;
 
     vec4 view_pos = ubo.virtual_view * vec4(inWorldPos, 1.0); 
-    uint cascade_idx = 4;
-    for (uint i = 0; i < SHADOW_MAP_CASCADE_COUNT; i++) {
+    uint cascade_idx = MAX_CASCADE_COUNT;
+    for (uint i = 0; i < cascade_count; i++) {
         if (-view_pos.z < depth_ubo.cascade_splits[i]) {
             cascade_idx = i;
             break;

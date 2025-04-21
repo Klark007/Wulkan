@@ -30,7 +30,7 @@ void DirectionalLight::init(const VKW_Device* vkw_device, const std::array<VKW_C
 		sharing_exlusive(),
 		"Directional light shadow map",
 		0,
-		4
+		MAX_CASCADE_COUNT
 	);
 
 	VkSemaphoreCreateInfo semaphore_create_info{};

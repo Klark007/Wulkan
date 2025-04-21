@@ -126,9 +126,10 @@ public: // TODO: remove public
 	Texture depth_render_target;
 
 
-	VKW_GraphicsPipeline terrain_pipeline;
+	// mostly for debugging reasons
+	std::array<VKW_GraphicsPipeline, MAX_CASCADE_COUNT> terrain_pipelines;
 	VKW_GraphicsPipeline terrain_depth_pipeline;
-	VKW_GraphicsPipeline terrain_wireframe_pipeline;
+	std::array<VKW_GraphicsPipeline, MAX_CASCADE_COUNT> terrain_wireframe_pipelines;
 
 	VKW_GraphicsPipeline environment_map_pipeline;
 
@@ -136,6 +137,7 @@ public: // TODO: remove public
 
 
 	// general sampler for texture (Linear sampling, repeat address mode)
+	VKW_Sampler nearest_texture_sampler;
 	VKW_Sampler linear_texture_sampler;
 	VKW_Sampler mirror_texture_sampler;
 
@@ -149,8 +151,8 @@ public: // TODO: remove public
 
 	// Lines (for debugging etc)
 	SharedLineData shared_line_data;
-	std::array<Line,4> camera_split_frustums;
-	std::array<Frustum,4> light_frustums;
+	std::array<Line, MAX_CASCADE_COUNT> camera_split_frustums;
+	std::array<Frustum, MAX_CASCADE_COUNT> light_frustums;
 
 	// Directional light
 	DirectionalLight directional_light;

@@ -2,7 +2,7 @@
 
 #include <fstream>
 
-void VKW_Shader::init(const VKW_Device* vkw_device, const std::string& path, VkShaderStageFlagBits stage, const std::string& obj_name, const std::string& entry_func)
+void VKW_Shader::init(const VKW_Device* vkw_device, const std::string& path, VkShaderStageFlagBits stage, const std::string& obj_name, const std::string& entry_func, const VkSpecializationInfo* spezialisation_const)
 {
 	device = vkw_device;
 	name = obj_name;
@@ -42,6 +42,7 @@ void VKW_Shader::init(const VKW_Device* vkw_device, const std::string& path, VkS
 	shader_stage_info.stage = stage;
 	shader_stage_info.module = module;
 	shader_stage_info.pName = entry.c_str();
+	shader_stage_info.pSpecializationInfo = spezialisation_const;
 }
 
 void VKW_Shader::del()

@@ -107,13 +107,13 @@ void Engine::draw()
 		float far_plane = camera.get_far_plane();
 		float lambda = 0.5;
 
-		int N = 4;
-		float zero_one_splits[5] = {}; // split planes (inluding near plane) normalized to 0 to 1
+		int nr_cascades = gui_input.nr_shadow_cascades;
+		float zero_one_splits[MAX_CASCADE_COUNT + 1] = {}; // split planes (inluding near plane) normalized to 0 to 1
 		zero_one_splits[0] = 0;
 
 		// formula from original paper
-		for (int i = 1; i <= N; i++) {
-			float ratio = ((float)i) / N;
+		for (int i = 1; i <= nr_cascades; i++) {
+			float ratio = ((float)i) / nr_cascades;
 			uniform.split_planes[i-1] = lambda * near_plane * powf(far_plane / near_plane, ratio)
 									+ (1 - lambda) * (near_plane + ratio * (far_plane - near_plane));
 			
@@ -133,7 +133,7 @@ void Engine::draw()
 		float light_near_plane = directional_light.shadow_camera.get_near_plane();
 		float light_far_plane = directional_light.shadow_camera.get_far_plane();
 
-		for (int cascade_idx = 0; cascade_idx < N; cascade_idx++) {
+		for (int cascade_idx = 0; cascade_idx < nr_cascades; cascade_idx++) {
 			// compute corner points of frustum p
 			glm::vec3 frustumNDC[8] = {
 				glm::vec3(-1.0f,  1.0f, zero_one_splits[cascade_idx]),
@@ -202,7 +202,7 @@ void Engine::draw()
 				VKW_GraphicsPipeline& pipeline = terrain_depth_pipeline;
 				pipeline.set_render_size(directional_light.depth_rt.get_extent());
 
-				for (uint32_t i = 0; i < 4; i++) {
+				for (uint32_t i = 0; i < nr_cascades; i++) {
 					pipeline.set_depth_attachment(
 						directional_light.depth_rt.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D, i, 1),
 						true,
@@ -280,7 +280,7 @@ void Engine::draw()
 
 			// draw terrain
 			{
-				VKW_GraphicsPipeline& pipeline = (gui_input.terrain_wireframe_mode) ? terrain_wireframe_pipeline : terrain_pipeline;
+				VKW_GraphicsPipeline& pipeline = (gui_input.terrain_wireframe_mode) ? terrain_wireframe_pipelines.at(gui_input.nr_shadow_cascades - 1) : terrain_pipelines.at(gui_input.nr_shadow_cascades - 1);
 				pipeline.set_render_size(swapchain.get_extent());
 
 				pipeline.set_color_attachment(
@@ -325,13 +325,15 @@ void Engine::draw()
 					1.0f
 				);
 
+				int nr_cascades = gui_input.nr_shadow_cascades;
+
 				pipeline.begin_rendering(cmd);
 				{
 					pipeline.bind(cmd);
 
 					pipeline.set_dynamic_state(cmd);
 
-					for (int i = 0; i < 4; i++) {
+					for (int i = 0; i < nr_cascades; i++) {
 						camera_split_frustums.at(i).draw(cmd, current_frame, pipeline);
 						light_frustums.at(i).draw(cmd, current_frame, pipeline);
 					}
@@ -500,8 +502,8 @@ void Engine::init_data()
 		glm::vec3(0, 0, 0), // look at for shadow
 		glm::vec3(0, 0, 1), // direction for shadow
 		50, // distance from look at for projection
-		4*1024,
-		4*1024,
+		1024*2,
+		1024*2,
 		40, // height of orthographic projection
 		0.1,
 		50.0
@@ -549,7 +551,7 @@ void Engine::init_data()
 		glm::vec4(0,1,0,1),
 		glm::vec4(0,0,1,1)
 	};
-	for (int i = 0; i < 4; i++) {
+	for (int i = 0; i < MAX_CASCADE_COUNT; i++) {
 		Line& line = camera_split_frustums.at(i);
 		line.init(
 			device,
@@ -565,7 +567,7 @@ void Engine::init_data()
 				0, 4, 1, 5, 2, 6, 3, 7,
 				4, 5, 5, 6, 6, 7, 7, 4
 			},
-			colors.at(i)
+			(i < 4) ? colors.at(i) : glm::vec4(1,0,1,1)
 		);
 		line.set_descriptor_bindings(uniform_buffers);
 		line.set_model_matrix(
@@ -580,7 +582,7 @@ void Engine::init_data()
 			descriptor_pool,
 			&shared_line_data,
 			glm::mat4(1),
-			colors.at(i)
+			(i < 4) ? colors.at(i) : glm::vec4(1, 0, 1, 1)
 		);
 		light_frustum.set_descriptor_bindings(uniform_buffers);
 		light_frustum.set_model_matrix(
@@ -597,6 +599,11 @@ void Engine::create_texture_samplers()
 	linear_texture_sampler.init(&device, "Default sampler");
 	cleanup_queue.add(&linear_texture_sampler);
 
+	nearest_texture_sampler.set_min_filter(VK_FILTER_NEAREST);
+	nearest_texture_sampler.set_mag_filter(VK_FILTER_NEAREST);
+	nearest_texture_sampler.init(&device, "Nearest neighbour sampler");
+	cleanup_queue.add(&nearest_texture_sampler);
+
 	mirror_texture_sampler.set_address_mode(VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT);
 	mirror_texture_sampler.init(&device, "Repeat sampler");
 	cleanup_queue.add(&mirror_texture_sampler);
@@ -611,9 +618,9 @@ void Engine::create_descriptor_sets()
 	// each Terrain instance needs MAX_FRAMES_IN_FLIGHT many descriptor sets
 	descriptor_pool.add_layout(shared_terrain_data.get_descriptor_set_layout(), MAX_FRAMES_IN_FLIGHT);
 	descriptor_pool.add_layout(shared_environment_data.get_descriptor_set_layout(), MAX_FRAMES_IN_FLIGHT);
-	descriptor_pool.add_layout(shared_line_data.get_descriptor_set_layout(), MAX_FRAMES_IN_FLIGHT*8);
+	descriptor_pool.add_layout(shared_line_data.get_descriptor_set_layout(), MAX_FRAMES_IN_FLIGHT*2*MAX_CASCADE_COUNT);
 
-	descriptor_pool.init(&device, MAX_FRAMES_IN_FLIGHT*10, "General descriptor pool");
+	descriptor_pool.init(&device, MAX_FRAMES_IN_FLIGHT*(2 + 2 * MAX_CASCADE_COUNT), "General descriptor pool");
 	cleanup_queue.add(&descriptor_pool);
 }
 
@@ -660,11 +667,14 @@ void Engine::init_render_targets()
 
 void Engine::create_graphics_pipelines()
 {
-	terrain_pipeline = Terrain::create_pipeline(&device, color_render_target, depth_render_target, shared_terrain_data);
-	cleanup_queue.add(&terrain_pipeline);
+	for (int i = 0; i < MAX_CASCADE_COUNT; i++) {
+		terrain_pipelines.at(i) = Terrain::create_pipeline(&device, color_render_target, depth_render_target, shared_terrain_data, false, false, false, i+1);
+		cleanup_queue.add(&terrain_pipelines.at(i));
 
-	terrain_wireframe_pipeline = Terrain::create_pipeline(&device, color_render_target, depth_render_target, shared_terrain_data, false, true); // wireframe but not depth only
-	cleanup_queue.add(&terrain_wireframe_pipeline);
+		terrain_wireframe_pipelines.at(i) = Terrain::create_pipeline(&device, color_render_target, depth_render_target, shared_terrain_data, false, true, false, i+1); // wireframe but not depth only
+		cleanup_queue.add(&terrain_wireframe_pipelines.at(i));
+	}
+	
 
 	terrain_depth_pipeline = Terrain::create_pipeline(&device, color_render_target, depth_render_target, shared_terrain_data, true, false, true);
 	cleanup_queue.add(&terrain_depth_pipeline);

@@ -9,10 +9,12 @@
 #include "Texture.h"
 #include "Camera.h"
 
+constexpr int MAX_CASCADE_COUNT = 4;
+
 // TODO NAMING
 struct ShadowDepthOnlyUniformData {
-	alignas(64) glm::mat4 proj_view[4];
-	alignas(16) float split_planes[4];
+	alignas(64) glm::mat4 proj_view[MAX_CASCADE_COUNT];
+	alignas(16) float split_planes[MAX_CASCADE_COUNT];
 };
 
 class DirectionalLight : public VKW_Object

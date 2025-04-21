@@ -1,6 +1,8 @@
 #include "Terrain.h"
 #include "vk_wrap/VKW_ComputePipeline.h"
 
+#include "DirectionalLight.h"
+
 void SharedTerrainData::init(const VKW_Device* device)
 {
 	// begin create create descriptor set layout
@@ -156,7 +158,7 @@ void Terrain::set_descriptor_bindings(const std::array<VKW_Buffer, MAX_FRAMES_IN
 		set.update(4, normal_map.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), *texture_sampler);
 		set.update(5, curvatue.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), *texture_sampler);
 		
-		set.update(6, shadow_map.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D_ARRAY, 0, 4), shadow_map_sampler);
+		set.update(6, shadow_map.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D_ARRAY, 0, MAX_CASCADE_COUNT), shadow_map_sampler);
 	}
 }
 

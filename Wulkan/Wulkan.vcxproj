@@ -228,6 +228,7 @@
     <ClInclude Include="src\engine\vk_wrap\VKW_PushConstants.h" />
     <ClInclude Include="src\engine\Terrain.h" />
     <ClInclude Include="src\engine\vk_wrap\VKW_ComputePipeline.h" />
+    <ClInclude Include="src\engine\vk_wrap\VKW_SpecializationConstants.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="shaders\terrain.txt" />
