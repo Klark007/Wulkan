@@ -56,6 +56,137 @@ void DirectionalLight::init(const VKW_Device* vkw_device, const std::array<VKW_C
 	}
 }
 
+void DirectionalLight::init_debug_lines(const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, SharedLineData* shared_line_data, const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& uniform_buffers)
+{
+	if (!cast_shadows) {
+		throw SetupException("Tried to initialize debug lines of shadow casting for a directional light not casting shadows", __FILE__, __LINE__);
+	}
+	initialized_debug_lines = true;
+
+	for (unsigned int i = 0; i < MAX_CASCADE_COUNT; i++) {
+		Line& camera_frustums = splitted_camera_frustums.at(i);
+		camera_frustums.init(
+			*device,
+			transfer_pool,
+			descriptor_pool,
+			shared_line_data,
+			// data is overwriten anyways (but size needs to be correct)
+			{
+				glm::vec3(0,0,0), glm::vec3(1, 0, 0),  glm::vec3(1, 1, 0),  glm::vec3(0, 1, 0),
+				glm::vec3(0,0,1), glm::vec3(1, 0, 1),  glm::vec3(1, 1, 1),  glm::vec3(0, 1, 1)
+			},
+			{
+				0, 1, 1, 2, 2, 3, 3, 0,
+				0, 4, 1, 5, 2, 6, 3, 7,
+				4, 5, 5, 6, 6, 7, 7, 4
+			},
+			(i < 4) ? line_colors.at(i) : glm::vec4(1, 0, 1, 1)
+		);
+		camera_frustums.set_descriptor_bindings(uniform_buffers);
+
+		Frustum& shadow_frustum = shadow_camera_frustums.at(i);
+		shadow_frustum.init(
+			*device,
+			transfer_pool,
+			descriptor_pool,
+			shared_line_data,
+			glm::mat4(1), // is overwritten anyways
+			(i < 4) ? line_colors.at(i) : glm::vec4(1, 0, 1, 1)
+		);
+		shadow_frustum.set_descriptor_bindings(uniform_buffers);
+	}
+}
+
+void DirectionalLight::set_uniforms(const Camera& camera, int nr_current_cascades, int current_frame)
+{
+	ShadowDepthOnlyUniformData uniform{};
+
+	float camera_near_plane = camera.get_near_plane();
+	float camera_far_plane = camera.get_far_plane();
+
+	float zero_one_splits[MAX_CASCADE_COUNT + 1] = {}; // split planes (including near plane) normalized to 0 to 1
+	zero_one_splits[0] = 0;
+
+	// compute distance of splits (formula from original paper)
+	for (int i = 1; i <= nr_current_cascades; i++) {
+		float ratio = ((float)i) / nr_current_cascades;
+		uniform.split_planes[i - 1] = lambda * camera_near_plane * powf(camera_far_plane / camera_near_plane, ratio)
+			+ (1 - lambda) * (camera_near_plane + ratio * (camera_far_plane - camera_near_plane));
+
+		float d = uniform.split_planes[i - 1];
+		// inverted the function to linearize depth as this is already linear atm.
+		zero_one_splits[i] = (camera_near_plane * camera_far_plane / d - camera_far_plane) / (camera_near_plane - camera_far_plane);
+	}
+
+	// project the edges of the cameras frustum
+	glm::mat4 camera_proj = camera.generate_projection_mat();
+	camera_proj[1][1] *= -1; // see https://community.khronos.org/t/confused-when-using-glm-for-projection/108548/2 for reason for the multiplication
+	glm::mat4 camera_view = camera.generate_virtual_view_mat();
+	glm::mat4 inv_proj_view_camera = glm::inverse(camera_proj * camera_view);
+
+	// into the shadow "cameras" space
+	float shadow_near_plane = shadow_camera.get_near_plane();
+	float shadow_far_plane = shadow_camera.get_far_plane();
+	glm::mat4 P = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, shadow_near_plane, shadow_far_plane);
+	P[1][1] *= -1;
+	glm::mat4 shadow_view_mat = shadow_camera.generate_view_mat();
+	glm::mat4 shadow_project_view = P * shadow_view_mat;
+
+	for (int cascade_idx = 0; cascade_idx < nr_current_cascades; cascade_idx++) {
+		// frustum points in clip space
+		glm::vec3 frustum_points[8] = {
+			glm::vec3(-1.0f,  1.0f, zero_one_splits[cascade_idx]),
+			glm::vec3(1.0f,  1.0f,  zero_one_splits[cascade_idx]),
+			glm::vec3(1.0f, -1.0f,  zero_one_splits[cascade_idx]),
+			glm::vec3(-1.0f, -1.0f,  zero_one_splits[cascade_idx]),
+			glm::vec3(-1.0f,  1.0f,  zero_one_splits[cascade_idx + 1]),
+			glm::vec3(1.0f,  1.0f,   zero_one_splits[cascade_idx + 1]),
+			glm::vec3(1.0f, -1.0f,   zero_one_splits[cascade_idx + 1]),
+			glm::vec3(-1.0f, -1.0f,   zero_one_splits[cascade_idx + 1]),
+		};
+
+		// keep track of min/max over all points, used to compute actual shadow projection
+		glm::vec3 min_v = glm::vec3(std::numeric_limits<float>::max());
+		glm::vec3 max_v = glm::vec3(std::numeric_limits<float>::min());
+
+		std::vector<glm::vec3> camera_frustum_points{};
+
+		for (int i = 0; i < 8; i++) {
+			glm::vec4 frustum_world_space = inv_proj_view_camera * glm::vec4(frustum_points[i], 1);
+			frustum_world_space /= frustum_world_space.w;
+
+			camera_frustum_points.push_back(glm::vec3(frustum_world_space));
+
+			glm::vec4 frustum_shadow_clip = shadow_project_view * frustum_world_space;
+			frustum_shadow_clip /= frustum_shadow_clip.w;
+
+			min_v = glm::min(min_v, glm::vec3(frustum_shadow_clip));
+			max_v = glm::max(max_v, glm::vec3(frustum_shadow_clip));
+		}
+
+		// compute projection matrix
+		glm::mat4 P_z = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, shadow_near_plane, max_v.z * shadow_far_plane);
+		P_z[1][1] *= -1;
+
+		glm::mat4 C = glm::mat4(1);
+		float S_x = 2 / (max_v.x - min_v.x);
+		float S_y = 2 / (max_v.y - min_v.y);
+		C[0][0] = S_x;
+		C[1][1] = S_y;
+		C[3][0] = -0.5 * (max_v.x + min_v.x) * S_x;
+		C[3][1] = -0.5 * (max_v.y + min_v.y) * S_y;
+
+		uniform.proj_view[cascade_idx] = C * P_z * shadow_view_mat;
+
+		if (initialized_debug_lines) {
+			splitted_camera_frustums.at(cascade_idx).update_vertices(camera_frustum_points);
+			shadow_camera_frustums.at(cascade_idx).set_camera_matrix(uniform.proj_view[cascade_idx]);
+		}
+	}
+
+	memcpy(uniform_buffers.at(current_frame).get_mapped_address(), &uniform, sizeof(ShadowDepthOnlyUniformData));
+}
+
 void DirectionalLight::del()
 {
 	if (cast_shadows) {
@@ -65,5 +196,47 @@ void DirectionalLight::del()
 			VK_DESTROY(shadow_semaphores.at(i), vkDestroySemaphore, *device, shadow_semaphores.at(i));
 			uniform_buffers.at(i).del();
 		}
+	}
+
+	if (initialized_debug_lines) {
+		for (unsigned int i = 0; i < MAX_CASCADE_COUNT; i++) {
+			splitted_camera_frustums.at(i).del();
+			shadow_camera_frustums.at(i).del();
+		}
+	}
+}
+
+const VKW_CommandBuffer& DirectionalLight::begin_depth_pass(int current_frame)
+{
+	const VKW_CommandBuffer& shadow_cmd = cmds.at(current_frame);
+	shadow_cmd.reset();
+	shadow_cmd.begin();
+
+	Texture::transition_layout(shadow_cmd, depth_rt, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+	return shadow_cmd;
+}
+
+void DirectionalLight::end_depth_pass(int current_frame)
+{
+	const VKW_CommandBuffer& shadow_cmd = cmds.at(current_frame);
+	Texture::transition_layout(shadow_cmd, depth_rt, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+	shadow_cmd.submit(
+		{ },
+		{ },
+		{ shadow_semaphores.at(current_frame) },
+		VK_NULL_HANDLE
+	);
+}
+
+void DirectionalLight::draw_debug_lines(const VKW_CommandBuffer& command_buffer, uint32_t current_frame, const VKW_GraphicsPipeline& pipeline, int nr_current_cascades)
+{
+	if (!initialized_debug_lines) {
+		throw SetupException("Tried to draw debug lines without initalizing them", __FILE__, __LINE__);
+	}
+
+	for (int i = 0; i < nr_current_cascades; i++) {
+		splitted_camera_frustums.at(i).draw(command_buffer, current_frame, pipeline);
+		shadow_camera_frustums.at(i).draw(command_buffer, current_frame, pipeline);
 	}
 }

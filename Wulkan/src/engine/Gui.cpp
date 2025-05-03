@@ -134,6 +134,8 @@ void GUI::draw_gui(const VKW_CommandBuffer& cmd)
 			ImGui::SliderFloat("Constant depth bias", &data.depth_bias, 1e4, 1e5);
 			ImGui::SliderFloat("Slope depth bias", &data.slope_depth_bias, 1e-2, 1e1);
 			ImGui::SliderInt("Number of shadow cascades", &data.nr_shadow_cascades, 1, MAX_CASCADE_COUNT);
+
+			ImGui::Checkbox("Show debug frustums", &data.shadow_draw_debug_frustums);
 		}
 
 		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);

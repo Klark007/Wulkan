@@ -151,9 +151,7 @@ public: // TODO: remove public
 
 	// Lines (for debugging etc)
 	SharedLineData shared_line_data;
-	std::array<Line, MAX_CASCADE_COUNT> camera_split_frustums;
-	std::array<Frustum, MAX_CASCADE_COUNT> light_frustums;
-
+	
 	// Directional light
 	DirectionalLight directional_light;
 

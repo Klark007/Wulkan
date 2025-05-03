@@ -33,7 +33,6 @@ struct UniformStruct {
     alignas(8) glm::vec2 near_far_plane;
     alignas(8) glm::vec2 sun_direction;
     alignas(16) glm::vec4 sun_color;
-    alignas(16) glm::mat4 sun_proj_view;
 };
 
 // std430

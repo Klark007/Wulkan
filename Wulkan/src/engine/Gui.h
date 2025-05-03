@@ -17,6 +17,7 @@ struct GUI_Input {
 	float camera_rotation_speed = 0.001f;
 	float camera_movement_speed = 25.0f;
 
+	// Terrain
 	float terrain_tesselation = 0.1f;
 	float max_terrain_tesselation = 16.0f;
 	float terrain_height_scale = 0.8f;
@@ -24,10 +25,12 @@ struct GUI_Input {
 	bool terrain_wireframe_mode = false;
 	TerrainVisualizationMode terrain_vis_mode = TerrainVisualizationMode::Shaded;
 
+	// Light / Shadows
 	glm::vec3 sun_direction = glm::vec3(0, 0.8, 0.5);
 	float depth_bias = 40000.0f;
 	float slope_depth_bias = 0.1f;
 	int nr_shadow_cascades = 3;
+	bool shadow_draw_debug_frustums = false;
 };
 
 class GUI : public VKW_Object
