@@ -7,8 +7,6 @@
 
 #include <iostream>
 
-#include <glm/gtc/matrix_transform.hpp> // todo remove
-
 #ifdef NDEBUG
 #else
 #define PROFILING
