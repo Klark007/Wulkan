@@ -64,14 +64,16 @@ inline void Line::draw(const VKW_CommandBuffer& command_buffer, uint32_t current
 inline VKW_GraphicsPipeline Line::create_pipeline(const VKW_Device* device, Texture& color_rt, Texture& depth_rt, const SharedLineData& shared_line_data)
 {
 	VKW_Shader vert_shader{};
-	vert_shader.init(device, "shaders/line/line_vert.spv", VK_SHADER_STAGE_VERTEX_BIT, "Line vertex shader");
+	//vert_shader.init(device, "shaders/line/line_vert.spv", VK_SHADER_STAGE_VERTEX_BIT, "Line vertex shader");
+	vert_shader.init(device, "shaders/spherical_gaussians/spherical_gaussian_vert.spv", VK_SHADER_STAGE_VERTEX_BIT, "Line vertex shader");
 
 	VKW_Shader frag_shader{};
-	frag_shader.init(device, "shaders/line/line_frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT, "Line fragment shader");
+	//frag_shader.init(device, "shaders/line/line_frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT, "Line fragment shader");
+	frag_shader.init(device, "shaders/spherical_gaussians/spherical_gaussian_frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT, "Line fragment shader");
 
 	VKW_GraphicsPipeline graphics_pipeline{};
 
-	graphics_pipeline.set_topology(VK_PRIMITIVE_TOPOLOGY_LINE_LIST);
+	//graphics_pipeline.set_topology(VK_PRIMITIVE_TOPOLOGY_LINE_LIST);
 
 	graphics_pipeline.set_culling_mode();
 	graphics_pipeline.enable_depth_test();

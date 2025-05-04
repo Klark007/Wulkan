@@ -140,6 +140,8 @@
     <None Include="src\engine\vk_wrap\README.md" />
     <None Include="shaders\line\line.frag" />
     <None Include="shaders\line\line.vert" />
+    <None Include="shaders\spherical_gaussians\spherical_gaussian.frag" />
+    <None Include="shaders\spherical_gaussians\spherical_gaussian.vert" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\engine\CameraController.h">

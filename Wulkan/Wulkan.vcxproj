@@ -179,6 +179,8 @@
     <None Include="shaders\compile.bat" />
     <None Include="shaders\line\line.frag" />
     <None Include="shaders\line\line.vert" />
+    <None Include="shaders\spherical_gaussians\spherical_gaussian.frag" />
+    <None Include="shaders\spherical_gaussians\spherical_gaussian.vert" />
     <None Include="src\engine\vk_wrap\README.md" />
   </ItemGroup>
   <ItemGroup>

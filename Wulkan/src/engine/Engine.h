@@ -151,6 +151,7 @@ public: // TODO: remove public
 
 	// Lines (for debugging etc)
 	SharedLineData shared_line_data;
+	Line spherical_gaussian;
 	
 	// Directional light
 	DirectionalLight directional_light;
