@@ -53,7 +53,15 @@ public:
 	void update(uint32_t binding, const VKW_Buffer& buffer) const;
 
 	// Updates descriptor at binding. Assumes binding corresponds to a combined sampler and the image corresponding to the view is in the mentioned layout 
-	void update(uint32_t binding, VkImageView image_view, const VKW_Sampler& sampler, VkImageLayout layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VkImageAspectFlags aspect = VK_IMAGE_ASPECT_COLOR_BIT) const;
+	void update(uint32_t binding, VkImageView image_view, const VKW_Sampler& sampler, VkImageLayout layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) const;
+
+	// Updates descriptor at binding. Assumes binding corresponds to a image corresponding to the view is in the mentioned layout 
+	// see: https://stackoverflow.com/questions/77070602/how-are-separated-sampled-images-and-samplers-used-in-vulkan-with-glsl
+	// be careful with sampler*Shadow as Shadow is not part of the type
+	void update(uint32_t binding, VkImageView image_view, VkImageLayout layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) const;
+
+	// Updates descriptor at binding. Assumes binding corresponds to a sampler
+	void update(uint32_t binding, const VKW_Sampler& sampler) const;
 
 
 	inline VkDescriptorSet get_descriptor_set() const { return descriptor_set; };

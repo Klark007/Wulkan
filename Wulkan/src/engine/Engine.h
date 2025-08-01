@@ -140,7 +140,7 @@ public: // TODO: remove public
 	VKW_Sampler nearest_texture_sampler;
 	VKW_Sampler linear_texture_sampler;
 	VKW_Sampler mirror_texture_sampler;
-	VKW_Sampler shadow_map_sampler;
+	VKW_Sampler shadow_map_gather_sampler;
 
 	// Terrain data
 	SharedTerrainData shared_terrain_data;

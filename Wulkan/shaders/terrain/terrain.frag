@@ -11,7 +11,10 @@ layout(binding = 2) uniform sampler2D height_map;
 layout(binding = 3) uniform sampler2D albedo;
 layout(binding = 4) uniform sampler2D normal_map;
 layout(binding = 5) uniform sampler2D curvature;
-layout(binding = 6) uniform sampler2DArrayShadow shadow_map;
+
+layout(binding = 6) uniform texture2DArray shadow_map;
+layout(binding = 7) uniform sampler shadow_sampler;
+layout(binding = 8) uniform sampler shadow_gather_sampler;
 
 layout(binding = 0) uniform UniformData {
     mat4 view;
@@ -151,16 +154,8 @@ float shadow(uint cascade_idx) {
         -1 <= shadow_coord.z && shadow_coord.z <= 1
     ) {
         vec2 texCoord = (shadow_coord.xy + vec2(1)) / 2;
-        /*
-        float dist = texture(shadow_map, vec3(texCoord, cascade_idx)).r;
-
-        // bias to avoid acne
-        if (dist <= shadow_coord.z) {
-            // in shadow
-            return 0.1;
-        }
-        */
-        float compare_value = textureGather(shadow_map, vec3(texCoord, cascade_idx), shadow_coord.z).r; // true (1) if texture depth > shadow_coord.z else 0
+        
+        float compare_value = max(textureGather(sampler2DArrayShadow(shadow_map, shadow_gather_sampler), vec3(texCoord, cascade_idx), shadow_coord.z).r, 0.1); // true (1) if texture depth > shadow_coord.z else 0        
         return compare_value;
     }
 

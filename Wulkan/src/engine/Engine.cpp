@@ -428,7 +428,7 @@ void Engine::init_data()
 		"textures/terrain/normal.png",
 		256							// resolution of mesh
 	);
-	terrain.set_descriptor_bindings(uniform_buffers, directional_light.get_uniform_buffers(), directional_light.get_texture(), shadow_map_sampler);
+	terrain.set_descriptor_bindings(uniform_buffers, directional_light.get_uniform_buffers(), directional_light.get_texture(), linear_texture_sampler, shadow_map_gather_sampler);
 	cleanup_queue.add(&terrain);
 
 	environment_map.init(
@@ -460,9 +460,9 @@ void Engine::create_texture_samplers()
 	mirror_texture_sampler.init(&device, "Repeat sampler");
 	cleanup_queue.add(&mirror_texture_sampler);
 
-	shadow_map_sampler.set_comparison(VK_COMPARE_OP_LESS);
-	shadow_map_sampler.init(&device, "Shadow map gather sampler");
-	cleanup_queue.add(&shadow_map_sampler);
+	shadow_map_gather_sampler.set_comparison(VK_COMPARE_OP_LESS);
+	shadow_map_gather_sampler.init(&device, "Shadow map gather sampler");
+	cleanup_queue.add(&shadow_map_gather_sampler);
 }
 
 void Engine::create_descriptor_sets()

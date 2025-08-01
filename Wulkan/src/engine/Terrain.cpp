@@ -48,10 +48,22 @@ void SharedTerrainData::init(const VKW_Device* device)
 		VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_FRAGMENT_BIT
 	);
 
-	// shadow map
+	// shadow map (seperate sampler and image due to needing two different samplers)
 	descriptor_set_layout.add_binding(
 		6,
-		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+		VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
+		VK_SHADER_STAGE_FRAGMENT_BIT
+	);
+
+	descriptor_set_layout.add_binding(
+		7,
+		VK_DESCRIPTOR_TYPE_SAMPLER,
+		VK_SHADER_STAGE_FRAGMENT_BIT
+	);
+
+	descriptor_set_layout.add_binding(
+		8,
+		VK_DESCRIPTOR_TYPE_SAMPLER,
 		VK_SHADER_STAGE_FRAGMENT_BIT
 	);
 
@@ -144,7 +156,7 @@ void Terrain::init(const VKW_Device& device, const VKW_CommandPool& graphics_poo
 	mesh.init(device, transfer_pool, terrain_vertices, terrain_indices);
 }
 
-void Terrain::set_descriptor_bindings(const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& general_ubo, const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& shadow_map_ubo, Texture& shadow_map, const VKW_Sampler& shadow_map_sampler)
+void Terrain::set_descriptor_bindings(const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& general_ubo, const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& shadow_map_ubo, Texture& shadow_map, const VKW_Sampler& shadow_map_sampler, const VKW_Sampler& shadow_map_gather_sampler)
 {
 	// set the bindings
 	for (unsigned int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
@@ -158,7 +170,9 @@ void Terrain::set_descriptor_bindings(const std::array<VKW_Buffer, MAX_FRAMES_IN
 		set.update(4, normal_map.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), *texture_sampler);
 		set.update(5, curvatue.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), *texture_sampler);
 		
-		set.update(6, shadow_map.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D_ARRAY, 0, MAX_CASCADE_COUNT), shadow_map_sampler);
+		set.update(6, shadow_map.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D_ARRAY, 0, MAX_CASCADE_COUNT));
+		set.update(7, shadow_map_sampler);
+		set.update(8, shadow_map_gather_sampler);
 	}
 }
 

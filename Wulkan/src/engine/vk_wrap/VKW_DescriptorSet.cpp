@@ -84,7 +84,7 @@ void VKW_DescriptorSet::update(uint32_t binding, const VKW_Buffer& buffer) const
 	vkUpdateDescriptorSets(*device, 1, &buffer_write, 0, VK_NULL_HANDLE);
 }
 
-void VKW_DescriptorSet::update(uint32_t binding, VkImageView image_view, const VKW_Sampler& sampler, VkImageLayout layout, VkImageAspectFlags aspect) const
+void VKW_DescriptorSet::update(uint32_t binding, VkImageView image_view, const VKW_Sampler& sampler, VkImageLayout layout) const
 {
 	VkDescriptorImageInfo image_info{};
 	image_info.imageLayout = layout;
@@ -102,4 +102,41 @@ void VKW_DescriptorSet::update(uint32_t binding, VkImageView image_view, const V
 	image_write.pImageInfo = &image_info;
 
 	vkUpdateDescriptorSets(*device, 1, &image_write, 0, VK_NULL_HANDLE);
+}
+
+void VKW_DescriptorSet::update(uint32_t binding, VkImageView image_view, VkImageLayout layout) const
+{
+	VkDescriptorImageInfo image_info{};
+	image_info.imageLayout = layout;
+	image_info.imageView = image_view;
+
+	VkWriteDescriptorSet image_write{};
+	image_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	image_write.dstSet = descriptor_set;
+	image_write.dstBinding = binding;
+	image_write.descriptorType = binding_types.at(binding);
+
+	image_write.dstArrayElement = 0;
+	image_write.descriptorCount = 1;
+	image_write.pImageInfo = &image_info;
+
+	vkUpdateDescriptorSets(*device, 1, &image_write, 0, VK_NULL_HANDLE);
+}
+
+void VKW_DescriptorSet::update(uint32_t binding, const VKW_Sampler& sampler) const
+{
+	VkDescriptorImageInfo image_info{};
+	image_info.sampler = sampler;
+
+	VkWriteDescriptorSet sampler_write{};
+	sampler_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	sampler_write.dstSet = descriptor_set;
+	sampler_write.dstBinding = binding;
+	sampler_write.descriptorType = binding_types.at(binding);
+
+	sampler_write.dstArrayElement = 0;
+	sampler_write.descriptorCount = 1;
+	sampler_write.pImageInfo = &image_info;
+
+	vkUpdateDescriptorSets(*device, 1, &sampler_write, 0, VK_NULL_HANDLE);
 }
