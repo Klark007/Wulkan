@@ -11,7 +11,7 @@ layout(binding = 2) uniform sampler2D height_map;
 layout(binding = 3) uniform sampler2D albedo;
 layout(binding = 4) uniform sampler2D normal_map;
 layout(binding = 5) uniform sampler2D curvature;
-layout(binding = 6) uniform sampler2DArray shadow_map;
+layout(binding = 6) uniform sampler2DArrayShadow shadow_map;
 
 layout(binding = 0) uniform UniformData {
     mat4 view;
@@ -23,11 +23,10 @@ layout(binding = 0) uniform UniformData {
     vec4 sun_color;
 } ubo;
 
-#define MAX_CASCADE_COUNT 4
-layout (constant_id = 0) const int cascade_count = MAX_CASCADE_COUNT;
+layout (constant_id = 0) const int cascade_count = 4;
 
 layout(binding = 1) uniform CascadeUniformData {
-    mat4 proj_views[MAX_CASCADE_COUNT];
+    mat4 proj_views[cascade_count];
     vec4 cascade_splits;
 } depth_ubo;
 
@@ -54,7 +53,7 @@ void main() {
     world_normal.y *= -1;
 
     vec4 view_pos = ubo.virtual_view * vec4(inWorldPos, 1.0); 
-    uint cascade_idx = MAX_CASCADE_COUNT;
+    uint cascade_idx = cascade_count;
     for (uint i = 0; i < cascade_count; i++) {
         if (-view_pos.z < depth_ubo.cascade_splits[i]) {
             cascade_idx = i;
@@ -103,22 +102,7 @@ void main() {
             float res = abs(err);
             outColor = vec4(vec3(res)*100, 1);
             break;
-        case 5: // linear depth from shadow map
-            vec4 s_coord = depth_ubo.proj_views[cascade_idx] * vec4(inWorldPos, 1.0);
-            s_coord /= s_coord.w;
-            if (
-                -1 <= s_coord.x && s_coord.x <= 1 && 
-                -1 <= s_coord.y && s_coord.y <= 1 &&
-                -1 <= s_coord.z && s_coord.z <= 1 &&
-                0 <= s_coord.w
-            ) {
-                vec2 texCoord = (s_coord.xy + vec2(1)) / 2;
-                outColor = vec4(vec3(linearize_depth(texture(shadow_map, vec3(texCoord,cascade_idx)).r)), 1);
-            } else {
-                outColor = vec4(1,0,1,1);
-            }
-            break;
-        case 6: // shadow map cascade
+        case 5: // shadow map cascade
             switch (cascade_idx) {
                 case 0:
                     outColor = vec4(1,0,0,1);
@@ -167,6 +151,7 @@ float shadow(uint cascade_idx) {
         -1 <= shadow_coord.z && shadow_coord.z <= 1
     ) {
         vec2 texCoord = (shadow_coord.xy + vec2(1)) / 2;
+        /*
         float dist = texture(shadow_map, vec3(texCoord, cascade_idx)).r;
 
         // bias to avoid acne
@@ -174,6 +159,9 @@ float shadow(uint cascade_idx) {
             // in shadow
             return 0.1;
         }
+        */
+        float compare_value = textureGather(shadow_map, vec3(texCoord, cascade_idx), shadow_coord.z).r; // true (1) if texture depth > shadow_coord.z else 0
+        return compare_value;
     }
 
     return 1;

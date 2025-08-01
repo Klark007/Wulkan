@@ -26,6 +26,9 @@ private:
 
 	float max_anisotropy; // most modern machines support up to 16, is clamped to maxAnisotropy (VkPhysicalDeviceProperties)
 	bool anisotropic_sampling;
+
+	bool compare_enable;
+	VkCompareOp compare_op;
 public:
 	// call before init to change default configuration
 	void set_min_filter(VkFilter filter) { min_filter = filter; };
@@ -37,8 +40,16 @@ public:
 	void set_anisotropic_sampling(bool state) { anisotropic_sampling = state; };
 	// call before init to change default configuration
 	void set_anisotropy(float max) { max_anisotropy = max; };
+	// call before init to change default configuration
+	inline void set_comparison(VkCompareOp compare_op);
 
 	VkSampler get_sampler() const { return sampler; };
 	inline operator VkSampler() const { return sampler; };
 };
 
+// see https://registry.khronos.org/vulkan/specs/latest/html/vkspec.html#textures-depth-compare-operation
+inline void VKW_Sampler::set_comparison(VkCompareOp compare_op)
+{
+	compare_enable = VK_TRUE;
+	this->compare_op = compare_op;
+}

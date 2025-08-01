@@ -3,9 +3,10 @@
 layout(location = 0) in vec3 inPos[];
 layout(location = 1) in vec2 inUV[];
 
+layout (constant_id = 0) const int cascade_count = 4;
 layout(binding = 1) uniform DepthUniformData {
-    mat4 proj_views[4];
-    float _cascade_splits[4];
+    mat4 proj_views[cascade_count];
+    float _cascade_splits[cascade_count];
 } depth_ubo;
 
 layout(binding = 2) uniform sampler2D height_map;

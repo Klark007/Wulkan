@@ -12,6 +12,8 @@ VKW_Sampler::VKW_Sampler()
 
 	max_anisotropy = 2.0f;
 	anisotropic_sampling = VK_TRUE;
+
+	compare_enable = VK_FALSE;
 }
 
 void VKW_Sampler::init(const VKW_Device* vkw_device, const std::string& obj_name)
@@ -38,6 +40,9 @@ void VKW_Sampler::init(const VKW_Device* vkw_device, const std::string& obj_name
 	sampler_info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
 	sampler_info.minLod = 0;
 	sampler_info.maxLod = 0;
+
+	sampler_info.compareEnable = compare_enable;
+	sampler_info.compareOp = compare_op;
 
 	VK_CHECK_ET(vkCreateSampler(*device, &sampler_info, VK_NULL_HANDLE, &sampler), RuntimeException, std::format("Failed to create texture sampler ({})", name));
 	device->name_object((uint64_t)sampler, VK_OBJECT_TYPE_SAMPLER, name);

@@ -395,8 +395,8 @@ void Engine::init_data()
 		glm::vec3(0, 0, 0), // look at for shadow
 		glm::vec3(0, 0, 1), // direction for shadow
 		50, // distance from look at for projection
-		1024*2,
-		1024*2,
+		1024*4,
+		1024*4,
 		40, // height of orthographic projection
 		0.1,
 		50.0
@@ -413,6 +413,7 @@ void Engine::init_data()
 	cleanup_queue.add(&directional_light);
 
 	// terrain needs directional light to be initiated due to it relying on it's uniform buffer
+	// try manticorp.github.io/unrealheightmap
 	terrain.init(
 		device,
 		get_current_graphics_pool(),
@@ -427,7 +428,7 @@ void Engine::init_data()
 		"textures/terrain/normal.png",
 		256							// resolution of mesh
 	);
-	terrain.set_descriptor_bindings(uniform_buffers, directional_light.get_uniform_buffers(), directional_light.get_texture(), linear_texture_sampler);
+	terrain.set_descriptor_bindings(uniform_buffers, directional_light.get_uniform_buffers(), directional_light.get_texture(), shadow_map_sampler);
 	cleanup_queue.add(&terrain);
 
 	environment_map.init(
@@ -458,6 +459,10 @@ void Engine::create_texture_samplers()
 	mirror_texture_sampler.set_address_mode(VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT);
 	mirror_texture_sampler.init(&device, "Repeat sampler");
 	cleanup_queue.add(&mirror_texture_sampler);
+
+	shadow_map_sampler.set_comparison(VK_COMPARE_OP_LESS);
+	shadow_map_sampler.init(&device, "Shadow map gather sampler");
+	cleanup_queue.add(&shadow_map_sampler);
 }
 
 void Engine::create_descriptor_sets()

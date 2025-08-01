@@ -135,6 +135,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\engine\PoissonSampling.cpp" />
     <ClCompile Include="src\engine\Frustum.cpp" />
     <ClCompile Include="src\engine\common.cpp" />
     <ClCompile Include="src\engine\DirectionalLight.cpp" />
@@ -183,6 +184,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="external\include\rapidcsv.h" />
+    <ClInclude Include="external\include\tph_poisson.h" />
+    <ClInclude Include="src\engine\PoissonSampling.h" />
     <ClInclude Include="src\engine\Frustum.h" />
     <ClInclude Include="src\engine\Line.h" />
     <ClInclude Include="src\engine\DirectionalLight.h" />

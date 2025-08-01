@@ -132,14 +132,14 @@ inline VKW_GraphicsPipeline Terrain::create_pipeline(const VKW_Device* device, T
 		tess_ctrl_shader.init(device, "shaders/terrain/terrain_tesc.spv", VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, "Terrain tesselation control shader");
 	}
 	else {
-		tess_ctrl_shader.init(device, "shaders/terrain/terrain_depth_tesc.spv", VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, "Terrain-depth tesselation control shader");
+		tess_ctrl_shader.init(device, "shaders/terrain/terrain_depth_tesc.spv", VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, "Terrain-depth tesselation control shader", "main", specialization_const.get_info());
 	}
 	VKW_Shader tess_eval_shader{};
 	if (!depth_only) {
 		tess_eval_shader.init(device, "shaders/terrain/terrain_tese.spv", VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, "Terrain tesselation evaluation shader");
 	}
 	else {
-		tess_eval_shader.init(device, "shaders/terrain/terrain_depth_tese.spv", VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, "Terrain-depth tesselation evaluation shader");
+		tess_eval_shader.init(device, "shaders/terrain/terrain_depth_tese.spv", VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, "Terrain-depth tesselation evaluation shader", "main", specialization_const.get_info());
 	}
 
 	VKW_GraphicsPipeline graphics_pipeline{};
