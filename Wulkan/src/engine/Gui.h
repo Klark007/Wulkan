@@ -27,10 +27,17 @@ struct GUI_Input {
 
 	// Light / Shadows
 	glm::vec3 sun_direction = glm::vec3(0, 0.8, 0.5);
+	glm::vec3 sun_color = glm::vec3(0.8, 0.8, 1.0);
+	float sun_intensity = 1.0f;
 	float depth_bias = 40000.0f;
 	float slope_depth_bias = 0.1f;
 	int nr_shadow_cascades = 3;
 	bool shadow_draw_debug_frustums = false;
+	
+	float sun_size = 64.0f; // scales how big penubra gets
+	float occluder_filter_size = 64.0f; // how much the samples for average occluder size are distributed
+	int nr_shadow_receiver_samples = 18;
+	int nr_shadow_occluder_samples = 8;
 };
 
 class GUI : public VKW_Object

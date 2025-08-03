@@ -24,6 +24,10 @@ layout(binding = 0) uniform UniformData {
     vec2 near_far_plane;
     vec2 sun_direction;
     vec4 sun_color;
+    float sun_size;
+    float occluder_filter_size;
+    int nr_shadow_occluder_samples; // isn't as performant as specialization consts or const, but want to be able to play with these settings
+    int nr_shadow_receiver_samples;
 } ubo;
 
 layout (constant_id = 0) const int cascade_count = 4;
@@ -31,6 +35,7 @@ layout (constant_id = 0) const int cascade_count = 4;
 layout(binding = 1) uniform CascadeUniformData {
     mat4 proj_views[cascade_count];
     vec4 cascade_splits;
+    vec4 shadow_extends[2]; // physical extends of shadow cameras
 } depth_ubo;
 
 
@@ -49,6 +54,34 @@ layout(location = 0) out vec4 outColor;
 vec3 spherical_to_dir(vec2 sph);
 float linearize_depth(float d);
 float shadow(uint cascade_idx);
+
+// contact hardening soft shadows based on "Contact-hardening Soft Shadows Made Fast"
+float soft_shadow(uint cascade_idx);
+
+float get_penumbra_size(float gradient_noise, vec2 shadow_tex_coord, float receiver_depth,  uint cascade_idx);
+// samples sample_idx out of sample_count many samples and rotates by phi
+vec2 sample_vogel_disk(int sample_idx, int sample_count, float phi);
+// given screen_pos return a random value in [0,1]
+float interleaved_gradient_noise(vec2 screen_pos);
+float avg_depth_to_penumbra(float receiver_depth, float avg_occluder_depth);
+// 1 texel movement for samples differ a lot in world space when switching between cascades
+// need to rescale wrt to which cascade the samples are in to have them remain similar sizes in world space
+vec2 get_scale_shadow_samples(uint cascade_idx, vec2 texture_size); 
+
+vec2 get_shadow_extents(uint cascade_idx) {
+    switch (cascade_idx) {
+        case 0:
+            return depth_ubo.shadow_extends[0].xy;
+        case 1:
+            return depth_ubo.shadow_extends[0].zw;
+        case 2:
+            return depth_ubo.shadow_extends[1].xy;
+        case 3:
+            return depth_ubo.shadow_extends[1].zw;
+        default:
+            return vec2(-1,-1);
+    }
+}
 
 void main() {
     vec3 obj_normal = normalize(texture(normal_map, inUV).rgb * 2 - 1);
@@ -73,21 +106,8 @@ void main() {
                 ), 0.1
             );
 
-            float in_shadow = shadow(cascade_idx);
+            float in_shadow = max(soft_shadow(cascade_idx), 0.1);
 
-            /* Debugging
-            if (in_shadow < 1) {
-                // in shadow
-                outColor = vec4(1,0,0,1);
-            } else if (in_shadow > 1) {
-                // in sun
-                outColor = texture(albedo, inUV) * cos_theata; //* in_shadow;
-            } else {
-                outColor = vec4(1,0,1,1);
-
-            }
-            */
-            
             outColor = texture(albedo, inUV) * ubo.sun_color * cos_theata * in_shadow;
             break;
         case 1: // tesselation level
@@ -144,7 +164,8 @@ vec3 spherical_to_dir(vec2 sph) {
     );
 }
 
-float shadow(uint cascade_idx) {
+float shadow(uint cascade_idx) 
+{
     vec4 shadow_coord = depth_ubo.proj_views[cascade_idx] * vec4(inWorldPos, 1.0);
     shadow_coord /= shadow_coord.w;
 
@@ -162,7 +183,104 @@ float shadow(uint cascade_idx) {
     return 1;
 }
 
+float soft_shadow(uint cascade_idx) 
+{
+    vec4 shadow_coord = depth_ubo.proj_views[cascade_idx] * vec4(inWorldPos, 1.0);
+    shadow_coord /= shadow_coord.w;
+
+    if (
+        -1 <= shadow_coord.x && shadow_coord.x <= 1 && 
+        -1 <= shadow_coord.y && shadow_coord.y <= 1 &&
+        -1 <= shadow_coord.z && shadow_coord.z <= 1
+    ) {
+        
+        vec2 tex_coord = (shadow_coord.xy + vec2(1)) / 2;
+
+        float gradient_noise = interleaved_gradient_noise(gl_FragCoord.xy);
+        float receiver_depth = shadow_coord.z;
+
+        float penumbra_filter_scale = get_penumbra_size(gradient_noise, tex_coord, receiver_depth, cascade_idx);
+
+        float shadow_value = 0;
+
+        int nr_samples = (penumbra_filter_scale > 0) ? ubo.nr_shadow_receiver_samples : 1;
+        
+        for (int i = 0; i < nr_samples; i++) {
+            vec2 sample_coord = sample_vogel_disk(i, nr_samples, gradient_noise);
+
+            vec2 scale = get_scale_shadow_samples(cascade_idx, textureSize(sampler2DArrayShadow(shadow_map, shadow_gather_sampler), 0).xy);
+
+            sample_coord = tex_coord + sample_coord * penumbra_filter_scale * scale;
+
+            // true (1) if texture depth > shadow_coord.z else 0  
+            shadow_value += textureGather(sampler2DArrayShadow(shadow_map, shadow_gather_sampler), vec3(sample_coord, cascade_idx), shadow_coord.z).r;
+        }
+        
+        return shadow_value / nr_samples;
+    }
+
+    // by default not in shadow
+    return 1;
+}
+
 float linearize_depth(float d)
 {
     return ubo.near_far_plane.x * ubo.near_far_plane.y / (ubo.near_far_plane.y + d * (ubo.near_far_plane.x - ubo.near_far_plane.y));
+}
+
+vec2 sample_vogel_disk(int sample_idx, int sample_count, float phi) 
+{
+    float golden_angle = 2.4f;
+
+    float r = sqrt(sample_idx + 0.5f) / sqrt(sample_count);
+    float theta = sample_idx * golden_angle + phi;
+
+    float sine= sin(theta);
+    float cosine = cos(theta);
+
+    return vec2(r*cosine, r*sine);
+}
+
+float interleaved_gradient_noise(vec2 screen_pos) 
+{
+    vec3 magic = vec3(0.06711056f, 0.00583715f, 52.9829189f);
+    return fract(magic.z * fract(dot(screen_pos, magic.xy)));
+}
+
+float avg_depth_to_penumbra(float receiver_depth, float avg_occluder_depth)
+{
+    return ubo.sun_size * (receiver_depth - avg_occluder_depth) / avg_occluder_depth;
+}
+
+float get_penumbra_size(float gradient_noise, vec2 shadow_tex_coord, float receiver_depth, uint cascade_idx) 
+{
+    float avg_occluder_depth = 0.0f;
+    int nr_occluders = 0;
+
+    for (int i = 0; i < ubo.nr_shadow_occluder_samples; i++) {
+        vec2 tex_coord = sample_vogel_disk(i, ubo.nr_shadow_occluder_samples, gradient_noise);
+        vec2 scale = get_scale_shadow_samples(cascade_idx, textureSize(sampler2DArray(shadow_map, shadow_sampler), 0).xy);
+
+        tex_coord = shadow_tex_coord + tex_coord * ubo.occluder_filter_size * scale;
+
+        float depth = texture(sampler2DArray(shadow_map, shadow_sampler), vec3(tex_coord, cascade_idx)).r;
+
+        // is actually an occluder
+        if (depth < receiver_depth) {
+            avg_occluder_depth += depth;
+            nr_occluders += 1;
+        }
+    }
+
+    if (nr_occluders > 0) {
+        avg_occluder_depth /= nr_occluders;
+        return avg_depth_to_penumbra(receiver_depth, avg_occluder_depth);
+    } else {
+        return 0.0f;
+    }
+}
+
+vec2 get_scale_shadow_samples(uint cascade_idx, vec2 texture_size) {
+    // scale to counter how much bigger the same resolution of pixels are in world space
+    return get_shadow_extents(0) / get_shadow_extents(cascade_idx) / texture_size;
 }

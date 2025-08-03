@@ -131,9 +131,19 @@ void GUI::draw_gui(const VKW_CommandBuffer& cmd)
 
 		if (ImGui::CollapsingHeader("Shading")) {
 			ImGui::SliderFloat3("Sun direction", glm::value_ptr(data.sun_direction), -1.0f, 1.0f);
+
+			ImGui::ColorEdit3("Sun Color", glm::value_ptr(data.sun_color), ImGuiColorEditFlags_None);
+			ImGui::SliderFloat("Sun Intensity", &data.sun_intensity, 0.1f, 25.0f);
+
+			ImGui::SliderFloat("Penumbra Scale", &data.sun_size, 1.0f, 64.0f);
+			ImGui::SliderFloat("Occluder Filter Size", &data.occluder_filter_size, 1.0f, 64.0f);
+			ImGui::SliderInt("Nr Receiver Samples", &data.nr_shadow_receiver_samples, 1, 32);
+			ImGui::SliderInt("Nr Occluder Samples", &data.nr_shadow_occluder_samples, 1, 16);
+			
 			ImGui::SliderFloat("Constant depth bias", &data.depth_bias, 1e4, 1e5);
 			ImGui::SliderFloat("Slope depth bias", &data.slope_depth_bias, 1e-2, 1e1);
 			ImGui::SliderInt("Number of shadow cascades", &data.nr_shadow_cascades, 1, MAX_CASCADE_COUNT);
+
 
 			ImGui::Checkbox("Show debug frustums", &data.shadow_draw_debug_frustums);
 		}

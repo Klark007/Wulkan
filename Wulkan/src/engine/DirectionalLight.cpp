@@ -20,7 +20,6 @@ void DirectionalLight::init(const VKW_Device* vkw_device, const std::array<VKW_C
 	shadow_camera = Camera(dest + direction * dist, dest, shadow_res_x, shadow_res_y, glm::radians(45.0f), near_plane, far_plane);
 	shadow_camera.set_orthographic_projection_height(orthographic_height);
 
-	// TODO: Array texture for each cascade
 	depth_rt.init(
 		device,
 		shadow_res_x,
@@ -52,7 +51,6 @@ void DirectionalLight::init(const VKW_Device* vkw_device, const std::array<VKW_C
 
 
 		cmds.at(i).init(device, &graphics_pools.at(i), false, "Shadow CMD");
-
 	}
 }
 
@@ -97,6 +95,7 @@ void DirectionalLight::init_debug_lines(const VKW_CommandPool& transfer_pool, co
 	}
 }
 
+#include <iostream>
 void DirectionalLight::set_uniforms(const Camera& camera, int nr_current_cascades, int current_frame)
 {
 	ShadowDepthOnlyUniformData uniform{};
@@ -176,7 +175,12 @@ void DirectionalLight::set_uniforms(const Camera& camera, int nr_current_cascade
 		C[3][0] = -0.5 * (max_v.x + min_v.x) * S_x;
 		C[3][1] = -0.5 * (max_v.y + min_v.y) * S_y;
 
-		uniform.proj_view[cascade_idx] = C * P_z * shadow_view_mat;
+		glm::mat4 ortho_proj = C * P_z;
+
+		uniform.shadow_extends[2*cascade_idx] = 2 / ortho_proj[0][0];
+		uniform.shadow_extends[2*cascade_idx+1] = -2 / ortho_proj[1][1];
+
+		uniform.proj_view[cascade_idx] = ortho_proj * shadow_view_mat;
 
 		if (initialized_debug_lines) {
 			splitted_camera_frustums.at(cascade_idx).update_vertices(camera_frustum_points);

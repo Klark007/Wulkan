@@ -11,12 +11,13 @@
 #include "Camera.h"
 #include "Frustum.h"
 
-constexpr int MAX_CASCADE_COUNT = 4;
+constexpr int MAX_CASCADE_COUNT = 4; // the default init in the shader cannot be lower than the max used
 
 // TODO NAMING
 struct ShadowDepthOnlyUniformData {
 	alignas(64) glm::mat4 proj_view[MAX_CASCADE_COUNT];
 	alignas(16) float split_planes[MAX_CASCADE_COUNT];
+	alignas(16) float shadow_extends[2*MAX_CASCADE_COUNT];
 };
 
 class DirectionalLight : public VKW_Object
@@ -79,7 +80,8 @@ public:
 	const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT> get_uniform_buffers() const { return uniform_buffers; };
 	VkSemaphore get_shadow_pass_semaphore(int current_frame) const { return shadow_semaphores.at(current_frame); };
 
-	glm::vec4 get_color() const { return glm::vec4(col, 1) * str; };
+	// returns color scaled by intensity
+	glm::vec4 get_scaled_color() const { return glm::vec4(col, 1) * str; };
 	glm::vec2 get_direction() const { return dir; };
 };
 

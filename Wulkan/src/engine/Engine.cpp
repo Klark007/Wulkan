@@ -89,6 +89,8 @@ void Engine::update()
 	terrain.set_visualization_mode(gui_input.terrain_vis_mode);
 
 	directional_light.set_direction(glm::normalize(gui_input.sun_direction));
+	directional_light.set_color(gui_input.sun_color);
+	directional_light.set_intensity(gui_input.sun_intensity);
 
 	update_uniforms();
 }
@@ -401,8 +403,6 @@ void Engine::init_data()
 		0.1,
 		50.0
 	);
-	directional_light.set_color(glm::vec3(0.8, 0.8, 1.0));
-	directional_light.set_intensity(1.0f);
 	directional_light.init_debug_lines(
 		get_current_transfer_pool(),
 		descriptor_pool,
@@ -669,7 +669,12 @@ void Engine::update_uniforms()
 	uniform.near_far_plane = glm::vec2(camera.get_near_plane(), camera.get_far_plane());
 	
 	uniform.sun_direction = directional_light.get_direction();
-	uniform.sun_color = directional_light.get_color();
+	uniform.sun_color = directional_light.get_scaled_color();
+
+	uniform.sun_size = gui_input.sun_size;
+	uniform.occluder_filter_size = gui_input.occluder_filter_size;
+	uniform.nr_shadow_receiver_samples = gui_input.nr_shadow_receiver_samples;
+	uniform.nr_shadow_occluder_samples = gui_input.nr_shadow_occluder_samples;
 	
 	memcpy(uniform_buffers.at(current_frame).get_mapped_address(), &uniform, sizeof(UniformStruct));
 }
