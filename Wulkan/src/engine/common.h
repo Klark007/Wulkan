@@ -31,12 +31,6 @@ struct UniformStruct {
     alignas(16) glm::mat4 virtual_view;
     alignas(16) glm::mat4 proj;
     alignas(8) glm::vec2 near_far_plane;
-    alignas(8) glm::vec2 sun_direction;
-    alignas(16) glm::vec4 sun_color;
-    alignas(4) float sun_size;
-    alignas(4) float occluder_filter_size;
-    alignas(4) int nr_shadow_occluder_samples;
-    alignas(4) int nr_shadow_receiver_samples;
 };
 
 // std430

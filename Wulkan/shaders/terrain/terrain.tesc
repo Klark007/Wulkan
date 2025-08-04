@@ -11,12 +11,9 @@ layout(binding = 0) uniform UniformData {
     mat4 virtual_view;
     mat4 proj;
     vec2 near_far_plane;
-    vec2 _sun_direction;
-    vec4 _sun_color;
-    mat4 _sun_proj_view;
 } ubo;
 
-layout(binding = 2) uniform sampler2D height_map;
+layout(binding = 4) uniform sampler2D height_map;
 layout(binding = 5) uniform sampler2D curvature;
 
 layout( push_constant ) uniform constants

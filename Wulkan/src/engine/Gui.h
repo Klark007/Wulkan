@@ -34,8 +34,8 @@ struct GUI_Input {
 	int nr_shadow_cascades = 3;
 	bool shadow_draw_debug_frustums = false;
 	
-	float sun_size = 64.0f; // scales how big penubra gets
-	float occluder_filter_size = 64.0f; // how much the samples for average occluder size are distributed
+	float receiver_sample_region = 64.0f; 
+	float occluder_sample_region = 64.0f;
 	int nr_shadow_receiver_samples = 18;
 	int nr_shadow_occluder_samples = 8;
 };

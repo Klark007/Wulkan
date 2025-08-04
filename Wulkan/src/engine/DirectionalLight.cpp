@@ -41,7 +41,7 @@ void DirectionalLight::init(const VKW_Device* vkw_device, const std::array<VKW_C
 
 		uniform_buffers.at(i).init(
 			device,
-			sizeof(ShadowDepthOnlyUniformData),
+			sizeof(DirectionalLightUniform),
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			sharing_exlusive(),
 			true,
@@ -95,10 +95,9 @@ void DirectionalLight::init_debug_lines(const VKW_CommandPool& transfer_pool, co
 	}
 }
 
-#include <iostream>
 void DirectionalLight::set_uniforms(const Camera& camera, int nr_current_cascades, int current_frame)
 {
-	ShadowDepthOnlyUniformData uniform{};
+	DirectionalLightUniform uniform{};
 
 	float camera_near_plane = camera.get_near_plane();
 	float camera_far_plane = camera.get_far_plane();
@@ -177,8 +176,8 @@ void DirectionalLight::set_uniforms(const Camera& camera, int nr_current_cascade
 
 		glm::mat4 ortho_proj = C * P_z;
 
-		uniform.shadow_extends[2*cascade_idx] = 2 / ortho_proj[0][0];
-		uniform.shadow_extends[2*cascade_idx+1] = -2 / ortho_proj[1][1];
+		uniform.shadow_extends[cascade_idx].x = 2 / ortho_proj[0][0];
+		uniform.shadow_extends[cascade_idx].y = -2 / ortho_proj[1][1];
 
 		uniform.proj_view[cascade_idx] = ortho_proj * shadow_view_mat;
 
@@ -188,7 +187,15 @@ void DirectionalLight::set_uniforms(const Camera& camera, int nr_current_cascade
 		}
 	}
 
-	memcpy(uniform_buffers.at(current_frame).get_mapped_address(), &uniform, sizeof(ShadowDepthOnlyUniformData));
+	// set other uniform details
+	uniform.direction = dir;
+	uniform.scaled_color = glm::vec4(col * str, 1);
+	uniform.receiver_sample_region = r_sample_reg;
+	uniform.occluder_sample_region = o_sample_reg;
+	uniform.nr_shadow_receiver_samples = r_nr_samples;
+	uniform.nr_shadow_occluder_samples = o_nr_samples;
+
+	memcpy(uniform_buffers.at(current_frame).get_mapped_address(), &uniform, sizeof(DirectionalLightUniform));
 }
 
 void DirectionalLight::del()

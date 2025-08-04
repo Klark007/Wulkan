@@ -1,15 +1,23 @@
 #version 450
+#extension GL_EXT_scalar_block_layout : enable
 
 layout(location = 0) in vec3 inPos[];
 layout(location = 1) in vec2 inUV[];
 
 layout (constant_id = 0) const int cascade_count = 4;
-layout(binding = 1) uniform DepthUniformData {
+layout(std430, binding = 1) uniform DirectionalLightData {
     mat4 proj_views[cascade_count];
-    float _cascade_splits[cascade_count];
-} depth_ubo;
+    vec4 _cascade_splits;
+    vec2 _shadow_extends[cascade_count]; 
+    vec3 _light_color; 
+    float _receiver_sample_region; 
+    vec2 _light_direction;
+    float _occluder_sample_region; 
+    int _nr_shadow_receiver_samples;
+    int _nr_shadow_occluder_samples;
+} directional_light_ubo;
 
-layout(binding = 2) uniform sampler2D height_map;
+layout(binding = 4) uniform sampler2D height_map;
 layout(binding = 5) uniform sampler2D curvature;
 
 layout( push_constant ) uniform constants
@@ -61,7 +69,7 @@ void main()
 
 bool is_culled() {
     // extract frustum planes in object space https://www.gamedevs.org/uploads/fast-extraction-viewing-frustum-planes-from-world-view-projection-matrix.pdf
-    mat4 MVP = depth_ubo.proj_views[pc.cascade_idx] * pc.model;
+    mat4 MVP = directional_light_ubo.proj_views[pc.cascade_idx] * pc.model;
     
     vec4 left = vec4(0);
     for (int i = 0; i < 4; i++) {

@@ -91,6 +91,7 @@ void Engine::update()
 	directional_light.set_direction(glm::normalize(gui_input.sun_direction));
 	directional_light.set_color(gui_input.sun_color);
 	directional_light.set_intensity(gui_input.sun_intensity);
+	directional_light.set_sample_info(gui_input.receiver_sample_region, gui_input.occluder_sample_region, gui_input.nr_shadow_receiver_samples, gui_input.nr_shadow_occluder_samples);
 
 	update_uniforms();
 }
@@ -668,14 +669,6 @@ void Engine::update_uniforms()
 
 	uniform.near_far_plane = glm::vec2(camera.get_near_plane(), camera.get_far_plane());
 	
-	uniform.sun_direction = directional_light.get_direction();
-	uniform.sun_color = directional_light.get_scaled_color();
-
-	uniform.sun_size = gui_input.sun_size;
-	uniform.occluder_filter_size = gui_input.occluder_filter_size;
-	uniform.nr_shadow_receiver_samples = gui_input.nr_shadow_receiver_samples;
-	uniform.nr_shadow_occluder_samples = gui_input.nr_shadow_occluder_samples;
-	
 	memcpy(uniform_buffers.at(current_frame).get_mapped_address(), &uniform, sizeof(UniformStruct));
 }
 
@@ -709,6 +702,7 @@ Required_Device_Features Engine::get_required_device_features()
 	// 1.2 features
 	features.rf12.bufferDeviceAddress = true;
 	features.rf12.descriptorIndexing = true;
+	features.rf12.uniformBufferStandardLayout = true; // enable std430 for uniform buffers
 	// 1.3 features
 	features.rf13.dynamicRendering = true;
 	features.rf13.synchronization2 = true;

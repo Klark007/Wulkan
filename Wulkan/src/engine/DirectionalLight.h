@@ -13,11 +13,18 @@
 
 constexpr int MAX_CASCADE_COUNT = 4; // the default init in the shader cannot be lower than the max used
 
-// TODO NAMING
-struct ShadowDepthOnlyUniformData {
-	alignas(64) glm::mat4 proj_view[MAX_CASCADE_COUNT];
-	alignas(16) float split_planes[MAX_CASCADE_COUNT];
-	alignas(16) float shadow_extends[2*MAX_CASCADE_COUNT];
+// only used if shadows can be cast onto object
+struct DirectionalLightUniform {
+	alignas(16) glm::mat4 proj_view[MAX_CASCADE_COUNT];
+	alignas(4) float split_planes[MAX_CASCADE_COUNT];
+	alignas(8) glm::vec2 shadow_extends[MAX_CASCADE_COUNT]; // phyical extends of orthographic projections horizontaly and vertically
+	alignas(16) glm::vec3 scaled_color; // already scaled by intensity
+	alignas(4) float receiver_sample_region; // how much the samples for if we are in shadow are distributed
+	alignas(8) glm::vec2 direction;
+
+	alignas(4) float occluder_sample_region; // how much the samples for average occluder distance are distributed 
+	alignas(4) int nr_shadow_receiver_samples;
+	alignas(4) int nr_shadow_occluder_samples;
 };
 
 class DirectionalLight : public VKW_Object
@@ -36,15 +43,32 @@ public:
 
 	void del() override;
 private:
+	const VKW_Device* device;
+
 	glm::vec2 dir;
 	glm::vec3 col;
 	float str;
 
-	bool cast_shadows;
-	const VKW_Device* device;
-
+	bool cast_shadows; // TODO: fully support non casting lights again
 	glm::vec3 dest;
 	float dist;
+
+	float r_sample_reg;
+	float o_sample_reg;
+	int r_nr_samples;
+	int o_nr_samples;
+
+	Camera shadow_camera;
+	// weighs between uniform distributing cascade splits and distributing based on distance (more closer)
+	float lambda;
+
+	std::array<VKW_CommandPool, MAX_FRAMES_IN_FLIGHT> graphics_pools;
+	std::array<VKW_CommandBuffer, MAX_FRAMES_IN_FLIGHT> cmds;
+	std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> shadow_semaphores; // signal when shadow depth pass is finished
+
+	std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT> uniform_buffers;
+
+	Texture depth_rt;
 
 	bool initialized_debug_lines;
 	std::array<glm::vec4, 4> line_colors = {
@@ -54,23 +78,10 @@ private:
 		glm::vec4(0,0,1,1)
 	};
 
-	std::array<Line, MAX_CASCADE_COUNT> splitted_camera_frustums; // because we need projected points in code anyways
+	std::array<Line, MAX_CASCADE_COUNT> splitted_camera_frustums;
 	std::array<Frustum, MAX_CASCADE_COUNT> shadow_camera_frustums;
-	Camera shadow_camera;
-	// weighs between uniform distributing cascade splits and distributing based on distance (more closer)
-	float lambda;
-
-	std::array<VKW_CommandPool, MAX_FRAMES_IN_FLIGHT> graphics_pools;
-	std::array<VKW_CommandBuffer, MAX_FRAMES_IN_FLIGHT> cmds;
-	std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> shadow_semaphores;	
-	std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT> uniform_buffers;
-
-	Texture depth_rt;
 public:
 	void set_uniforms(const Camera& camera, int nr_cascades, int current_frame);
-	inline void set_direction(glm::vec3 direction);
-	void set_color(glm::vec3 color) { col = color; };
-	void set_intensity(float intensity) { str = intensity; };
 	
 	const VKW_CommandBuffer& begin_depth_pass(int current_frame);
 	void end_depth_pass(int current_frame);
@@ -80,9 +91,11 @@ public:
 	const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT> get_uniform_buffers() const { return uniform_buffers; };
 	VkSemaphore get_shadow_pass_semaphore(int current_frame) const { return shadow_semaphores.at(current_frame); };
 
-	// returns color scaled by intensity
-	glm::vec4 get_scaled_color() const { return glm::vec4(col, 1) * str; };
-	glm::vec2 get_direction() const { return dir; };
+	inline void set_direction(glm::vec3 direction);
+	void set_lambda(float l) { lambda = l; };
+	void set_color(glm::vec3 color) { col = color; };
+	void set_intensity(float intensity) { str = intensity; };
+	inline void set_sample_info(float receiver_sample_region, float occluder_sample_region, int nr_shadow_receiver_samples, int nr_shadow_occluder_samples);
 };
 
 inline void DirectionalLight::set_direction(glm::vec3 direction)
@@ -91,4 +104,12 @@ inline void DirectionalLight::set_direction(glm::vec3 direction)
 
 	shadow_camera.set_pos(dest + direction * dist);
 	shadow_camera.look_at(dest);
+}
+
+inline void DirectionalLight::set_sample_info(float receiver_sample_region, float occluder_sample_region, int nr_shadow_receiver_samples, int nr_shadow_occluder_samples)
+{
+	r_sample_reg = receiver_sample_region;
+	o_sample_reg = occluder_sample_region;
+	r_nr_samples = nr_shadow_receiver_samples;
+	o_nr_samples = nr_shadow_occluder_samples;
 }

@@ -135,8 +135,8 @@ void GUI::draw_gui(const VKW_CommandBuffer& cmd)
 			ImGui::ColorEdit3("Sun Color", glm::value_ptr(data.sun_color), ImGuiColorEditFlags_None);
 			ImGui::SliderFloat("Sun Intensity", &data.sun_intensity, 0.1f, 25.0f);
 
-			ImGui::SliderFloat("Penumbra Scale", &data.sun_size, 1.0f, 64.0f);
-			ImGui::SliderFloat("Occluder Filter Size", &data.occluder_filter_size, 1.0f, 64.0f);
+			ImGui::SliderFloat("Receiver Occlusion Sample Region", &data.receiver_sample_region, 1.0f, 64.0f);
+			ImGui::SliderFloat("Occluder Depth Sample Region", &data.occluder_sample_region, 1.0f, 64.0f);
 			ImGui::SliderInt("Nr Receiver Samples", &data.nr_shadow_receiver_samples, 1, 32);
 			ImGui::SliderInt("Nr Occluder Samples", &data.nr_shadow_occluder_samples, 1, 16);
 			
