@@ -1,4 +1,5 @@
 #version 450
+// environment map fragment shader
 
 layout(location = 0) in vec3 inUVW;
 

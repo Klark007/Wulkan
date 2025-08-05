@@ -282,10 +282,6 @@ void Engine::late_update()
 
 }
 
-inline void Engine::resize()
-{
-}
-
 // TODO: Query glfwGetRequiredInstanceExtensions() and add it to list of required extensions
 void Engine::init_glfw()
 {
@@ -391,19 +387,22 @@ void Engine::init_data()
 	for (unsigned int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 		graphic_pools.at(i) = command_structs.at(i).graphics_command_pool;
 	}
+
 	directional_light.init(
 		&device,
 		graphic_pools,
 		
 		glm::vec3(0, 0, 0), // look at for shadow
 		glm::vec3(0, 0, 1), // direction for shadow
-		50, // distance from look at for projection
+		50,                 // distance from look at for projection
+		1024*4,             // resolution
 		1024*4,
-		1024*4,
-		40, // height of orthographic projection
-		0.1,
-		50.0
-	);
+		40,                 // height of orthographic projection
+		0.1,                // near
+		50.0                // far plane
+ 	);
+	
+	// can toggle debug drawings of cascade frustums
 	directional_light.init_debug_lines(
 		get_current_transfer_pool(),
 		descriptor_pool,
@@ -423,11 +422,10 @@ void Engine::init_data()
 		&mirror_texture_sampler,
 		&shared_terrain_data,
 
-		"textures/terrain/heightmap.png",
-		//"textures/terrain/test/height_test4.png",
-		"textures/terrain/texture.png",
-		"textures/terrain/normal.png",
-		256							// resolution of mesh
+		"textures/terrain/heightmap.png", // height map
+		"textures/terrain/texture.png",   // albedo
+		"textures/terrain/normal.png",	  // normals TODO: support normal computation directly from heightmap
+		256							      // resolution of base mesh
 	);
 	terrain.set_descriptor_bindings(uniform_buffers, directional_light.get_uniform_buffers(), directional_light.get_texture(), linear_texture_sampler, shadow_map_gather_sampler);
 	cleanup_queue.add(&terrain);
@@ -440,8 +438,6 @@ void Engine::init_data()
 		&shared_environment_data,
 
 		"textures/environment_maps/day_cube_map_%.exr"
-		//"textures/environment_maps/rogland_clear_night_%.exr"
-		//"textures/environment_maps/test/test_%.exr"
 	);
 	environment_map.set_descriptor_bindings(uniform_buffers, linear_texture_sampler);
 	cleanup_queue.add(&environment_map);
@@ -475,7 +471,7 @@ void Engine::create_descriptor_sets()
 	// each Terrain instance needs MAX_FRAMES_IN_FLIGHT many descriptor sets
 	descriptor_pool.add_layout(shared_terrain_data.get_descriptor_set_layout(), MAX_FRAMES_IN_FLIGHT);
 	descriptor_pool.add_layout(shared_environment_data.get_descriptor_set_layout(), MAX_FRAMES_IN_FLIGHT);
-	descriptor_pool.add_layout(shared_line_data.get_descriptor_set_layout(), MAX_FRAMES_IN_FLIGHT*2*MAX_CASCADE_COUNT);
+	descriptor_pool.add_layout(shared_line_data.get_descriptor_set_layout(), MAX_FRAMES_IN_FLIGHT*2*MAX_CASCADE_COUNT); // need 2 per cascade (one for the orthographic shadow camera and one for how the virtual camera is divided)
 
 	descriptor_pool.init(&device, MAX_FRAMES_IN_FLIGHT*(2 + 2 * MAX_CASCADE_COUNT), "General descriptor pool");
 	cleanup_queue.add(&descriptor_pool);
@@ -499,6 +495,7 @@ void Engine::create_uniform_buffers()
 
 void Engine::init_render_targets()
 {
+	// Scene rendered into this texture before copied over, allows for higher resolution than what is used in the swapchain
 	color_render_target.init(
 		&device,
 		swapchain.get_extent().width,
@@ -524,6 +521,7 @@ void Engine::init_render_targets()
 
 void Engine::create_graphics_pipelines()
 {
+	// have different specialized pipelines for different cascade counts (specialization constants)
 	for (int i = 0; i < MAX_CASCADE_COUNT; i++) {
 		terrain_pipelines.at(i) = Terrain::create_pipeline(&device, color_render_target, depth_render_target, shared_terrain_data, false, false, false, i+1);
 		cleanup_queue.add(&terrain_pipelines.at(i));
@@ -531,7 +529,7 @@ void Engine::create_graphics_pipelines()
 		terrain_wireframe_pipelines.at(i) = Terrain::create_pipeline(&device, color_render_target, depth_render_target, shared_terrain_data, false, true, false, i+1); // wireframe but not depth only
 		cleanup_queue.add(&terrain_wireframe_pipelines.at(i));
 	}
-	
+
 
 	terrain_depth_pipeline = Terrain::create_pipeline(&device, color_render_target, depth_render_target, shared_terrain_data, true, false, true);
 	cleanup_queue.add(&terrain_depth_pipeline);
@@ -579,7 +577,7 @@ void Engine::recreate_render_targets()
 	color_render_target.del();
 	depth_render_target.del();
 
-	// important to clear i.e. image view cache
+	// important to clear i.e. image view's cache
 	color_render_target = {};
 	depth_render_target = {};
 
@@ -599,6 +597,7 @@ void Engine::create_command_structs()
 		command_structs.at(i).graphics_command_pool.init(&device, &graphics_queue, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, "Graphics pool");
 		cleanup_queue.add(&command_structs.at(i).graphics_command_pool);
 		
+		// VK_COMMAND_POOL_CREATE_TRANSIENT_BIT: short lived command buffers
 		command_structs.at(i).transfer_command_pool.init(&device, &transfer_queue, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, "Transfer pool");
 		cleanup_queue.add(&command_structs.at(i).transfer_command_pool);
 		
@@ -630,6 +629,7 @@ void Engine::create_sync_structs()
 
 bool Engine::aquire_image()
 {
+	// Wait such that we are not still drawing into this frame (but we might not have presented it properly)
 	VkFence render_fence = get_current_render_fence();
 	VK_CHECK_E(vkWaitForFences(device, 1, &render_fence, VK_TRUE, UINT64_MAX), RuntimeException);
 	
@@ -637,7 +637,7 @@ bool Engine::aquire_image()
 		device, 
 		swapchain,
 		UINT64_MAX, 
-		get_current_swapchain_semaphore(),
+		get_current_swapchain_semaphore(), // signal swapchain semaphore once we aquired image
 		VK_NULL_HANDLE, 
 		&current_swapchain_image_idx
 	);

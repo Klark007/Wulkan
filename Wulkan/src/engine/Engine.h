@@ -75,7 +75,6 @@ private:
 	void late_update(); // executed after draw
 
 	bool resize_window = false; // set to true by resize_callback(), will execute resize to avoid issues with resources 
-	void resize();
 
 	void init_glfw();
 	void init_vulkan();
@@ -93,13 +92,12 @@ private:
 
 	void init_data();
 
-
 	void init_render_targets();
 
 	void create_graphics_pipelines();
 	void create_swapchain();
 	void recreate_swapchain();
-	void recreate_render_targets();
+	void recreate_render_targets(); // resizes textures that are being rendered into and correlate with window size
 	void create_command_structs(); // creates command pools and buffers
 	void create_sync_structs(); // create fences and semaphores
 

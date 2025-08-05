@@ -1,5 +1,6 @@
 #version 450
 #extension GL_EXT_scalar_block_layout : enable
+// depth only version of terrain.tesc
 
 layout(location = 0) in vec3 inPos[];
 layout(location = 1) in vec2 inUV[];

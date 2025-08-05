@@ -1,5 +1,6 @@
 #version 450
 #extension GL_EXT_scalar_block_layout : enable
+// frag shader for terrain, supporting cascaded shadow maps and contact hardening soft shadows
 
 layout(location = 0) in vec3 inWorldPos;
 layout(location = 1) in vec2 inUV;
@@ -30,12 +31,12 @@ layout(std430, binding = 1) uniform DirectionalLightData {
     mat4 proj_views[cascade_count];
     vec4 cascade_splits;
     vec2 shadow_extends[cascade_count];  // phyical extends of orthographic projections horizontaly and vertically
-    vec3 light_color; // already scaled by intensity
-    float receiver_sample_region; // how much the samples for if we are in shadow are distributed
+    vec3 light_color;                    // already scaled by intensity
+    float receiver_sample_region;        // how much the samples for if we are in shadow are distributed
     vec2 light_direction;
-    float occluder_sample_region; // how much the samples for average occluder distance are distributed 
+    float occluder_sample_region;        // how much the samples for average occluder distance are distributed 
     int nr_shadow_receiver_samples;
-    int nr_shadow_occluder_samples; // isn't as performant as specialization consts or const, but want to be able to play with these settings
+    int nr_shadow_occluder_samples;      // isn't as performant as specialization consts or const, but want to be able to play with these settings
 } directional_light_ubo;
 
 
@@ -52,9 +53,8 @@ layout( push_constant ) uniform constants
 layout(location = 0) out vec4 outColor;
 
 vec3 spherical_to_dir(vec2 sph);
-float linearize_depth(float d);
-float shadow(uint cascade_idx);
 
+float shadow(uint cascade_idx);
 // contact hardening soft shadows based on "Contact-hardening Soft Shadows Made Fast"
 float soft_shadow(uint cascade_idx);
 
@@ -210,11 +210,6 @@ float soft_shadow(uint cascade_idx)
 
     // by default not in shadow
     return 1;
-}
-
-float linearize_depth(float d)
-{
-    return ubo.near_far_plane.x * ubo.near_far_plane.y / (ubo.near_far_plane.y + d * (ubo.near_far_plane.x - ubo.near_far_plane.y));
 }
 
 vec2 sample_vogel_disk(int sample_idx, int sample_count, float phi) 

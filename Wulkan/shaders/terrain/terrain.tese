@@ -1,4 +1,6 @@
 #version 450
+// implements how properties will be interpolated for the newly tesselated vertices as well as projects said vertices
+
 
 layout (quads, fractional_odd_spacing, cw) in;
 layout(location = 0) in vec2 inUV[];

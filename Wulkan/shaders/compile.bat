@@ -14,7 +14,7 @@ echo Vertex shaders:
 echo.
 for /r %%i in (*.vert) do (
     echo Compiling %%i into %%~ni_vert.spv
-    echo.
+    echo(
 
     glslc.exe %%i -O -o %%~dpi%%~ni_vert.spv
 )
@@ -25,7 +25,7 @@ echo Fragment shaders: \n
 echo.
 for /r %%i in (*.frag) do (
     echo Compiling %%i into %%~ni_frag.spv
-    echo.
+    echo(
 
     glslc.exe %%i -O -o %%~dpi%%~ni_frag.spv
 )
@@ -36,7 +36,7 @@ echo Tesselation evaluation shaders: \n
 echo.
 for /r %%i in (*.tese) do (
     echo Compiling %%i into %%~ni_tese.spv
-    echo.
+    echo(
 
     glslc.exe %%i -O -o %%~dpi%%~ni_tese.spv
 )
@@ -47,7 +47,7 @@ echo Tesselation control shaders: \n
 echo.
 for /r %%i in (*.tesc) do (
     echo Compiling %%i into %%~ni_tesc.spv
-    echo.
+    echo(
 
     glslc.exe %%i -O -o %%~dpi%%~ni_tesc.spv
 )
@@ -58,7 +58,7 @@ echo Compute shaders: \n
 echo.
 for /r %%i in (*.comp) do (
     echo Compiling %%i into %%~ni_comp.spv
-    echo.
+    echo(
 
     glslc.exe %%i -O -o %%~dpi%%~ni_comp.spv
 )

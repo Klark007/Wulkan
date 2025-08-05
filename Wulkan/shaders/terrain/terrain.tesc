@@ -1,4 +1,5 @@
 #version 450
+// Controlls how strong this quad will be tesselated
 
 layout(location = 0) in vec3 inPos[];
 layout(location = 1) in vec2 inUV[];

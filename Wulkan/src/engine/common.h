@@ -50,10 +50,12 @@ struct SharingInfo {
     std::vector<uint32_t> queue_families;
 };
 
+// most things are owned exclusively by one queue
 inline constexpr SharingInfo sharing_exlusive() {
     return { VK_SHARING_MODE_EXCLUSIVE, {} };
 };
 
+// convert to phi, theta representation of an already normalized direction
 glm::vec2 dir_to_spherical(const glm::vec3& dir);
 
 #define VK_CHECK(x)                                                     \

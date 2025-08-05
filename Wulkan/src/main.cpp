@@ -1,6 +1,7 @@
 #include <iostream>
 #include "engine/Engine.h"
 
+// initial screen resolution
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
 

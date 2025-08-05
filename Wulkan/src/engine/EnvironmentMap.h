@@ -57,7 +57,7 @@ inline void EnvironmentMap::draw(const VKW_CommandBuffer& command_buffer, uint32
 
 	shared_data->get_pc().update({
 		mesh.get_vertex_address()
-		});
+	});
 	shared_data->get_pc().push(command_buffer, pipeline.get_layout());
 
 	mesh.draw(command_buffer, current_frame, pipeline);

@@ -1,5 +1,6 @@
 #version 450
 #extension GL_EXT_scalar_block_layout : enable
+// depth only version of terrain.tese
 
 layout (quads, fractional_odd_spacing, cw) in;
 layout(location = 0) in vec2 inUV[];

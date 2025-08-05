@@ -1,4 +1,5 @@
 #version 450
+// Just color as supplied by vertex colors
 
 layout (location = 0) in vec3 inColor;
 
