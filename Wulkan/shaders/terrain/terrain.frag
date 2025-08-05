@@ -35,8 +35,9 @@ layout(std430, binding = 1) uniform DirectionalLightData {
     float receiver_sample_region;        // how much the samples for if we are in shadow are distributed
     vec2 light_direction;
     float occluder_sample_region;        // how much the samples for average occluder distance are distributed 
-    int nr_shadow_receiver_samples;
-    int nr_shadow_occluder_samples;      // isn't as performant as specialization consts or const, but want to be able to play with these settings
+    int nr_shadow_receiver_samples;      // isn't as performant as specialization consts or const, but want to be able to play with these settings
+    int nr_shadow_occluder_samples;      
+    int shadow_mode;				     // 0: no shadows, 1: hard shadows, 2: soft shadows 
 } directional_light_ubo;
 
 
@@ -91,7 +92,22 @@ void main() {
                 ), 0.1
             );
 
-            float in_shadow = max(soft_shadow(cascade_idx), 0.1);
+            
+            float in_shadow = 1.0;
+            switch (directional_light_ubo.shadow_mode) {
+                case 0:
+                    in_shadow = 1.0;
+                    break;
+                case 1:
+                    in_shadow = max(shadow(cascade_idx), 0.1);
+                    break;
+                case 2:
+                    in_shadow = max(soft_shadow(cascade_idx), 0.1);
+                    break;
+                default:
+                    in_shadow = 1.0;
+                    break;
+            }
 
             outColor = texture(albedo, inUV) * vec4(directional_light_ubo.light_color, 1) * cos_theata * in_shadow;
             break;

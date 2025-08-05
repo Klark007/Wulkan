@@ -13,18 +13,25 @@
 
 constexpr int MAX_CASCADE_COUNT = 4; // the default init in the shader cannot be lower than the max used
 
+enum ShadowMode {
+	NoShadows,
+	HardShadows,
+	SoftShadows
+};
+
 // only used if shadows can be cast onto object
 struct DirectionalLightUniform {
 	alignas(16) glm::mat4 proj_view[MAX_CASCADE_COUNT];
 	alignas(4) float split_planes[MAX_CASCADE_COUNT];
 	alignas(8) glm::vec2 shadow_extends[MAX_CASCADE_COUNT]; // phyical extends of orthographic projections horizontaly and vertically
-	alignas(16) glm::vec3 scaled_color; // already scaled by intensity
-	alignas(4) float receiver_sample_region; // how much the samples for if we are in shadow are distributed
+	alignas(16) glm::vec3 scaled_color;                     // already scaled by intensity
+	alignas(4) float receiver_sample_region;                // how much the samples for if we are in shadow are distributed
 	alignas(8) glm::vec2 direction;
 
-	alignas(4) float occluder_sample_region; // how much the samples for average occluder distance are distributed 
+	alignas(4) float occluder_sample_region;                // how much the samples for average occluder distance are distributed 
 	alignas(4) int nr_shadow_receiver_samples;
 	alignas(4) int nr_shadow_occluder_samples;
+	alignas(4) int shadow_mode;							    // 0: no shadows, 1: hard shadows, 2: soft shadows
 };
 
 class DirectionalLight : public VKW_Object
@@ -57,6 +64,8 @@ private:
 	float o_sample_reg;
 	int r_nr_samples;
 	int o_nr_samples;
+
+	ShadowMode shadow_mode;
 
 	Camera shadow_camera;
 	// weighs between uniform distributing cascade splits and distributing based on distance (more closer)
@@ -96,6 +105,7 @@ public:
 	void set_color(glm::vec3 color) { col = color; };
 	void set_intensity(float intensity) { str = intensity; };
 	inline void set_sample_info(float receiver_sample_region, float occluder_sample_region, int nr_shadow_receiver_samples, int nr_shadow_occluder_samples);
+	void set_shadow_mode(ShadowMode m) { shadow_mode = m; };
 };
 
 inline void DirectionalLight::set_direction(glm::vec3 direction)

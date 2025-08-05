@@ -12,6 +12,7 @@
 #include "vk_wrap/VKW_CommandBuffer.h"
 
 #include "Terrain.h"
+#include "DirectionalLight.h"
 
 struct GUI_Input {
 	float camera_rotation_speed = 0.001f;
@@ -38,6 +39,8 @@ struct GUI_Input {
 	float occluder_sample_region = 64.0f;
 	int nr_shadow_receiver_samples = 18;
 	int nr_shadow_occluder_samples = 8;
+
+	ShadowMode shadow_mode = ShadowMode::SoftShadows;
 };
 
 class GUI : public VKW_Object

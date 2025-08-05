@@ -135,15 +135,19 @@ void GUI::draw_gui(const VKW_CommandBuffer& cmd)
 			ImGui::ColorEdit3("Sun Color", glm::value_ptr(data.sun_color), ImGuiColorEditFlags_None);
 			ImGui::SliderFloat("Sun Intensity", &data.sun_intensity, 0.1f, 25.0f);
 
-			ImGui::SliderFloat("Receiver Occlusion Sample Region", &data.receiver_sample_region, 1.0f, 64.0f);
-			ImGui::SliderFloat("Occluder Depth Sample Region", &data.occluder_sample_region, 1.0f, 64.0f);
-			ImGui::SliderInt("Nr Receiver Samples", &data.nr_shadow_receiver_samples, 1, 32);
-			ImGui::SliderInt("Nr Occluder Samples", &data.nr_shadow_occluder_samples, 1, 16);
-			
+			constexpr const char* shadow_modes[] = { "No shadows", "Hard shadows", "Soft Shadows"};
+			static int selected_shadow_mode = 2;
+			ImGui::ListBox("Mode", &selected_shadow_mode, shadow_modes, IM_ARRAYSIZE(shadow_modes));
+			data.shadow_mode = static_cast<ShadowMode>(selected_shadow_mode);
+
 			ImGui::SliderFloat("Constant depth bias", &data.depth_bias, 1e4, 1e5);
 			ImGui::SliderFloat("Slope depth bias", &data.slope_depth_bias, 1e-2, 1e1);
 			ImGui::SliderInt("Number of shadow cascades", &data.nr_shadow_cascades, 1, MAX_CASCADE_COUNT);
 
+			ImGui::SliderFloat("Receiver Occlusion Sample Region", &data.receiver_sample_region, 1.0f, 64.0f);
+			ImGui::SliderFloat("Occluder Depth Sample Region", &data.occluder_sample_region, 1.0f, 64.0f);
+			ImGui::SliderInt("Nr Receiver Samples", &data.nr_shadow_receiver_samples, 1, 32);
+			ImGui::SliderInt("Nr Occluder Samples", &data.nr_shadow_occluder_samples, 1, 16);
 
 			ImGui::Checkbox("Show debug frustums", &data.shadow_draw_debug_frustums);
 		}

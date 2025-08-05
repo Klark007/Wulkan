@@ -92,6 +92,7 @@ void Engine::update()
 	directional_light.set_color(gui_input.sun_color);
 	directional_light.set_intensity(gui_input.sun_intensity);
 	directional_light.set_sample_info(gui_input.receiver_sample_region, gui_input.occluder_sample_region, gui_input.nr_shadow_receiver_samples, gui_input.nr_shadow_occluder_samples);
+	directional_light.set_shadow_mode(gui_input.shadow_mode);
 
 	update_uniforms();
 }

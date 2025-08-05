@@ -194,6 +194,7 @@ void DirectionalLight::set_uniforms(const Camera& camera, int nr_current_cascade
 	uniform.occluder_sample_region = o_sample_reg;
 	uniform.nr_shadow_receiver_samples = r_nr_samples;
 	uniform.nr_shadow_occluder_samples = o_nr_samples;
+	uniform.shadow_mode = shadow_mode;
 
 	memcpy(uniform_buffers.at(current_frame).get_mapped_address(), &uniform, sizeof(DirectionalLightUniform));
 }
