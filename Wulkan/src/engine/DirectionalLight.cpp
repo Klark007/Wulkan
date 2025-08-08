@@ -32,6 +32,9 @@ void DirectionalLight::init(const VKW_Device* vkw_device, const std::array<VKW_C
 		MAX_CASCADE_COUNT
 	);
 
+	res_x = shadow_res_x;
+	res_y = shadow_res_y;
+
 	VkSemaphoreCreateInfo semaphore_create_info{};
 	semaphore_create_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
@@ -162,17 +165,31 @@ void DirectionalLight::set_uniforms(const Camera& camera, int nr_current_cascade
 			max_v = glm::max(max_v, glm::vec3(frustum_shadow_clip));
 		}
 
+		// round min/max to pixel steps
+		// pixel size with current extends
+		float step_x = (max_v.x - min_v.x) / res_x;
+		float step_y = (max_v.y - min_v.y) / res_y;
+		glm::vec2 step = glm::vec2(step_x, step_y);
+		
+		// min is rounded down towards a step
+		glm::vec2 min_v_prime = glm::floor(glm::vec2(min_v) / step) * step;
+
+		// max is rounded up a step
+		glm::vec2 max_v_prime = glm::ceil(glm::vec2(max_v) / step) * step;
+
+		
 		// compute projection matrix
 		glm::mat4 P_z = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, shadow_near_plane, max_v.z * shadow_far_plane);
 		P_z[1][1] *= -1;
-
+		
 		glm::mat4 C = glm::mat4(1);
-		float S_x = 2 / (max_v.x - min_v.x);
-		float S_y = 2 / (max_v.y - min_v.y);
+		float S_x = 2 / (max_v_prime.x - min_v_prime.x);
+		float S_y = 2 / (max_v_prime.y - min_v_prime.y);
 		C[0][0] = S_x;
 		C[1][1] = S_y;
-		C[3][0] = -0.5 * (max_v.x + min_v.x) * S_x;
-		C[3][1] = -0.5 * (max_v.y + min_v.y) * S_y;
+		C[3][0] = -0.5 * (max_v_prime.x + min_v_prime.x) * S_x;
+		C[3][1] = -0.5 * (max_v_prime.y + min_v_prime.y) * S_y;
+		
 
 		glm::mat4 ortho_proj = C * P_z;
 

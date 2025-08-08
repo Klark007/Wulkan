@@ -6,16 +6,23 @@
 * Model Loading [ ]
 * PBRT materials [ ]
 * Anti Aliasing [ ] 
+* Maybe experiment with Slang [ ] 
 
 ## Bugs
 * Flickering at high frame rates [ ]
-* Looking up / down changes shadows[ ]
+* Looking up / down changes shadows [ ]
+
+## Terrain
+* Check if normals are scaled correctly [ ] 
+* Compute normals on the fly (or into texture) [ ] 
+* Check how well multiple terrain's are handled [ ] 
 
 ## Shadows
 ### Hard shadows [~]
+* Better layout transitions for shadow pass [ ] 
 * Add screen space shadows to cover for peter panning [ ]
 ### Cascaded shadow maps [~]
-* Lock orthographic shadow views to pixel movement [ ]
+* Lock orthographic shadow views to pixel movement [X]
 ### Soft shadows [X]
 
 ## Foliage

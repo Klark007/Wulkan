@@ -181,6 +181,7 @@
     <None Include="shaders\line\line.frag" />
     <None Include="shaders\line\line.vert" />
     <None Include="src\engine\vk_wrap\README.md" />
+    <None Include="TODO.md" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="external\include\rapidcsv.h" />

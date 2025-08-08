@@ -78,6 +78,7 @@ private:
 	std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT> uniform_buffers;
 
 	Texture depth_rt;
+	int res_x, res_y; // resolution of texture (same for all cascade layers)
 
 	bool initialized_debug_lines;
 	std::array<glm::vec4, 4> line_colors = {
