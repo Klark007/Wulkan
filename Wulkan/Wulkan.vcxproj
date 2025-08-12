@@ -135,11 +135,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\engine\PoissonSampling.cpp" />
+    <ClCompile Include="src\engine\Frustum.cpp" />
+    <ClCompile Include="src\engine\common.cpp" />
+    <ClCompile Include="src\engine\DirectionalLight.cpp" />
     <ClCompile Include="external\Volk\volk.c" />
     <ClCompile Include="src\engine\EnvironmentMap.cpp" />
     <ClCompile Include="external\miniz\miniz.c" />
     <ClCompile Include="external\vk-bootstrap\VkBootstrap.cpp" />
     <ClCompile Include="src\engine\Gui.cpp" />
+    <ClCompile Include="src\engine\Line.cpp" />
     <ClCompile Include="src\engine\Mesh.cpp" />
     <ClCompile Include="src\engine\CameraController.cpp" />
     <ClCompile Include="src\engine\Engine.cpp" />
@@ -173,9 +178,18 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\compile.bat" />
+    <None Include="shaders\line\line.frag" />
+    <None Include="shaders\line\line.vert" />
     <None Include="src\engine\vk_wrap\README.md" />
+    <None Include="TODO.md" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="external\include\rapidcsv.h" />
+    <ClInclude Include="external\include\tph_poisson.h" />
+    <ClInclude Include="src\engine\PoissonSampling.h" />
+    <ClInclude Include="src\engine\Frustum.h" />
+    <ClInclude Include="src\engine\Line.h" />
+    <ClInclude Include="src\engine\DirectionalLight.h" />
     <ClInclude Include="src\engine\EnvironmentMap.h" />
     <ClInclude Include="external\include\tinyexr.h" />
     <ClInclude Include="external\miniz\miniz.h" />
@@ -199,7 +213,7 @@
     <ClInclude Include="src\engine\Camera.h" />
     <ClInclude Include="src\engine\Profiler.h" />
     <ClInclude Include="src\engine\Shape.h" />
-    <ClInclude Include="src\engine\vk_types.h" />
+    <ClInclude Include="src\engine\common.h" />
     <ClInclude Include="src\engine\vk_wrap\VKW_Object.h" />
     <ClInclude Include="src\engine\vk_wrap\VKW_Instance.h" />
     <ClInclude Include="src\engine\vk_wrap\VKW_Surface.h" />
@@ -218,6 +232,7 @@
     <ClInclude Include="src\engine\vk_wrap\VKW_PushConstants.h" />
     <ClInclude Include="src\engine\Terrain.h" />
     <ClInclude Include="src\engine\vk_wrap\VKW_ComputePipeline.h" />
+    <ClInclude Include="src\engine\vk_wrap\VKW_SpecializationConstants.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="shaders\terrain.txt" />

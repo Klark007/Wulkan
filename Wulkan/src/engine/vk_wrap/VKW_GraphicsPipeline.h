@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../vk_types.h"
+#include "../common.h"
 #include "VKW_Object.h"
 
 #include "VKW_Device.h"
@@ -25,6 +25,7 @@ private:
 	// the following fields can be configured (before calling init)
 	VkPipelineInputAssemblyStateCreateInfo input_assembly; // define topology such as triangles, points, lines
 	VkPipelineRasterizationStateCreateInfo rasterizer; // rasterization state such as depth bias, wireframe, backface culling
+	bool dynamic_depth_bias;
 	VkPipelineDepthStencilStateCreateInfo depth_stencil; // depth and stencil testing
 	bool tesselation_enabled;
 	VkPipelineTessellationStateCreateInfo tesselation; // tesselation state
@@ -67,7 +68,10 @@ public:
 	inline void set_wireframe_mode(bool use_wireframe=true);
 	// set culling settings
 	inline void set_culling_mode(VkCullModeFlags culling_mode=VK_CULL_MODE_BACK_BIT, VkFrontFace front_face=VK_FRONT_FACE_COUNTER_CLOCKWISE);
-	
+	// enable depth bias (either called before init if not dynamic or during the command recording if enable_dynamic_depth_bias was called)
+	inline void set_depth_bias(float const_bias, float slope_factor, const std::optional<VKW_CommandBuffer>& cmd = {});
+	inline void enable_dynamic_depth_bias();
+
 	// enable depth testing (by default closer values are smaller, not always preferred: see https://developer.nvidia.com/blog/visualizing-depth-precision/)
 	inline void enable_depth_test(VkCompareOp compare_op = VK_COMPARE_OP_LESS);
 	// enables writing to depth buffer
@@ -103,11 +107,9 @@ public:
 	
 	void set_render_size(VkExtent2D extend);
 
-	// sets the dynamic viewport (with extend set by set_render_size), expects to be in an active render pass
+	// sets the dynamic state (viewport and scissor; with extend set by set_render_size), expects to be in an active render pass
 	// Todo could later also set min and max depth for inverted zbuffer
-	inline void set_dynamic_viewport(const VKW_CommandBuffer& cmd) const { vkCmdSetViewport(cmd, 0, 1, &viewport);  };
-	// sets the dynamic scissor (with extend set by set_render_size), expects to be in an active render pass
-	inline void set_dynamic_scissor(const VKW_CommandBuffer& cmd) const { vkCmdSetScissor(cmd, 0, 1, &scissor); };
+	inline void set_dynamic_state(const VKW_CommandBuffer& cmd);
 
 	inline operator VkPipeline() const { return graphics_pipeline; };
 	inline VkPipeline get_pipeline() const { return graphics_pipeline; };
@@ -134,6 +136,25 @@ inline void VKW_GraphicsPipeline::set_culling_mode(VkCullModeFlags culling_mode,
 {
 	rasterizer.cullMode = culling_mode;
 	rasterizer.frontFace = front_face;
+}
+
+inline void VKW_GraphicsPipeline::set_depth_bias(float const_bias, float slope_factor, const std::optional<VKW_CommandBuffer>& cmd)
+{
+	if (dynamic_depth_bias) {
+		assert(cmd.has_value());
+		vkCmdSetDepthBias(cmd.value(), const_bias, 0, slope_factor);
+	} else {
+		rasterizer.depthBiasEnable = VK_TRUE;
+		rasterizer.depthBiasConstantFactor = const_bias;
+		rasterizer.depthBiasSlopeFactor = slope_factor;
+		rasterizer.depthBiasClamp = 0;
+	}
+}
+
+inline void VKW_GraphicsPipeline::enable_dynamic_depth_bias()
+{
+	rasterizer.depthBiasEnable = VK_TRUE;
+	dynamic_depth_bias = true;
 }
 
 inline void VKW_GraphicsPipeline::enable_depth_test(VkCompareOp compare_op)
@@ -176,4 +197,10 @@ template<class T>
 inline void VKW_GraphicsPipeline::add_push_constant(VKW_PushConstant<T> push_const)
 {
 	push_consts_range.push_back(push_const.get_range());
+}
+
+inline void VKW_GraphicsPipeline::set_dynamic_state(const VKW_CommandBuffer& cmd)
+{
+	vkCmdSetViewport(cmd, 0, 1, &viewport);
+	vkCmdSetScissor(cmd, 0, 1, &scissor);
 }

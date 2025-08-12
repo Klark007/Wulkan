@@ -1,6 +1,8 @@
 #include "Terrain.h"
 #include "vk_wrap/VKW_ComputePipeline.h"
 
+#include "DirectionalLight.h"
+
 void SharedTerrainData::init(const VKW_Device* device)
 {
 	// begin create create descriptor set layout
@@ -11,13 +13,14 @@ void SharedTerrainData::init(const VKW_Device* device)
 		VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT | VK_SHADER_STAGE_FRAGMENT_BIT
 	);
 
-	// terrain texture and sampler
+	// uniform buffer for rendering directional lights
 	descriptor_set_layout.add_binding(
 		1,
-		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
 		VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT | VK_SHADER_STAGE_FRAGMENT_BIT
 	);
 
+	// terrain texture and sampler
 	// albedo
 	descriptor_set_layout.add_binding(
 		2,
@@ -32,11 +35,37 @@ void SharedTerrainData::init(const VKW_Device* device)
 		VK_SHADER_STAGE_FRAGMENT_BIT
 	);
 
-	// curvature map
+	// height map
 	descriptor_set_layout.add_binding(
 		4,
 		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+		VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT | VK_SHADER_STAGE_FRAGMENT_BIT
+	);
+
+	// curvature map
+	descriptor_set_layout.add_binding(
+		5,
+		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 		VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_FRAGMENT_BIT
+	);
+
+	// shadow map (seperate sampler and image due to needing two different samplers)
+	descriptor_set_layout.add_binding(
+		6,
+		VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
+		VK_SHADER_STAGE_FRAGMENT_BIT
+	);
+
+	descriptor_set_layout.add_binding(
+		7,
+		VK_DESCRIPTOR_TYPE_SAMPLER,
+		VK_SHADER_STAGE_FRAGMENT_BIT
+	);
+
+	descriptor_set_layout.add_binding(
+		8,
+		VK_DESCRIPTOR_TYPE_SAMPLER,
+		VK_SHADER_STAGE_FRAGMENT_BIT
 	);
 
 	descriptor_set_layout.init(device, "Terrain Desc Layout");
@@ -62,7 +91,7 @@ void Terrain::init(const VKW_Device& device, const VKW_CommandPool& graphics_poo
 		&device,
 		&graphics_pool,
 		height_path,
-		Texture_Type::Tex_R,
+		Texture_Type::Tex_R_Linear,
 		"Terrain Height map"
 	);
 
@@ -92,7 +121,7 @@ void Terrain::init(const VKW_Device& device, const VKW_CommandPool& graphics_poo
 		&device,
 		&graphics_pool,
 		normal_path,
-		Texture_Type::Tex_RGB,
+		Texture_Type::Tex_RGB_Linear,
 		"Terrain Normals"
 	);
 
@@ -128,17 +157,23 @@ void Terrain::init(const VKW_Device& device, const VKW_CommandPool& graphics_poo
 	mesh.init(device, transfer_pool, terrain_vertices, terrain_indices);
 }
 
-void Terrain::set_descriptor_bindings(const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& uniform_buffers)
+void Terrain::set_descriptor_bindings(const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& general_ubo, const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& shadow_map_ubo, Texture& shadow_map, const VKW_Sampler& shadow_map_sampler, const VKW_Sampler& shadow_map_gather_sampler)
 {
 	// set the bindings
 	for (unsigned int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 		const VKW_DescriptorSet& set = descriptor_sets.at(i);
 
-		set.update(0, uniform_buffers.at(i));
-		set.update(1, height_map.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), *texture_sampler);
+		set.update(0, general_ubo.at(i));
+		set.update(1, shadow_map_ubo.at(i));
+
 		set.update(2, albedo.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), *texture_sampler);
 		set.update(3, normal_map.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), *texture_sampler);
-		set.update(4, curvatue.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), *texture_sampler);
+		set.update(4, height_map.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), *texture_sampler);
+		set.update(5, curvatue.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), *texture_sampler);
+		
+		set.update(6, shadow_map.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D_ARRAY, 0, MAX_CASCADE_COUNT));
+		set.update(7, shadow_map_sampler);
+		set.update(8, shadow_map_gather_sampler);
 	}
 }
 

@@ -3,9 +3,6 @@
 #define VMA_IMPLEMENTATION
 #include "vma/vk_mem_alloc.h"
 
-#include <glm/gtc/matrix_transform.hpp>
-
-
 #include <GLFW/glfw3.h>
 
 #include <iostream>
@@ -27,7 +24,7 @@ void Engine::init(unsigned int w, unsigned int h)
 
 	camera = Camera( glm::vec3(0.0, 60.0, 25.0), glm::vec3(0.0, 10.0, 8.0), res_x, res_y, glm::radians(45.0f), 0.1f, 100.0f );
 	camera_controller = CameraController(window, &camera);
-	gui.init(window, instance, device, graphics_queue, imgui_descriptor_pool, &swapchain);
+	gui.init(window, instance, device, graphics_queue, imgui_descriptor_pool, &swapchain, &camera_controller);
 	cleanup_queue.add(&gui);
  }
 
@@ -85,112 +82,190 @@ void Engine::update()
 
 	terrain.set_tesselation_strength(gui_input.terrain_tesselation);
 	terrain.set_max_tesselation(gui_input.max_terrain_tesselation);
-	terrain.set_height_scale(gui_input.terrain_height_scale);
+	terrain.set_model_matrix(
+		glm::scale(glm::mat4(1), glm::vec3(25.0, 25.0, 25.0 * gui_input.terrain_height_scale))
+	);
 	terrain.set_texture_eps(gui_input.terrain_texture_eps);
 	terrain.set_visualization_mode(gui_input.terrain_vis_mode);
+
+	directional_light.set_direction(glm::normalize(gui_input.sun_direction));
+	directional_light.set_color(gui_input.sun_color);
+	directional_light.set_intensity(gui_input.sun_intensity);
+	directional_light.set_sample_info(gui_input.receiver_sample_region, gui_input.occluder_sample_region, gui_input.nr_shadow_receiver_samples, gui_input.nr_shadow_occluder_samples);
+	directional_light.set_shadow_mode(gui_input.shadow_mode);
 
 	update_uniforms();
 }
 
 void Engine::draw()
 {
-	const VKW_CommandBuffer& cmd = get_current_command_buffer();
-	cmd.reset();
-
-	// begin command buffer
-	cmd.begin();
-	
+	// shadow pass		
 	{
-		// initial layout transitions
-		Texture::transition_layout(cmd, color_render_target, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-		Texture::transition_layout(cmd, depth_render_target, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+		// TODO: Use camera controllers active camera
+		int nr_cascades = gui_input.nr_shadow_cascades;
+		directional_light.set_uniforms(camera, nr_cascades, current_frame);
 
-		// draw environment map
+
+		const VKW_CommandBuffer& shadow_cmd = directional_light.begin_depth_pass(current_frame);
 		{
-			
-			VKW_GraphicsPipeline& pipeline = environment_map_pipeline;
-			pipeline.set_render_size(swapchain.get_extent());
-
-			// would theoretically not need to clear the screen
-			pipeline.set_color_attachment(
-				color_render_target.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT),
-				true,
-				{ {0.2f, 0.2f, 0.2f, 1.0f} }
-			);
-
-			pipeline.set_depth_attachment(
-				depth_render_target.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT),
-				true,
-				1.0f
-			);
-			
-			pipeline.begin_rendering(cmd);
+			// draw using depth only pipelines
 			{
-				pipeline.bind(cmd);
+				VKW_GraphicsPipeline& pipeline = terrain_depth_pipeline;
+				pipeline.set_render_size(directional_light.get_texture().get_extent());
 
-				pipeline.set_dynamic_viewport(cmd);
-				pipeline.set_dynamic_scissor(cmd);
-				environment_map.draw(cmd, current_frame, pipeline);
+				for (uint32_t i = 0; i < nr_cascades; i++) {
+					pipeline.set_depth_attachment(
+						directional_light.get_texture().get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D, i, 1),
+						true,
+						1.0f
+					);
+
+					pipeline.begin_rendering(shadow_cmd);
+					{
+						pipeline.bind(shadow_cmd);
+						pipeline.set_dynamic_state(shadow_cmd);
+						pipeline.set_depth_bias(gui_input.depth_bias, gui_input.slope_depth_bias, shadow_cmd);
+
+						terrain.set_cascade_idx(i);
+						terrain.draw(shadow_cmd, current_frame, pipeline);
+					}
+					pipeline.end_rendering(shadow_cmd);
+				}
 			}
-			pipeline.end_rendering(cmd);
 		}
-		
-
-		// draw terrain
-		{
-			VKW_GraphicsPipeline& pipeline = (gui_input.terrain_wireframe_mode) ? terrain_wireframe_pipeline : terrain_pipeline;
-			pipeline.set_render_size(swapchain.get_extent());
-
-			pipeline.set_color_attachment(
-				color_render_target.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT),
-				false,
-				{ {1.0f, 0.0f, 1.0f, 1.0f} }
-			);
-
-			pipeline.set_depth_attachment(
-				depth_render_target.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT),
-				false,
-				1.0f
-			);
-
-			pipeline.begin_rendering(cmd);
-			{
-				pipeline.bind(cmd);
-
-				pipeline.set_dynamic_viewport(cmd);
-				pipeline.set_dynamic_scissor(cmd);
-				terrain.draw(cmd, current_frame, pipeline);
-			}
-			pipeline.end_rendering(cmd);
-		}
-		
-		// transitions for copy into swapchain images
-		Texture::transition_layout(cmd, color_render_target, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-		Texture::transition_layout(cmd, swapchain.images_at(current_swapchain_image_idx), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-
-		// copy (both have swapchain extent resolution
-		Texture::copy(cmd, color_render_target, swapchain.images_at(current_swapchain_image_idx), swapchain.get_extent(), swapchain.get_extent());
-
-		
-		// transition for imgui
-		Texture::transition_layout(cmd, swapchain.images_at(current_swapchain_image_idx), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-
-		// draw imgui
-		gui.draw(cmd, current_swapchain_image_idx);
-
-
-		// transition for present
-		Texture::transition_layout(cmd, swapchain.images_at(current_swapchain_image_idx), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+		directional_light.end_depth_pass(current_frame);
 	}
-	
-	// end and submit command buffer
 
-	cmd.submit(
-		{ get_current_swapchain_semaphore() },
-		{ VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT },
-		{ get_current_render_semaphore() },
-		get_current_render_fence()
-	);
+	{
+
+		const VKW_CommandBuffer& cmd = get_current_command_buffer();
+		cmd.reset(); // resetting command pool might be more efficient
+
+		// begin command buffer
+		cmd.begin();
+	
+		{
+			// initial layout transitions
+			Texture::transition_layout(cmd, color_render_target, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+			Texture::transition_layout(cmd, depth_render_target, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL); // TODO check if necessary for depth each frame
+
+			// draw environment map
+			{
+			
+				VKW_GraphicsPipeline& pipeline = environment_map_pipeline;
+				pipeline.set_render_size(swapchain.get_extent());
+
+				// would theoretically not need to clear the screen
+				pipeline.set_color_attachment(
+					color_render_target.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT),
+					true,
+					{ {0.2f, 0.2f, 0.2f, 1.0f} }
+				);
+
+				pipeline.set_depth_attachment(
+					depth_render_target.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT),
+					true,
+					1.0f
+				);
+			
+				pipeline.begin_rendering(cmd);
+				{
+					pipeline.bind(cmd);
+
+					pipeline.set_dynamic_state(cmd);
+					environment_map.draw(cmd, current_frame, pipeline);
+				}
+				pipeline.end_rendering(cmd);
+			}
+		
+
+			// draw terrain
+			{
+				VKW_GraphicsPipeline& pipeline = (gui_input.terrain_wireframe_mode) ? terrain_wireframe_pipelines.at(gui_input.nr_shadow_cascades - 1) : terrain_pipelines.at(gui_input.nr_shadow_cascades - 1);
+				pipeline.set_render_size(swapchain.get_extent());
+
+				pipeline.set_color_attachment(
+					color_render_target.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT),
+					false,
+					{ {1.0f, 0.0f, 1.0f, 1.0f} }
+				);
+			
+
+				pipeline.set_depth_attachment(
+					depth_render_target.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT),
+					false,
+					1.0f
+				);
+
+				pipeline.begin_rendering(cmd);
+				{
+					pipeline.bind(cmd);
+
+					pipeline.set_dynamic_state(cmd);
+					
+					terrain.draw(cmd, current_frame, pipeline);
+				}
+				pipeline.end_rendering(cmd);
+			}
+
+			// draw lines
+			{
+				VKW_GraphicsPipeline& pipeline = line_pipeline;
+				pipeline.set_render_size(swapchain.get_extent());
+
+				pipeline.set_color_attachment(
+					color_render_target.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT),
+					false,
+					{ {1.0f, 0.0f, 1.0f, 1.0f} }
+				);
+
+
+				pipeline.set_depth_attachment(
+					depth_render_target.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT),
+					false,
+					1.0f
+				);
+
+				pipeline.begin_rendering(cmd);
+				{
+					pipeline.bind(cmd);
+
+					pipeline.set_dynamic_state(cmd);
+
+					if (gui_input.shadow_draw_debug_frustums)
+						directional_light.draw_debug_lines(cmd, current_frame, pipeline, gui_input.nr_shadow_cascades);
+				}
+				pipeline.end_rendering(cmd);
+			}
+		
+			// transitions for copy into swapchain images
+			Texture::transition_layout(cmd, color_render_target, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+			Texture::transition_layout(cmd, swapchain.images_at(current_swapchain_image_idx), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+			// copy (both have swapchain extent resolution
+			Texture::copy(cmd, color_render_target, swapchain.images_at(current_swapchain_image_idx), swapchain.get_extent(), swapchain.get_extent());
+
+		
+			// transition for imgui
+			Texture::transition_layout(cmd, swapchain.images_at(current_swapchain_image_idx), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+			// draw imgui
+			gui.draw(cmd, current_swapchain_image_idx);
+
+
+			// transition for present
+			Texture::transition_layout(cmd, swapchain.images_at(current_swapchain_image_idx), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+		}
+	
+		// end and submit command buffer
+
+		cmd.submit(
+			{ get_current_swapchain_semaphore(), directional_light.get_shadow_pass_semaphore(current_frame) },
+			{ VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT },
+			{ get_current_render_semaphore() },
+			get_current_render_fence()
+		);
+	}
 	
 }
 
@@ -206,10 +281,6 @@ void Engine::late_update()
 {
 	current_frame = (current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
 
-}
-
-inline void Engine::resize()
-{
 }
 
 // TODO: Query glfwGetRequiredInstanceExtensions() and add it to list of required extensions
@@ -306,10 +377,44 @@ void Engine::init_shared_data()
 
 	shared_environment_data.init(&device);
 	cleanup_queue.add(&shared_environment_data);
+
+	shared_line_data.init(&device);
+	cleanup_queue.add(&shared_line_data);
 }
 
 void Engine::init_data()
 {
+	std::array<VKW_CommandPool, MAX_FRAMES_IN_FLIGHT> graphic_pools;
+	for (unsigned int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+		graphic_pools.at(i) = command_structs.at(i).graphics_command_pool;
+	}
+
+	directional_light.init(
+		&device,
+		graphic_pools,
+		
+		glm::vec3(0, 0, 0), // look at for shadow
+		glm::vec3(0, 0, 1), // direction for shadow
+		50,                 // distance from look at for projection
+		1024*4,             // resolution
+		1024*4,
+		40,                 // height of orthographic projection
+		0.1,                // near
+		50.0                // far plane
+ 	);
+	
+	// can toggle debug drawings of cascade frustums
+	directional_light.init_debug_lines(
+		get_current_transfer_pool(),
+		descriptor_pool,
+		&shared_line_data,
+		uniform_buffers
+	);
+
+	cleanup_queue.add(&directional_light);
+
+	// terrain needs directional light to be initiated due to it relying on it's uniform buffer
+	// try manticorp.github.io/unrealheightmap
 	terrain.init(
 		device,
 		get_current_graphics_pool(),
@@ -318,13 +423,12 @@ void Engine::init_data()
 		&mirror_texture_sampler,
 		&shared_terrain_data,
 
-		"textures/terrain/heightmap.png",
-		//"textures/terrain/test/height_test4.png",
-		"textures/terrain/texture.png",
-		"textures/terrain/normal.png",
-		256							// resolution of mesh
+		"textures/terrain/heightmap.png", // height map
+		"textures/terrain/texture.png",   // albedo
+		"textures/terrain/normal.png",	  // normals TODO: support normal computation directly from heightmap
+		256							      // resolution of base mesh
 	);
-	terrain.set_descriptor_bindings(uniform_buffers);
+	terrain.set_descriptor_bindings(uniform_buffers, directional_light.get_uniform_buffers(), directional_light.get_texture(), linear_texture_sampler, shadow_map_gather_sampler);
 	cleanup_queue.add(&terrain);
 
 	environment_map.init(
@@ -335,8 +439,6 @@ void Engine::init_data()
 		&shared_environment_data,
 
 		"textures/environment_maps/day_cube_map_%.exr"
-		//"textures/environment_maps/rogland_clear_night_%.exr"
-		//"textures/environment_maps/test/test_%.exr"
 	);
 	environment_map.set_descriptor_bindings(uniform_buffers, linear_texture_sampler);
 	cleanup_queue.add(&environment_map);
@@ -347,9 +449,18 @@ void Engine::create_texture_samplers()
 	linear_texture_sampler.init(&device, "Default sampler");
 	cleanup_queue.add(&linear_texture_sampler);
 
+	nearest_texture_sampler.set_min_filter(VK_FILTER_NEAREST);
+	nearest_texture_sampler.set_mag_filter(VK_FILTER_NEAREST);
+	nearest_texture_sampler.init(&device, "Nearest neighbour sampler");
+	cleanup_queue.add(&nearest_texture_sampler);
+
 	mirror_texture_sampler.set_address_mode(VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT);
 	mirror_texture_sampler.init(&device, "Repeat sampler");
 	cleanup_queue.add(&mirror_texture_sampler);
+
+	shadow_map_gather_sampler.set_comparison(VK_COMPARE_OP_LESS);
+	shadow_map_gather_sampler.init(&device, "Shadow map gather sampler");
+	cleanup_queue.add(&shadow_map_gather_sampler);
 }
 
 void Engine::create_descriptor_sets()
@@ -361,8 +472,9 @@ void Engine::create_descriptor_sets()
 	// each Terrain instance needs MAX_FRAMES_IN_FLIGHT many descriptor sets
 	descriptor_pool.add_layout(shared_terrain_data.get_descriptor_set_layout(), MAX_FRAMES_IN_FLIGHT);
 	descriptor_pool.add_layout(shared_environment_data.get_descriptor_set_layout(), MAX_FRAMES_IN_FLIGHT);
+	descriptor_pool.add_layout(shared_line_data.get_descriptor_set_layout(), MAX_FRAMES_IN_FLIGHT*2*MAX_CASCADE_COUNT); // need 2 per cascade (one for the orthographic shadow camera and one for how the virtual camera is divided)
 
-	descriptor_pool.init(&device, MAX_FRAMES_IN_FLIGHT*2, "General descriptor pool");
+	descriptor_pool.init(&device, MAX_FRAMES_IN_FLIGHT*(2 + 2 * MAX_CASCADE_COUNT), "General descriptor pool");
 	cleanup_queue.add(&descriptor_pool);
 }
 
@@ -375,7 +487,7 @@ void Engine::create_uniform_buffers()
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
 			sharing_exlusive(), 
 			true,
-			"Uniform buffer"
+			"Main Uniform buffer"
 		);
 		uniform_buffer.map();
 		cleanup_queue.add(&uniform_buffer);
@@ -384,6 +496,7 @@ void Engine::create_uniform_buffers()
 
 void Engine::init_render_targets()
 {
+	// Scene rendered into this texture before copied over, allows for higher resolution than what is used in the swapchain
 	color_render_target.init(
 		&device,
 		swapchain.get_extent().width,
@@ -409,14 +522,24 @@ void Engine::init_render_targets()
 
 void Engine::create_graphics_pipelines()
 {
-	terrain_pipeline = Terrain::create_pipeline(&device, color_render_target, depth_render_target, shared_terrain_data);
-	cleanup_queue.add(&terrain_pipeline);
+	// have different specialized pipelines for different cascade counts (specialization constants)
+	for (int i = 0; i < MAX_CASCADE_COUNT; i++) {
+		terrain_pipelines.at(i) = Terrain::create_pipeline(&device, color_render_target, depth_render_target, shared_terrain_data, false, false, false, i+1);
+		cleanup_queue.add(&terrain_pipelines.at(i));
 
-	terrain_wireframe_pipeline = Terrain::create_pipeline(&device, color_render_target, depth_render_target, shared_terrain_data, true);
-	cleanup_queue.add(&terrain_wireframe_pipeline);
+		terrain_wireframe_pipelines.at(i) = Terrain::create_pipeline(&device, color_render_target, depth_render_target, shared_terrain_data, false, true, false, i+1); // wireframe but not depth only
+		cleanup_queue.add(&terrain_wireframe_pipelines.at(i));
+	}
+
+
+	terrain_depth_pipeline = Terrain::create_pipeline(&device, color_render_target, depth_render_target, shared_terrain_data, true, false, true);
+	cleanup_queue.add(&terrain_depth_pipeline);
 
 	environment_map_pipeline = EnvironmentMap::create_pipeline(&device, color_render_target, depth_render_target, shared_environment_data);
 	cleanup_queue.add(&environment_map_pipeline);
+
+	line_pipeline = Line::create_pipeline(&device, color_render_target, depth_render_target, shared_line_data);
+	cleanup_queue.add(&line_pipeline);
 }
 
 void Engine::create_swapchain()
@@ -455,7 +578,7 @@ void Engine::recreate_render_targets()
 	color_render_target.del();
 	depth_render_target.del();
 
-	// important to clear i.e. image view cache
+	// important to clear i.e. image view's cache
 	color_render_target = {};
 	depth_render_target = {};
 
@@ -475,6 +598,7 @@ void Engine::create_command_structs()
 		command_structs.at(i).graphics_command_pool.init(&device, &graphics_queue, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, "Graphics pool");
 		cleanup_queue.add(&command_structs.at(i).graphics_command_pool);
 		
+		// VK_COMMAND_POOL_CREATE_TRANSIENT_BIT: short lived command buffers
 		command_structs.at(i).transfer_command_pool.init(&device, &transfer_queue, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, "Transfer pool");
 		cleanup_queue.add(&command_structs.at(i).transfer_command_pool);
 		
@@ -497,11 +621,16 @@ void Engine::create_sync_structs()
 		VK_CHECK_E(vkCreateSemaphore(device, &semaphore_create_info, nullptr, &sync_structs.at(i).swapchain_semaphore), SetupException);
 		VK_CHECK_E(vkCreateSemaphore(device, &semaphore_create_info, nullptr, &sync_structs.at(i).render_semaphore), SetupException);
 		VK_CHECK_E(vkCreateFence(device, &fence_create_info, nullptr, &sync_structs.at(i).render_fence), SetupException);
+
+		device.name_object((uint64_t)sync_structs.at(i).swapchain_semaphore, VK_OBJECT_TYPE_SEMAPHORE, "Swapchain semaphore");
+		device.name_object((uint64_t)sync_structs.at(i).render_semaphore, VK_OBJECT_TYPE_SEMAPHORE, "Render semaphore");
+		device.name_object((uint64_t)sync_structs.at(i).render_fence, VK_OBJECT_TYPE_FENCE, "Render fence");
 	}
 }
 
 bool Engine::aquire_image()
 {
+	// Wait such that we are not still drawing into this frame (but we might not have presented it properly)
 	VkFence render_fence = get_current_render_fence();
 	VK_CHECK_E(vkWaitForFences(device, 1, &render_fence, VK_TRUE, UINT64_MAX), RuntimeException);
 	
@@ -509,7 +638,7 @@ bool Engine::aquire_image()
 		device, 
 		swapchain,
 		UINT64_MAX, 
-		get_current_swapchain_semaphore(),
+		get_current_swapchain_semaphore(), // signal swapchain semaphore once we aquired image
 		VK_NULL_HANDLE, 
 		&current_swapchain_image_idx
 	);
@@ -540,8 +669,7 @@ void Engine::update_uniforms()
 	uniform.virtual_view = camera.generate_virtual_view_mat();
 
 	uniform.near_far_plane = glm::vec2(camera.get_near_plane(), camera.get_far_plane());
-	uniform.sun_direction = glm::normalize(gui_input.sun_direction);
-
+	
 	memcpy(uniform_buffers.at(current_frame).get_mapped_address(), &uniform, sizeof(UniformStruct));
 }
 
@@ -575,6 +703,7 @@ Required_Device_Features Engine::get_required_device_features()
 	// 1.2 features
 	features.rf12.bufferDeviceAddress = true;
 	features.rf12.descriptorIndexing = true;
+	features.rf12.uniformBufferStandardLayout = true; // enable std430 for uniform buffers
 	// 1.3 features
 	features.rf13.dynamicRendering = true;
 	features.rf13.synchronization2 = true;

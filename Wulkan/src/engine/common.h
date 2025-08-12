@@ -18,8 +18,26 @@
 #include <set>
 #include <map>
 #include <functional>
+#include <limits>
+
+#define _USE_MATH_DEFINES
+#include <math.h>
 
 constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 2;
+
+struct UniformStruct {
+    alignas(16) glm::mat4 view;
+    alignas(16) glm::mat4 inv_view;
+    alignas(16) glm::mat4 virtual_view;
+    alignas(16) glm::mat4 proj;
+    alignas(8) glm::vec2 near_far_plane;
+};
+
+// std430
+struct PushConstants {
+    alignas(8) VkDeviceAddress vertex_buffer;
+    alignas(16) glm::mat4 model;
+};
 
 #ifdef NDEBUG
 const bool enable_validation_layers = false;
@@ -32,9 +50,13 @@ struct SharingInfo {
     std::vector<uint32_t> queue_families;
 };
 
+// most things are owned exclusively by one queue
 inline constexpr SharingInfo sharing_exlusive() {
     return { VK_SHARING_MODE_EXCLUSIVE, {} };
 };
+
+// convert to phi, theta representation of an already normalized direction
+glm::vec2 dir_to_spherical(const glm::vec3& dir);
 
 #define VK_CHECK(x)                                                     \
     do {                                                                \

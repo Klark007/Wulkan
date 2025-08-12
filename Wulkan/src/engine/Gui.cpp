@@ -1,16 +1,22 @@
 #include "Gui.h"
 
+#include "DirectionalLight.h"
+
 #define IMGUI_IMPL_VULKAN_USE_VOLK
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_vulkan.h"
 #include "glm/gtc/type_ptr.hpp"
 
+#include <iostream>
+
 static void check_imgui_result(VkResult result) {
 	VK_CHECK_ET(result, RuntimeException, "IMGUI Vulkan error");
 }
 
-void GUI::init(GLFWwindow* window, const VKW_Instance& instance, const VKW_Device& device, const VKW_Queue& graphics_queue, const VKW_DescriptorPool& descriptor_pool, const VKW_Swapchain* vkw_swapchain)
+void GUI::init(GLFWwindow* window, const VKW_Instance& instance, const VKW_Device& device, const VKW_Queue& graphics_queue, const VKW_DescriptorPool& descriptor_pool, const VKW_Swapchain* vkw_swapchain, CameraController* camera_controller)
 {
+	this->camera_controller = camera_controller;
+
 	swapchain = vkw_swapchain;
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
@@ -87,10 +93,22 @@ void GUI::draw_gui(const VKW_CommandBuffer& cmd)
 	ImGui::Begin("Wulkan GUI");  // creates window
 
 	{
-		if (ImGui::CollapsingHeader("Camera movement")) {
+		if (ImGui::CollapsingHeader("Camera")) {
 			ImGui::SliderFloat("Movement speed", &data.camera_movement_speed, 5.0f, 50.0f);
 			ImGui::SliderFloat("Rotation speed", &data.camera_rotation_speed, 0.0005f, 0.005f);
 
+			// TODO: support smt like https://github.com/btzy/nativefiledialog-extended
+			static char path[256] = "out/pose.csv";
+			ImGui::InputText("Camera pose path:", path, IM_ARRAYSIZE(path));
+			if (ImGui::Button("Store position")) {
+				std::cout << "Storing camera pose into " << path << std::endl;
+				camera_controller->export_active_camera(path);
+			}
+
+			if (ImGui::Button("Load position")) {
+				std::cout << "Loading camera pose from " << path << std::endl;
+				camera_controller->import_active_camera(path);
+			}
 		}
 
 		if (ImGui::CollapsingHeader("Terrain")) {
@@ -101,7 +119,7 @@ void GUI::draw_gui(const VKW_CommandBuffer& cmd)
 
 			ImGui::Checkbox("Show Wireframe", &data.terrain_wireframe_mode);
 
-			constexpr const char* visualization_modes[] = { "Shaded", "Level", "Height", "Normals", "Error"};
+			constexpr const char* visualization_modes[] = { "Shaded", "Level", "Height", "Normals", "Error", "Shadow map cascade"};
 			static int selected_vis = 0;
 			if (ImGui::TreeNode("Visualization mode")) {
 				ImGui::ListBox("Mode", &selected_vis, visualization_modes, IM_ARRAYSIZE(visualization_modes));
@@ -113,6 +131,25 @@ void GUI::draw_gui(const VKW_CommandBuffer& cmd)
 
 		if (ImGui::CollapsingHeader("Shading")) {
 			ImGui::SliderFloat3("Sun direction", glm::value_ptr(data.sun_direction), -1.0f, 1.0f);
+
+			ImGui::ColorEdit3("Sun Color", glm::value_ptr(data.sun_color), ImGuiColorEditFlags_None);
+			ImGui::SliderFloat("Sun Intensity", &data.sun_intensity, 0.1f, 25.0f);
+
+			constexpr const char* shadow_modes[] = { "No shadows", "Hard shadows", "Soft Shadows"};
+			static int selected_shadow_mode = 2;
+			ImGui::ListBox("Mode", &selected_shadow_mode, shadow_modes, IM_ARRAYSIZE(shadow_modes));
+			data.shadow_mode = static_cast<ShadowMode>(selected_shadow_mode);
+
+			ImGui::SliderFloat("Constant depth bias", &data.depth_bias, 1e4, 1e5);
+			ImGui::SliderFloat("Slope depth bias", &data.slope_depth_bias, 1e-2, 1e1);
+			ImGui::SliderInt("Number of shadow cascades", &data.nr_shadow_cascades, 1, MAX_CASCADE_COUNT);
+
+			ImGui::SliderFloat("Receiver Occlusion Sample Region", &data.receiver_sample_region, 1.0f, 64.0f);
+			ImGui::SliderFloat("Occluder Depth Sample Region", &data.occluder_sample_region, 1.0f, 64.0f);
+			ImGui::SliderInt("Nr Receiver Samples", &data.nr_shadow_receiver_samples, 1, 32);
+			ImGui::SliderInt("Nr Occluder Samples", &data.nr_shadow_occluder_samples, 1, 16);
+
+			ImGui::Checkbox("Show debug frustums", &data.shadow_draw_debug_frustums);
 		}
 
 		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);

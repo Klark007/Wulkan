@@ -1,6 +1,6 @@
 #include "Mesh.h"
 
-void Mesh::init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, const std::vector<Vertex>& vertices, const std::vector<uint32_t> indices)
+void Mesh::init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices)
 {
 	// create gpu side buffer storing vertices
 	VkDeviceSize vertex_buffer_size = sizeof(Vertex) * vertices.size();

@@ -1,4 +1,6 @@
 #version 450
+// implements how properties will be interpolated for the newly tesselated vertices as well as projects said vertices
+
 
 layout (quads, fractional_odd_spacing, cw) in;
 layout(location = 0) in vec2 inUV[];
@@ -11,10 +13,9 @@ layout(binding = 0) uniform UniformData {
     mat4 _virtual_view;
     mat4 proj;
     vec2 _near_far_plane;
-    vec3 _sun_direction;
 } ubo;
 
-layout(binding = 1) uniform sampler2D height_map;
+layout(binding = 4) uniform sampler2D height_map;
 
 
 layout( push_constant ) uniform constants
@@ -22,15 +23,17 @@ layout( push_constant ) uniform constants
     mat4 model;
     float _tesselation_strength;
     float _max_tesselation;
-    float height_scale;
     float _texture_eps;
     int _visualization_mode;
+    int _cascade_idx;
 } pc;
 
-layout(location = 0) out float model_height;
+layout(location = 0) out vec3 outWorldPos;
 layout(location = 1) out vec2 outUV;
 layout(location = 2) out vec3 outNormal;
 layout(location = 3) out vec4 outColor;
+layout(location = 4) out float model_height;
+
 
 void main()
 {
@@ -42,9 +45,10 @@ void main()
 	vec4 pos2 = mix(gl_in[3].gl_Position, gl_in[2].gl_Position, gl_TessCoord.x);
 	vec4 pos = mix(pos1, pos2, gl_TessCoord.y);
 
-    pos.z = texture(height_map, outUV).r * pc.height_scale;
+    pos.z = texture(height_map, outUV).r;
 
     model_height = pos.z;
+    outWorldPos = (pc.model * pos).xyz;
     gl_Position = ubo.proj * ubo.view * pc.model * pos;
 
     vec3 normal1 = normalize(mix(inNormal[0], inNormal[1], gl_TessCoord.x));

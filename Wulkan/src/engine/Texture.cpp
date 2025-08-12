@@ -68,11 +68,11 @@ void Texture::del()
 	}
 }
 
-VkImageView Texture::get_image_view(VkImageAspectFlags aspect_flag, VkImageViewType type, uint32_t array_layers)
+VkImageView Texture::get_image_view(VkImageAspectFlags aspect_flag, VkImageViewType type, uint32_t base_layer, uint32_t array_layers)
 {
-	std::pair<VkImageAspectFlags, VkImageViewType> pair = std::make_pair(aspect_flag, type);
-	if (image_views.contains(pair)) {
-		return image_views[pair];
+	std::tuple<VkImageAspectFlags, VkImageViewType, int> tuple = std::make_tuple(aspect_flag, type, base_layer);
+	if (image_views.contains(tuple)) {
+		return image_views[tuple];
 	} else {
 		VkImageViewCreateInfo view_info{};
 		view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -85,14 +85,14 @@ VkImageView Texture::get_image_view(VkImageAspectFlags aspect_flag, VkImageViewT
 		view_info.subresourceRange.baseMipLevel = 0;
 		view_info.subresourceRange.levelCount = 1;
 	
-		view_info.subresourceRange.baseArrayLayer = 0;
+		view_info.subresourceRange.baseArrayLayer = base_layer;
 		view_info.subresourceRange.layerCount = array_layers;
 
 		VkImageView image_view;
 		VK_CHECK_ET(vkCreateImageView(*device, &view_info, nullptr, &image_view), RuntimeException, std::format("Failed to create image ({}) view for aspect {}", name, aspect_flag));
 		device->name_object((uint64_t)image_view, VK_OBJECT_TYPE_IMAGE_VIEW, name + " view");
 
-		image_views[pair] = image_view;
+		image_views[tuple] = image_view;
 		return image_view;
 	}
 }
@@ -138,10 +138,10 @@ void Texture::transition_layout(const VKW_CommandBuffer& command_buffer, VkImage
 	barrier.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
 
 	VkImageAspectFlags aspect = 0;
-	if (new_layout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL) {
+	if (new_layout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL || initial_layout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL) {
 		aspect = VK_IMAGE_ASPECT_DEPTH_BIT;
 	}
-	else if (new_layout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
+	else if (new_layout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL || initial_layout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
 		aspect = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
 	}
 	else {
@@ -177,6 +177,22 @@ void Texture::transition_layout(const VKW_CommandBuffer& command_buffer, VkImage
 			| VK_PIPELINE_STAGE_2_TESSELLATION_EVALUATION_SHADER_BIT; // textures can be read in fragment and tesselation shaders
 
 		barrier.srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
+		barrier.dstAccessMask = VK_ACCESS_2_SHADER_READ_BIT;
+	}
+	else if (initial_layout == VK_IMAGE_LAYOUT_UNDEFINED && new_layout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL) {
+		// new texture to be used as a depth attachment
+		barrier.srcStageMask = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT;
+		barrier.dstStageMask = VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT;
+
+		barrier.srcAccessMask = VK_ACCESS_2_NONE;
+		barrier.dstAccessMask = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+	}
+	else if (initial_layout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL && new_layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+		// read from depth attachment in a shader
+		barrier.srcStageMask = VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT;
+		barrier.dstStageMask = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
+
+		barrier.srcAccessMask = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 		barrier.dstAccessMask = VK_ACCESS_2_SHADER_READ_BIT;
 	}
 	else {

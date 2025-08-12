@@ -55,6 +55,9 @@ void VKW_GraphicsPipeline::init(const VKW_Device* vkw_device, const std::string&
 			VK_DYNAMIC_STATE_VIEWPORT,
 			VK_DYNAMIC_STATE_SCISSOR
 	};
+	if (dynamic_depth_bias) {
+		dynamic_states.push_back(VK_DYNAMIC_STATE_DEPTH_BIAS);
+	}
 
 	VkPipelineDynamicStateCreateInfo dynamic_state{};
 	dynamic_state.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;

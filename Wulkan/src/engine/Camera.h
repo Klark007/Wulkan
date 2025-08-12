@@ -23,12 +23,13 @@ public:
 
 	inline void set_aspect_ratio(unsigned int r_x, unsigned int r_y);
 	inline void set_virtual_camera_enabled(bool enabled);
-	inline void roll_yaw(float d_yaw) { set_yaw(yaw + d_yaw); };
-	inline void roll_pitch(float d_pitch) { set_pitch(pitch + d_pitch); };
+	inline void add_yaw(float d_yaw) { set_yaw(yaw + d_yaw); };
+	inline void add_pitch(float d_pitch) { set_pitch(pitch + d_pitch); };
 	inline void set_yaw(float yaw) { this->yaw = yaw; };
 	inline void set_pitch(float pitch);
 	inline void set_near_plane(float near) { z_near = near; };
 	inline void set_far_plane(float far) { z_far = far; };
+	inline void set_orthographic_projection_height(float h) { ortho_height = h; };
 private:
 	glm::vec3 position;
 
@@ -40,6 +41,7 @@ private:
 	float foc_x = -1; // set to invalid values if camera is constructed using fov and not focal length x and y
 	float foc_y = -1;
 	float fov;
+	float ortho_height;
 	float z_near;
 	float z_far;
 
@@ -51,6 +53,7 @@ public:
 	inline glm::mat4 generate_view_mat_LHS() const;
 	inline glm::mat4 generate_virtual_view_mat() const;
 	inline glm::mat4 generate_projection_mat() const;
+	inline glm::mat4 generate_ortho_mat() const;
 	inline glm::vec3 get_pos() const { return position; };
 	inline glm::vec3 get_des() const { return position + get_dir(); };
 	inline glm::vec3 get_dir() const;
@@ -123,6 +126,12 @@ inline glm::mat4 Camera::generate_virtual_view_mat() const
 
 inline glm::mat4 Camera::generate_projection_mat() const {
 	return glm::perspective(fov, get_aspect_ratio(), z_near, z_far);
+}
+
+inline glm::mat4 Camera::generate_ortho_mat() const
+{
+	float aspect = get_aspect_ratio();
+	return glm::ortho(-ortho_height * aspect, ortho_height * aspect, -ortho_height, ortho_height, z_near, z_far);
 }
 
 // calculate dir given yaw and pitch

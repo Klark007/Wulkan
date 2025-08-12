@@ -1,6 +1,6 @@
 #pragma once
 
-#include "vk_types.h"
+#include "common.h"
 
 #include "Shape.h"
 #include "vk_wrap/VKW_Device.h"
@@ -23,7 +23,7 @@ class Mesh : public Shape
 {
 public:
 	Mesh() = default;
-	void init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, const std::vector<Vertex>& vertices, const std::vector<uint32_t> indices);
+	void init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices);
 	void del() override;
 
 	// binds the indices and calls vkCmdDrawIndexed, expects to be in active command buffer

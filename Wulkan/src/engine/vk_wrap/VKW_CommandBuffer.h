@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../vk_types.h"
+#include "../common.h"
 
 #include "VKW_Device.h"
 #include "VKW_CommandPool.h"

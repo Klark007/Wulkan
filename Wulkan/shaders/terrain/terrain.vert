@@ -1,5 +1,6 @@
 #version 450
 #extension GL_EXT_buffer_reference : require
+// pass vertices without projecting them
 
 struct Vertex {
 	vec3 position;

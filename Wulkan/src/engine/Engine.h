@@ -2,8 +2,10 @@
 
 
 /* BIG TODO's:
- 	Disable safety checks if compiled in Release mode
+ 	Disable safety checks if compiled in Release mode?
 */
+
+#include "common.h"
 
 #include "vk_wrap/VKW_Instance.h"
 #include "vk_wrap/VKW_Surface.h"
@@ -29,6 +31,9 @@
 #include "Mesh.h"
 #include "Terrain.h"
 #include "EnvironmentMap.h"
+#include "Line.h"
+#include "Frustum.h"
+#include "DirectionalLight.h"
 
 #include "Gui.h"
 
@@ -52,21 +57,6 @@ struct SyncStructs {
 	VkFence render_fence;
 };
 
-struct UniformStruct {
-	alignas(16) glm::mat4 view;
-	alignas(16) glm::mat4 inv_view;
-	alignas(16) glm::mat4 virtual_view;
-	alignas(16) glm::mat4 proj;
-	alignas(8) glm::vec2 near_far_plane;
-	alignas(16) glm::vec3 sun_direction; // TODO: could be compressed
-};
-
-// std430
-struct PushConstants {
-	alignas(8) VkDeviceAddress vertex_buffer;
-	alignas(16) glm::mat4 model;
-};
-
 class Engine
 {
 public:
@@ -85,7 +75,6 @@ private:
 	void late_update(); // executed after draw
 
 	bool resize_window = false; // set to true by resize_callback(), will execute resize to avoid issues with resources 
-	void resize();
 
 	void init_glfw();
 	void init_vulkan();
@@ -103,13 +92,12 @@ private:
 
 	void init_data();
 
-
 	void init_render_targets();
 
 	void create_graphics_pipelines();
 	void create_swapchain();
 	void recreate_swapchain();
-	void recreate_render_targets();
+	void recreate_render_targets(); // resizes textures that are being rendered into and correlate with window size
 	void create_command_structs(); // creates command pools and buffers
 	void create_sync_structs(); // create fences and semaphores
 
@@ -117,8 +105,8 @@ private:
 
 	void update_uniforms(); // updates uniform buffers (Pushconstant's are changed per object so not in this call)
 
-	std::vector<const char*> get_required_instance_extensions();
-	std::vector<const char*> get_required_device_extensions();
+	inline std::vector<const char*> get_required_instance_extensions();
+	inline std::vector<const char*> get_required_device_extensions();
 	Required_Device_Features get_required_device_features();
 
 public: // TODO: remove public
@@ -135,20 +123,37 @@ public: // TODO: remove public
 	Texture color_render_target;
 	Texture depth_render_target;
 
-	VKW_GraphicsPipeline terrain_pipeline;
-	VKW_GraphicsPipeline terrain_wireframe_pipeline;
+
+	// mostly for debugging reasons
+	std::array<VKW_GraphicsPipeline, MAX_CASCADE_COUNT> terrain_pipelines;
+	VKW_GraphicsPipeline terrain_depth_pipeline;
+	std::array<VKW_GraphicsPipeline, MAX_CASCADE_COUNT> terrain_wireframe_pipelines;
+
 	VKW_GraphicsPipeline environment_map_pipeline;
 
+	VKW_GraphicsPipeline line_pipeline;
+
+
 	// general sampler for texture (Linear sampling, repeat address mode)
+	VKW_Sampler nearest_texture_sampler;
 	VKW_Sampler linear_texture_sampler;
 	VKW_Sampler mirror_texture_sampler;
+	VKW_Sampler shadow_map_gather_sampler;
 
 	// Terrain data
 	SharedTerrainData shared_terrain_data;
 	Terrain terrain;
 
+	// Environment map
 	SharedEnvironmentData shared_environment_data;
 	EnvironmentMap environment_map;
+
+	// Lines (for debugging etc)
+	SharedLineData shared_line_data;
+	
+	// Directional light
+	DirectionalLight directional_light;
+
 
 	// Input into shaders
 	VKW_DescriptorPool imgui_descriptor_pool;
