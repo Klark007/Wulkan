@@ -19,9 +19,9 @@
 
 ## Shadows
 ### Hard shadows [~]
-* Better layout transitions for shadow pass [ ] 
-* Add screen space shadows to cover for peter panning [ ]
-### Cascaded shadow maps [~]
+* Better layout transitions for shadow pass [X] 
+* Maybe add screen space shadows to cover for peter panning [ ]
+### Cascaded shadow maps [X]
 * Lock orthographic shadow views to pixel movement [X]
 ### Soft shadows [X]
 
