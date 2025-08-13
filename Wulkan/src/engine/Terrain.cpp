@@ -7,14 +7,14 @@ void SharedTerrainData::init(const VKW_Device* device)
 {
 	// begin create create descriptor set layout
 	// uniform buffer containing projection & view matrix
-	descriptor_set_layout.add_binding(
+	terrain_descriptor_set_layout.add_binding(
 		0,
 		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
 		VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT | VK_SHADER_STAGE_FRAGMENT_BIT
 	);
 
 	// uniform buffer for rendering directional lights
-	descriptor_set_layout.add_binding(
+	terrain_descriptor_set_layout.add_binding(
 		1,
 		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
 		VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT | VK_SHADER_STAGE_FRAGMENT_BIT
@@ -22,53 +22,70 @@ void SharedTerrainData::init(const VKW_Device* device)
 
 	// terrain texture and sampler
 	// albedo
-	descriptor_set_layout.add_binding(
+	terrain_descriptor_set_layout.add_binding(
 		2,
 		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 		VK_SHADER_STAGE_FRAGMENT_BIT
 	);
 
 	// normal map
-	descriptor_set_layout.add_binding(
+	terrain_descriptor_set_layout.add_binding(
 		3,
 		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 		VK_SHADER_STAGE_FRAGMENT_BIT
 	);
 
 	// height map
-	descriptor_set_layout.add_binding(
+	terrain_descriptor_set_layout.add_binding(
 		4,
 		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 		VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT | VK_SHADER_STAGE_FRAGMENT_BIT
 	);
 
 	// curvature map
-	descriptor_set_layout.add_binding(
+	terrain_descriptor_set_layout.add_binding(
 		5,
 		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 		VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_FRAGMENT_BIT
 	);
 
 	// shadow map (seperate sampler and image due to needing two different samplers)
-	descriptor_set_layout.add_binding(
+	terrain_descriptor_set_layout.add_binding(
 		6,
 		VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
 		VK_SHADER_STAGE_FRAGMENT_BIT
 	);
 
-	descriptor_set_layout.add_binding(
+	terrain_descriptor_set_layout.add_binding(
 		7,
 		VK_DESCRIPTOR_TYPE_SAMPLER,
 		VK_SHADER_STAGE_FRAGMENT_BIT
 	);
 
-	descriptor_set_layout.add_binding(
+	terrain_descriptor_set_layout.add_binding(
 		8,
 		VK_DESCRIPTOR_TYPE_SAMPLER,
 		VK_SHADER_STAGE_FRAGMENT_BIT
 	);
 
-	descriptor_set_layout.init(device, "Terrain Desc Layout");
+	terrain_descriptor_set_layout.init(device, "Terrain Desc Layout");
+	
+	// curvature precompute descriptor set layout
+	// read from height map
+	curvature_descriptor_set_layout.add_binding(
+		0,
+		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, // read only 
+		VK_SHADER_STAGE_COMPUTE_BIT
+	);
+
+	// write into curvature texture
+	curvature_descriptor_set_layout.add_binding(
+		1,
+		VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, // supports load, store and atomic operations
+		VK_SHADER_STAGE_COMPUTE_BIT
+	);
+	curvature_descriptor_set_layout.init(device, "Curvature Desc Layout");
+
 	// end create create descriptor set layout
 
 	push_constant.init(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT | VK_SHADER_STAGE_FRAGMENT_BIT , 0);
@@ -77,7 +94,8 @@ void SharedTerrainData::init(const VKW_Device* device)
 
 void SharedTerrainData::del()
 {
-	descriptor_set_layout.del();	
+	terrain_descriptor_set_layout.del();	
+	curvature_descriptor_set_layout.del();	
 }
 
 void Terrain::init(const VKW_Device& device, const VKW_CommandPool& graphics_pool, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, const VKW_Sampler* sampler, SharedTerrainData* shared_terrain_data, const std::string& height_path, const std::string& albedo_path, const std::string& normal_path, uint32_t mesh_res)
@@ -151,7 +169,7 @@ void Terrain::init(const VKW_Device& device, const VKW_CommandPool& graphics_poo
 	}
 
 	for (VKW_DescriptorSet& set : descriptor_sets) {
-		set.init(&device, &descriptor_pool, shared_data->get_descriptor_set_layout(), "Terrain Desc Set");
+		set.init(&device, &descriptor_pool, shared_data->get_terrain_descriptor_set_layout(), "Terrain Desc Set");
 	}
 	
 	mesh.init(device, transfer_pool, terrain_vertices, terrain_indices);
@@ -180,21 +198,7 @@ void Terrain::set_descriptor_bindings(const std::array<VKW_Buffer, MAX_FRAMES_IN
 void Terrain::precompute_curvature(const VKW_Device& device, const VKW_CommandPool& graphics_pool, const VKW_DescriptorPool& descriptor_pool)
 {
 	// descriptor sets
-	VKW_DescriptorSetLayout compute_layout{};
-	// read from height map
-	compute_layout.add_binding(
-		0,
-		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, // read only 
-		VK_SHADER_STAGE_COMPUTE_BIT
-	);
-
-	// write into curvature texture
-	compute_layout.add_binding(
-		1,
-		VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, // supports load, store and atomic operations
-		VK_SHADER_STAGE_COMPUTE_BIT
-	);
-	compute_layout.init(&device, "Curvature Desc Layout");
+	VKW_DescriptorSetLayout compute_layout = shared_data->get_curvature_descriptor_set_layout();
 
 	VKW_DescriptorSet compute_desc_set{};
 	compute_desc_set.init(&device, &descriptor_pool, compute_layout, "Curvature Desc Set");
@@ -233,7 +237,6 @@ void Terrain::precompute_curvature(const VKW_Device& device, const VKW_CommandPo
 
 	pipeline.del();
 	compute_desc_set.del();
-	compute_layout.del();
 }
 
 void Terrain::del()

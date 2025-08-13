@@ -100,6 +100,8 @@ void Engine::update()
 void Engine::draw()
 {
 	// shadow pass		
+	get_current_graphics_pool().reset();
+
 	{
 		// TODO: Use camera controllers active camera
 		int nr_cascades = gui_input.nr_shadow_cascades;
@@ -139,7 +141,6 @@ void Engine::draw()
 	{
 
 		const VKW_CommandBuffer& cmd = get_current_command_buffer();
-		cmd.reset(); // resetting command pool might be more efficient
 
 		// begin command buffer
 		cmd.begin();
@@ -333,7 +334,6 @@ void Engine::init_vulkan()
 
 	init_data();
 
-
 	create_graphics_pipelines();
 }
 
@@ -470,11 +470,12 @@ void Engine::create_descriptor_sets()
 	cleanup_queue.add(&imgui_descriptor_pool);
 	
 	// each Terrain instance needs MAX_FRAMES_IN_FLIGHT many descriptor sets
-	descriptor_pool.add_layout(shared_terrain_data.get_descriptor_set_layout(), MAX_FRAMES_IN_FLIGHT);
+	descriptor_pool.add_layout(shared_terrain_data.get_terrain_descriptor_set_layout(), MAX_FRAMES_IN_FLIGHT);
+	descriptor_pool.add_layout(shared_terrain_data.get_curvature_descriptor_set_layout(), 1);
 	descriptor_pool.add_layout(shared_environment_data.get_descriptor_set_layout(), MAX_FRAMES_IN_FLIGHT);
 	descriptor_pool.add_layout(shared_line_data.get_descriptor_set_layout(), MAX_FRAMES_IN_FLIGHT*2*MAX_CASCADE_COUNT); // need 2 per cascade (one for the orthographic shadow camera and one for how the virtual camera is divided)
 
-	descriptor_pool.init(&device, MAX_FRAMES_IN_FLIGHT*(2 + 2 * MAX_CASCADE_COUNT), "General descriptor pool");
+	descriptor_pool.init(&device, MAX_FRAMES_IN_FLIGHT*(2 + 2 * MAX_CASCADE_COUNT) + 1, "General descriptor pool");
 	cleanup_queue.add(&descriptor_pool);
 }
 
@@ -595,11 +596,11 @@ void Engine::create_command_structs()
 			{},
 		};
 
-		command_structs.at(i).graphics_command_pool.init(&device, &graphics_queue, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, "Graphics pool");
+		command_structs.at(i).graphics_command_pool.init(&device, &graphics_queue, "Graphics pool");
 		cleanup_queue.add(&command_structs.at(i).graphics_command_pool);
 		
 		// VK_COMMAND_POOL_CREATE_TRANSIENT_BIT: short lived command buffers
-		command_structs.at(i).transfer_command_pool.init(&device, &transfer_queue, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, "Transfer pool");
+		command_structs.at(i).transfer_command_pool.init(&device, &transfer_queue, "Transfer pool");
 		cleanup_queue.add(&command_structs.at(i).transfer_command_pool);
 		
 		command_structs.at(i).graphics_command_buffer.init(&device, &command_structs.at(i).graphics_command_pool, false, "Draw CMD");

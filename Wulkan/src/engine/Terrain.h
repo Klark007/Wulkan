@@ -40,13 +40,15 @@ public:
 	void init(const VKW_Device* device);
 	void del() override;
 private:
-	VKW_DescriptorSetLayout descriptor_set_layout;
+	VKW_DescriptorSetLayout terrain_descriptor_set_layout;
+	VKW_DescriptorSetLayout curvature_descriptor_set_layout;
 
 	// TODO: are there potential race conditions with the push constants being shared between multiple Terrain's
 	VKW_PushConstant<TerrainPushConstants> push_constant;
 	VKW_PushConstant<TerrainVertexPushConstants> vertex_push_constant;
 public:
-	const VKW_DescriptorSetLayout& get_descriptor_set_layout() const { return descriptor_set_layout; };
+	const VKW_DescriptorSetLayout& get_terrain_descriptor_set_layout() const { return terrain_descriptor_set_layout; };
+	const VKW_DescriptorSetLayout& get_curvature_descriptor_set_layout() const { return curvature_descriptor_set_layout; };
 	
 	inline std::vector<VkPushConstantRange> get_push_consts_range() const {
 		return { vertex_push_constant.get_range(), push_constant.get_range()};
@@ -160,7 +162,7 @@ inline VKW_GraphicsPipeline Terrain::create_pipeline(const VKW_Device* device, T
 	else {
 		graphics_pipeline.add_shader_stages({ terrain_vert_shader, tess_ctrl_shader, tess_eval_shader });
 	}
-	graphics_pipeline.add_descriptor_sets({ shared_terrain_data.get_descriptor_set_layout() });
+	graphics_pipeline.add_descriptor_sets({ shared_terrain_data.get_terrain_descriptor_set_layout() });
 
 	graphics_pipeline.add_push_constants(shared_terrain_data.get_push_consts_range());
 

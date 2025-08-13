@@ -1,6 +1,7 @@
 # Planned features
 
 ## General features
+* Implement best practises as reported by validation layers [~]
 * Tracy [ ]
 * Shader includes with a shared file for common helper functions [ ] 
 * Model Loading [ ]

@@ -10,7 +10,10 @@ class VKW_CommandPool : public VKW_Object
 {
 public:
 	VKW_CommandPool() = default;
-	void init(const VKW_Device* vkw_device, const VKW_Queue* vkw_queue, VkCommandPoolCreateFlags flags, const std::string& obj_name);
+	void init(const VKW_Device* vkw_device, const VKW_Queue* vkw_queue, const std::string& obj_name);
+
+	void reset() const;
+
 	void del() override;
 private:
 	const VKW_Device* device;
@@ -23,4 +26,3 @@ public:
 	inline operator VkCommandPool() const { return command_pool; };
 	inline const VKW_Queue* get_queue() const { return queue; };
 };
-

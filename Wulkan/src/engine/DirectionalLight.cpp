@@ -238,7 +238,6 @@ void DirectionalLight::del()
 const VKW_CommandBuffer& DirectionalLight::begin_depth_pass(int current_frame)
 {
 	const VKW_CommandBuffer& shadow_cmd = cmds.at(current_frame);
-	shadow_cmd.reset();
 	shadow_cmd.begin();
 
 	Texture::transition_layout(shadow_cmd, depth_rt, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);

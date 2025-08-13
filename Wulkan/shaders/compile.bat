@@ -8,6 +8,9 @@ set "width=%width: =%"
 set "line="
 for /l %%i in (1,1,%width%) do set "line=!line!-"
 
+:: Optimized version
+set GLSLO=glslc.exe %%i -O --target-env=vulkan1.3
+
 echo !line!
 
 echo Vertex shaders: 
@@ -16,7 +19,7 @@ for /r %%i in (*.vert) do (
     echo Compiling %%i into %%~ni_vert.spv
     echo(
 
-    glslc.exe %%i -O -o %%~dpi%%~ni_vert.spv
+    %GLSLO% -o %%~dpi%%~ni_vert.spv
 )
 
 echo !line!
@@ -27,7 +30,7 @@ for /r %%i in (*.frag) do (
     echo Compiling %%i into %%~ni_frag.spv
     echo(
 
-    glslc.exe %%i -O -o %%~dpi%%~ni_frag.spv
+    %GLSLO% -o %%~dpi%%~ni_frag.spv
 )
 
 echo !line!
@@ -38,7 +41,7 @@ for /r %%i in (*.tese) do (
     echo Compiling %%i into %%~ni_tese.spv
     echo(
 
-    glslc.exe %%i -O -o %%~dpi%%~ni_tese.spv
+    %GLSLO% -o %%~dpi%%~ni_tese.spv
 )
 
 echo !line!
@@ -49,7 +52,7 @@ for /r %%i in (*.tesc) do (
     echo Compiling %%i into %%~ni_tesc.spv
     echo(
 
-    glslc.exe %%i -O -o %%~dpi%%~ni_tesc.spv
+    %GLSLO% -o %%~dpi%%~ni_tesc.spv
 )
 
 echo !line!
@@ -60,7 +63,7 @@ for /r %%i in (*.comp) do (
     echo Compiling %%i into %%~ni_comp.spv
     echo(
 
-    glslc.exe %%i -O -o %%~dpi%%~ni_comp.spv
+    %GLSLO% -o %%~dpi%%~ni_comp.spv
 )
 
 echo !line!

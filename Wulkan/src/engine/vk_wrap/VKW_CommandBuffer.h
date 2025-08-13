@@ -15,9 +15,6 @@ public:
 	// submits command buffer and waits for the queue to be idle. WARNING: could take long
 	void submit_single_use();
 
-	// resets the currently recorded commands
-	inline void reset() const;
-
 	// begins command buffer
 	void begin() const;
 
@@ -35,8 +32,3 @@ public:
 	inline VkCommandBuffer get_command_buffer() const { return command_buffer; };
 	inline operator VkCommandBuffer() const { return command_buffer; };
 };
-
-inline void VKW_CommandBuffer::reset() const
-{
-	vkResetCommandBuffer(command_buffer, 0);
-}

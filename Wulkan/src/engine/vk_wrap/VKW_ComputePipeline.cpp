@@ -11,7 +11,7 @@ void VKW_ComputePipeline::init(const VKW_Device* vkw_device, const std::string& 
 
 	// Compute shader associated with pipeline
 	VKW_Shader compute_shader{};
-	compute_shader.init(device, shader_path, VK_SHADER_STAGE_COMPUTE_BIT, "Curvature compute shader");
+	compute_shader.init(device, shader_path, VK_SHADER_STAGE_COMPUTE_BIT, name + " shader");
 	pipeline_info.stage = compute_shader.get_info();
 
 	// Pipeline layout
