@@ -1,13 +1,15 @@
 # Planned features
 
 ## General features
-* Implement best practises as reported by validation layers [~]
+* Implement best practises as reported by validation layers [X]
 * Tracy [ ]
 * Shader includes with a shared file for common helper functions [ ] 
 * Model Loading [ ]
 * PBRT materials [ ]
 * Anti Aliasing [ ] 
 * Maybe experiment with Slang [ ] 
+* Check best practises and synchronization regularly 
+
 
 ## Bugs
 * Flickering at high frame rates [ ]

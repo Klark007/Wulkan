@@ -80,20 +80,20 @@ VkImageView Texture::get_image_view(VkImageAspectFlags aspect_flag, VkImageViewT
 		view_info.viewType = type;
 		view_info.format = format;
 
-		view_info.subresourceRange.aspectMask = aspect_flag;
+view_info.subresourceRange.aspectMask = aspect_flag;
 
-		view_info.subresourceRange.baseMipLevel = 0;
-		view_info.subresourceRange.levelCount = 1;
-	
-		view_info.subresourceRange.baseArrayLayer = base_layer;
-		view_info.subresourceRange.layerCount = array_layers;
+view_info.subresourceRange.baseMipLevel = 0;
+view_info.subresourceRange.levelCount = 1;
 
-		VkImageView image_view;
-		VK_CHECK_ET(vkCreateImageView(*device, &view_info, nullptr, &image_view), RuntimeException, std::format("Failed to create image ({}) view for aspect {}", name, aspect_flag));
-		device->name_object((uint64_t)image_view, VK_OBJECT_TYPE_IMAGE_VIEW, name + " view");
+view_info.subresourceRange.baseArrayLayer = base_layer;
+view_info.subresourceRange.layerCount = array_layers;
 
-		image_views[tuple] = image_view;
-		return image_view;
+VkImageView image_view;
+VK_CHECK_ET(vkCreateImageView(*device, &view_info, nullptr, &image_view), RuntimeException, std::format("Failed to create image ({}) view for aspect {}", name, aspect_flag));
+device->name_object((uint64_t)image_view, VK_OBJECT_TYPE_IMAGE_VIEW, name + " view");
+
+image_views[tuple] = image_view;
+return image_view;
 	}
 }
 
@@ -107,7 +107,7 @@ void Texture::transition_layout(const VKW_CommandPool* command_pool, VkImageLayo
 		"Layout Transition Single Use CMD"
 	);
 	command_buffer.begin_single_use();
-	
+
 	transition_layout(command_buffer, image, initial_layout, new_layout, old_ownership, new_ownership);
 
 	command_buffer.submit_single_use();
@@ -170,6 +170,27 @@ void Texture::transition_layout(const VKW_CommandBuffer& command_buffer, VkImage
 		barrier.srcAccessMask = VK_ACCESS_2_NONE; // nothing from before as data is undefined
 		barrier.dstAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
 	}
+	else if (initial_layout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL && new_layout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL) {
+		barrier.srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+		barrier.dstStageMask = VK_PIPELINE_STAGE_2_ALL_TRANSFER_BIT_KHR;
+
+		barrier.srcAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
+		barrier.dstAccessMask = VK_ACCESS_2_TRANSFER_READ_BIT;
+	}
+	else if (initial_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && new_layout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL) {
+		barrier.srcStageMask = VK_PIPELINE_STAGE_2_ALL_TRANSFER_BIT_KHR;
+		barrier.dstStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+		barrier.srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
+		barrier.dstAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT;
+	}
+	else if (initial_layout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL && new_layout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR) {
+		barrier.srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+		barrier.dstStageMask = VK_PIPELINE_STAGE_2_BOTTOM_OF_PIPE_BIT;
+
+		barrier.srcAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
+		barrier.dstAccessMask = VK_ACCESS_2_NONE; 
+	}
 	else if (initial_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && new_layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
 		barrier.srcStageMask = VK_PIPELINE_STAGE_2_ALL_TRANSFER_BIT_KHR;
 		barrier.dstStageMask = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT
@@ -178,6 +199,14 @@ void Texture::transition_layout(const VKW_CommandBuffer& command_buffer, VkImage
 
 		barrier.srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT;
 		barrier.dstAccessMask = VK_ACCESS_2_SHADER_READ_BIT;
+	}
+	else if (initial_layout == VK_IMAGE_LAYOUT_UNDEFINED && new_layout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL) {
+		// new texture to be used as color attachment
+		barrier.srcStageMask = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT;
+		barrier.dstStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+		barrier.srcAccessMask = VK_ACCESS_2_NONE;
+		barrier.dstAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT;
 	}
 	else if (initial_layout == VK_IMAGE_LAYOUT_UNDEFINED && new_layout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL) {
 		// new texture to be used as a depth attachment

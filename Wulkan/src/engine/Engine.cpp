@@ -253,7 +253,6 @@ void Engine::draw()
 			// draw imgui
 			gui.draw(cmd, current_swapchain_image_idx);
 
-
 			// transition for present
 			Texture::transition_layout(cmd, swapchain.images_at(current_swapchain_image_idx), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 		}
@@ -284,7 +283,6 @@ void Engine::late_update()
 
 }
 
-// TODO: Query glfwGetRequiredInstanceExtensions() and add it to list of required extensions
 void Engine::init_glfw()
 {
 	if (!glfwInit()) {
@@ -682,7 +680,9 @@ std::vector<const char*> Engine::get_required_instance_extensions()
 	glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
 	std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+#ifdef DEBUG
 	extensions.push_back("VK_EXT_debug_utils");
+#endif
 
 	return extensions;
 }
