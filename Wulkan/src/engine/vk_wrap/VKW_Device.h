@@ -69,7 +69,7 @@ inline void VKW_Device::name_object(uint64_t object_handle, VkObjectType object_
 	name_info.objectType = object_type;
 	name_info.pObjectName = name.c_str();
 
-#ifdef DEBUG
+#ifndef NDEBUG
 	vkSetDebugUtilsObjectNameEXT(device, &name_info);
 #endif
 }

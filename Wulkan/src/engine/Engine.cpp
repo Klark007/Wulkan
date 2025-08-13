@@ -16,6 +16,9 @@
 
 void Engine::init(unsigned int w, unsigned int h)
 {
+#ifndef NDEBUG
+	std::cout << "DEBUGGING" << std::endl;
+#endif
 	res_x = w;
 	res_y = h;
 
@@ -680,7 +683,7 @@ std::vector<const char*> Engine::get_required_instance_extensions()
 	glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
 	std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
-#ifdef DEBUG
+#ifndef NDEBUG
 	extensions.push_back("VK_EXT_debug_utils");
 #endif
 
