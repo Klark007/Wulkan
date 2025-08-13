@@ -2,7 +2,7 @@
 
 ## General features
 * Implement best practises as reported by validation layers [X]
-* Tracy [ ]
+* Tracy [~]
 * Shader includes with a shared file for common helper functions [ ] 
 * Model Loading [ ]
 * PBRT materials [ ]

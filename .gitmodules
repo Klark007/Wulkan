@@ -1,0 +1,3 @@
+[submodule "Wulkan/external/tracy"]
+	path = Wulkan/external/tracy
+	url = https://github.com/wolfpld/tracy

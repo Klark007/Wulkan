@@ -65,14 +65,17 @@ void Engine::run()
 			resize_window = false;
 		}
 
+		FrameMark;
 	}
 
 	vkDeviceWaitIdle(device);
 }
-
+	
 
 void Engine::update()
 {
+	ZoneScoped;
+
 	glfwPollEvents();
 
 	camera_controller.update_time();
@@ -102,6 +105,8 @@ void Engine::update()
 
 void Engine::draw()
 {
+	ZoneScoped;
+
 	// shadow pass		
 	get_current_graphics_pool().reset();
 
@@ -274,6 +279,8 @@ void Engine::draw()
 
 void Engine::present()
 {
+	ZoneScoped;
+
 	if (!swapchain.present({ get_current_render_semaphore() }, current_swapchain_image_idx)) {
 		std::cout << "Recreate swapchain (Present)" << std::endl;
 		resize_window = true;
@@ -282,6 +289,8 @@ void Engine::present()
 
 void Engine::late_update()
 {
+	ZoneScoped;
+
 	current_frame = (current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
 
 }
@@ -632,6 +641,8 @@ void Engine::create_sync_structs()
 
 bool Engine::aquire_image()
 {
+	ZoneScoped;
+
 	// Wait such that we are not still drawing into this frame (but we might not have presented it properly)
 	VkFence render_fence = get_current_render_fence();
 	VK_CHECK_E(vkWaitForFences(device, 1, &render_fence, VK_TRUE, UINT64_MAX), RuntimeException);
