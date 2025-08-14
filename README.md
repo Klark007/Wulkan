@@ -6,7 +6,7 @@ TODO
 
 ### Dependencies
 
-GLFW
+GLFW \\
 Volk
 vk-bootstrap
 vma

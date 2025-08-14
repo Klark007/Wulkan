@@ -37,8 +37,11 @@ Engine::~Engine()
 		VK_DESTROY(sync_structs.at(i).swapchain_semaphore, vkDestroySemaphore, device, sync_structs.at(i).swapchain_semaphore);
 		VK_DESTROY(sync_structs.at(i).render_semaphore, vkDestroySemaphore, device, sync_structs.at(i).render_semaphore);
 		VK_DESTROY(sync_structs.at(i).render_fence, vkDestroyFence, device, sync_structs.at(i).render_fence);
+
+		TracyVkDestroy(command_structs.at(i).graphics_queue_tracy_context);
 	}
 
+	
 	cleanup_queue.del_all_obj();
 
 	glfwDestroyWindow(window);
@@ -120,6 +123,8 @@ void Engine::draw()
 		{
 			// draw using depth only pipelines
 			{
+				TracyVkZone(get_current_tracy_context(), shadow_cmd, "Shadow [Depth Only]");
+
 				VKW_GraphicsPipeline& pipeline = terrain_depth_pipeline;
 				pipeline.set_render_size(directional_light.get_texture().get_extent());
 
@@ -154,13 +159,15 @@ void Engine::draw()
 		cmd.begin();
 	
 		{
+
 			// initial layout transitions
 			Texture::transition_layout(cmd, color_render_target, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 			Texture::transition_layout(cmd, depth_render_target, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL); // TODO check if necessary for depth each frame
 
 			// draw environment map
 			{
-			
+				TracyVkZone(get_current_tracy_context(), cmd, "Environment map");
+
 				VKW_GraphicsPipeline& pipeline = environment_map_pipeline;
 				pipeline.set_render_size(swapchain.get_extent());
 
@@ -190,6 +197,8 @@ void Engine::draw()
 
 			// draw terrain
 			{
+				TracyVkZone(get_current_tracy_context(), cmd, "Terrain");
+
 				VKW_GraphicsPipeline& pipeline = (gui_input.terrain_wireframe_mode) ? terrain_wireframe_pipelines.at(gui_input.nr_shadow_cascades - 1) : terrain_pipelines.at(gui_input.nr_shadow_cascades - 1);
 				pipeline.set_render_size(swapchain.get_extent());
 
@@ -219,6 +228,8 @@ void Engine::draw()
 
 			// draw lines
 			{
+				TracyVkZone(get_current_tracy_context(), cmd, "Debug Lines");
+
 				VKW_GraphicsPipeline& pipeline = line_pipeline;
 				pipeline.set_render_size(swapchain.get_extent());
 
@@ -265,6 +276,8 @@ void Engine::draw()
 			Texture::transition_layout(cmd, swapchain.images_at(current_swapchain_image_idx), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 		}
 	
+		TracyVkCollect(get_current_tracy_context(), cmd);
+
 		// end and submit command buffer
 
 		cmd.submit(
@@ -604,6 +617,7 @@ void Engine::create_command_structs()
 			{},
 			{},
 			{},
+			{},
 		};
 
 		command_structs.at(i).graphics_command_pool.init(&device, &graphics_queue, "Graphics pool");
@@ -614,6 +628,9 @@ void Engine::create_command_structs()
 		cleanup_queue.add(&command_structs.at(i).transfer_command_pool);
 		
 		command_structs.at(i).graphics_command_buffer.init(&device, &command_structs.at(i).graphics_command_pool, false, "Draw CMD");
+
+		command_structs.at(i).graphics_queue_tracy_context = TracyVkContext(device.get_physical_device(), device, graphics_queue, command_structs.at(i).graphics_command_buffer);
+		TracyVkContextName(command_structs.at(i).graphics_queue_tracy_context, "Graphics Context", sizeof("Graphics Context"));
 	}
 }
 

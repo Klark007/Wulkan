@@ -46,6 +46,7 @@ struct CommandStructs {
 	VKW_CommandPool graphics_command_pool;
 	VKW_CommandPool transfer_command_pool;
 	VKW_CommandBuffer graphics_command_buffer;
+	TracyVkCtx graphics_queue_tracy_context;
 };
 
 struct SyncStructs {
@@ -169,6 +170,7 @@ public: // TODO: remove public
 	inline const VKW_CommandPool& get_current_graphics_pool() const;
 	inline const VKW_CommandPool& get_current_transfer_pool() const;
 	inline const VKW_CommandBuffer& get_current_command_buffer() const;
+	inline const TracyVkCtx& get_current_tracy_context() const;
 	inline VkSemaphore get_current_swapchain_semaphore() const;
 	inline VkSemaphore get_current_render_semaphore() const;
 	inline VkFence get_current_render_fence() const;
@@ -201,6 +203,11 @@ inline const VKW_CommandPool& Engine::get_current_transfer_pool() const
 inline const VKW_CommandBuffer& Engine::get_current_command_buffer() const
 {
 	return command_structs[current_frame].graphics_command_buffer;
+}
+
+inline const TracyVkCtx& Engine::get_current_tracy_context() const
+{
+	return command_structs[current_frame].graphics_queue_tracy_context;
 }
 
 inline VkSemaphore Engine::get_current_swapchain_semaphore() const
