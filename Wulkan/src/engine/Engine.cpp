@@ -629,7 +629,7 @@ void Engine::create_command_structs()
 		
 		command_structs.at(i).graphics_command_buffer.init(&device, &command_structs.at(i).graphics_command_pool, false, "Draw CMD");
 
-		command_structs.at(i).graphics_queue_tracy_context = TracyVkContext(device.get_physical_device(), device, graphics_queue, command_structs.at(i).graphics_command_buffer);
+		command_structs.at(i).graphics_queue_tracy_context = TracyVkContextCalibrated(device.get_physical_device(), device, graphics_queue, command_structs.at(i).graphics_command_buffer, vkGetPhysicalDeviceCalibrateableTimeDomainsEXT, vkGetCalibratedTimestampsEXT);
 		TracyVkContextName(command_structs.at(i).graphics_queue_tracy_context, "Graphics Context", sizeof("Graphics Context"));
 	}
 }
@@ -722,6 +722,11 @@ std::vector<const char*> Engine::get_required_device_extensions()
 {
 	// VK_KHR_SWAPCHAIN_EXTENSION_NAME is added automatically
 	std::vector<const char*> extensions{};
+
+#ifdef TRACY_ENABLE
+	extensions.push_back("VK_EXT_calibrated_timestamps");
+#endif
+
 	return extensions;
 }
 

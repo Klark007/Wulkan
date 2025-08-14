@@ -400,5 +400,4 @@ FodyWeavers.xsd
 
 *.exe
 x64/
-Wulkan/imgui.ini
-*.ini
+/Wulkan/imgui.ini
