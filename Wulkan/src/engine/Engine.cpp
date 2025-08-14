@@ -37,8 +37,11 @@ Engine::~Engine()
 		VK_DESTROY(sync_structs.at(i).swapchain_semaphore, vkDestroySemaphore, device, sync_structs.at(i).swapchain_semaphore);
 		VK_DESTROY(sync_structs.at(i).render_semaphore, vkDestroySemaphore, device, sync_structs.at(i).render_semaphore);
 		VK_DESTROY(sync_structs.at(i).render_fence, vkDestroyFence, device, sync_structs.at(i).render_fence);
+
+		TracyVkDestroy(command_structs.at(i).graphics_queue_tracy_context);
 	}
 
+	
 	cleanup_queue.del_all_obj();
 
 	glfwDestroyWindow(window);
@@ -65,14 +68,17 @@ void Engine::run()
 			resize_window = false;
 		}
 
+		FrameMark;
 	}
 
 	vkDeviceWaitIdle(device);
 }
-
+	
 
 void Engine::update()
 {
+	ZoneScoped;
+
 	glfwPollEvents();
 
 	camera_controller.update_time();
@@ -102,6 +108,8 @@ void Engine::update()
 
 void Engine::draw()
 {
+	ZoneScoped;
+
 	// shadow pass		
 	get_current_graphics_pool().reset();
 
@@ -115,6 +123,8 @@ void Engine::draw()
 		{
 			// draw using depth only pipelines
 			{
+				TracyVkZone(get_current_tracy_context(), shadow_cmd, "Shadow [Depth Only]");
+
 				VKW_GraphicsPipeline& pipeline = terrain_depth_pipeline;
 				pipeline.set_render_size(directional_light.get_texture().get_extent());
 
@@ -149,13 +159,15 @@ void Engine::draw()
 		cmd.begin();
 	
 		{
+
 			// initial layout transitions
 			Texture::transition_layout(cmd, color_render_target, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 			Texture::transition_layout(cmd, depth_render_target, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL); // TODO check if necessary for depth each frame
 
 			// draw environment map
 			{
-			
+				TracyVkZone(get_current_tracy_context(), cmd, "Environment map");
+
 				VKW_GraphicsPipeline& pipeline = environment_map_pipeline;
 				pipeline.set_render_size(swapchain.get_extent());
 
@@ -185,6 +197,8 @@ void Engine::draw()
 
 			// draw terrain
 			{
+				TracyVkZone(get_current_tracy_context(), cmd, "Terrain");
+
 				VKW_GraphicsPipeline& pipeline = (gui_input.terrain_wireframe_mode) ? terrain_wireframe_pipelines.at(gui_input.nr_shadow_cascades - 1) : terrain_pipelines.at(gui_input.nr_shadow_cascades - 1);
 				pipeline.set_render_size(swapchain.get_extent());
 
@@ -214,6 +228,8 @@ void Engine::draw()
 
 			// draw lines
 			{
+				TracyVkZone(get_current_tracy_context(), cmd, "Debug Lines");
+
 				VKW_GraphicsPipeline& pipeline = line_pipeline;
 				pipeline.set_render_size(swapchain.get_extent());
 
@@ -260,6 +276,8 @@ void Engine::draw()
 			Texture::transition_layout(cmd, swapchain.images_at(current_swapchain_image_idx), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 		}
 	
+		TracyVkCollect(get_current_tracy_context(), cmd);
+
 		// end and submit command buffer
 
 		cmd.submit(
@@ -274,6 +292,8 @@ void Engine::draw()
 
 void Engine::present()
 {
+	ZoneScoped;
+
 	if (!swapchain.present({ get_current_render_semaphore() }, current_swapchain_image_idx)) {
 		std::cout << "Recreate swapchain (Present)" << std::endl;
 		resize_window = true;
@@ -282,6 +302,8 @@ void Engine::present()
 
 void Engine::late_update()
 {
+	ZoneScoped;
+
 	current_frame = (current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
 
 }
@@ -595,6 +617,7 @@ void Engine::create_command_structs()
 			{},
 			{},
 			{},
+			{},
 		};
 
 		command_structs.at(i).graphics_command_pool.init(&device, &graphics_queue, "Graphics pool");
@@ -605,6 +628,9 @@ void Engine::create_command_structs()
 		cleanup_queue.add(&command_structs.at(i).transfer_command_pool);
 		
 		command_structs.at(i).graphics_command_buffer.init(&device, &command_structs.at(i).graphics_command_pool, false, "Draw CMD");
+
+		command_structs.at(i).graphics_queue_tracy_context = TracyVkContextCalibrated(device.get_physical_device(), device, graphics_queue, command_structs.at(i).graphics_command_buffer, vkGetPhysicalDeviceCalibrateableTimeDomainsEXT, vkGetCalibratedTimestampsEXT);
+		TracyVkContextName(command_structs.at(i).graphics_queue_tracy_context, "Graphics Context", sizeof("Graphics Context"));
 	}
 }
 
@@ -632,6 +658,8 @@ void Engine::create_sync_structs()
 
 bool Engine::aquire_image()
 {
+	ZoneScoped;
+
 	// Wait such that we are not still drawing into this frame (but we might not have presented it properly)
 	VkFence render_fence = get_current_render_fence();
 	VK_CHECK_E(vkWaitForFences(device, 1, &render_fence, VK_TRUE, UINT64_MAX), RuntimeException);
@@ -694,6 +722,11 @@ std::vector<const char*> Engine::get_required_device_extensions()
 {
 	// VK_KHR_SWAPCHAIN_EXTENSION_NAME is added automatically
 	std::vector<const char*> extensions{};
+
+#ifdef TRACY_ENABLE
+	extensions.push_back("VK_EXT_calibrated_timestamps");
+#endif
+
 	return extensions;
 }
 

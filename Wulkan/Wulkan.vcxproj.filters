@@ -135,6 +135,9 @@
     <ClCompile Include="src\engine\PoissonSampling.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="external\tracy\public\TracyClient.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\compile.bat">

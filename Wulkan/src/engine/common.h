@@ -23,6 +23,9 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 
+#include "tracy/Tracy.hpp"
+#include "tracy/TracyVulkan.hpp"
+
 constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 2;
 
 struct UniformStruct {
