@@ -2,14 +2,19 @@
 
 ## General features
 * Implement best practises as reported by validation layers [X]
-* Tracy [~]
 * Shader includes with a shared file for common helper functions [ ] 
 * Model Loading [ ]
 * PBRT materials [ ]
 * Anti Aliasing [ ] 
 * Maybe experiment with Slang [ ] 
-* Check best practises and synchronization regularly 
+* Check best practises and synchronization regularly [ ]
 
+# Tracy 
+* CPU side basics [X]
+* GPU side basics [X]
+* Synchronization [X]
+* CPU Memory usage [ ]
+* GPU Memory usage [ ] 
 
 ## Bugs
 * Flickering at high frame rates [ ]
