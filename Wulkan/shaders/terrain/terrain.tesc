@@ -1,31 +1,16 @@
 #version 450
 // Controlls how strong this quad will be tesselated
 
+#include "../common.shader"
+#include "terrain_common.shader"
+
 layout(location = 0) in vec3 inPos[];
 layout(location = 1) in vec2 inUV[];
 layout(location = 2) in vec3 inNormal[];
 layout(location = 3) in vec4 inColor[];
 
-layout(binding = 0) uniform UniformData {
-    mat4 view;
-    mat4 _inv_view;
-    mat4 virtual_view;
-    mat4 proj;
-    vec2 near_far_plane;
-} ubo;
-
 layout(binding = 4) uniform sampler2D height_map;
 layout(binding = 5) uniform sampler2D curvature;
-
-layout( push_constant ) uniform constants
-{
-    mat4 model;
-    float tesselation_strength;
-    float max_tesselation;
-    float texture_eps;
-    int visualization_mode;
-    int _cascade_idx;
-} pc;
 
 layout (vertices = 4) out;
 
@@ -46,13 +31,17 @@ vec4 debug_level(float str) {
 }
 
 vec4 compute_tesselation_level();
-bool is_culled();
 
 void main()
 {
     if (gl_InvocationID == 0)
     {
-        if (is_culled()) {
+        if (is_culled(
+            vec3[4](inPos[0], inPos[1], inPos[2], inPos[3]), 
+            vec2[4](inUV[0], inUV[1], inUV[2], inUV[3]), 
+            ubo.proj * ubo.virtual_view * pc.model, 
+            height_map)) 
+        {
             gl_TessLevelOuter[0] = 0;
             gl_TessLevelOuter[1] = 0;
             gl_TessLevelOuter[2] = 0;
@@ -96,78 +85,6 @@ void main()
     } 
 }
 
-bool is_culled() {
-    // extract frustum planes in object space https://www.gamedevs.org/uploads/fast-extraction-viewing-frustum-planes-from-world-view-projection-matrix.pdf
-    mat4 MVP = ubo.proj * ubo.virtual_view * pc.model;
-    
-    vec4 left = vec4(0);
-    for (int i = 0; i < 4; i++) {
-        left[i] = MVP[i][3] + MVP[i][0];
-    }
-    
-    vec4 right = vec4(0);
-    for (int i = 0; i < 4; i++) {
-        right[i] = MVP[i][3] - MVP[i][0];
-    }
-
-    vec4 bottom = vec4(0);
-    for (int i = 0; i < 4; i++) {
-        bottom[i] = MVP[i][3] + MVP[i][1];
-    }
-
-    vec4 top = vec4(0);
-    for (int i = 0; i < 4; i++) {
-        top[i] = MVP[i][3] - MVP[i][1];
-    }
-
-    vec4 near = vec4(0);
-    for (int i = 0; i < 4; i++) {
-        near[i] = MVP[i][3] + MVP[i][2];
-    }
-
-    vec4 far = vec4(0);
-    for (int i = 0; i < 4; i++) {
-        far[i] = MVP[i][3] - MVP[i][2];
-    }
-    
-    vec4 planes[6] = vec4[6](left, right, bottom, top, near, far);
-
-
-    // bounding box
-    float eps = 0.01; // bias as texture is only sampled at the vertices of the patch
-    vec3 min_pos = inPos[0];
-    min_pos.z = (texture(height_map, inUV[0]).r - eps);
-
-    vec3 max_pos = inPos[0];
-    max_pos.z = (texture(height_map, inUV[0]).r + eps);
-    
-    for (int i=1; i < 4; i++) {
-        vec3 pos = inPos[i];
-        pos.z = texture(height_map, inUV[i]).r;
-
-        min_pos = min(min_pos, pos);
-        max_pos = max(max_pos, pos);
-    }
-
-    for (int i = 0; i < 6; i++) {
-        bool outside = true;
-
-        outside = outside && dot(planes[i], vec4(min_pos.x, min_pos.y, min_pos.z, 1)) < 0;
-        outside = outside && dot(planes[i], vec4(max_pos.x, min_pos.y, min_pos.z, 1)) < 0;
-        outside = outside && dot(planes[i], vec4(min_pos.x, max_pos.y, min_pos.z, 1)) < 0;
-        outside = outside && dot(planes[i], vec4(min_pos.x, min_pos.y, max_pos.z, 1)) < 0;
-        outside = outside && dot(planes[i], vec4(max_pos.x, max_pos.y, min_pos.z, 1)) < 0;
-        outside = outside && dot(planes[i], vec4(min_pos.x, max_pos.y, max_pos.z, 1)) < 0;
-        outside = outside && dot(planes[i], vec4(max_pos.x, min_pos.y, max_pos.z, 1)) < 0;
-        outside = outside && dot(planes[i], vec4(max_pos.x, max_pos.y, max_pos.z, 1)) < 0;
-
-        if (outside) {
-            return true; // is culled
-        }
-    }
-
-    return false;
-}
 
 vec4 project_point(vec4 p, vec2 uv) {
     p.z = texture(height_map, uv).r;
@@ -175,19 +92,6 @@ vec4 project_point(vec4 p, vec2 uv) {
     proj_p = proj_p / proj_p.w;
 
     return proj_p;
-}
-
-float linearize_depth(float d)
-{
-    return ubo.near_far_plane.x * ubo.near_far_plane.y / (ubo.near_far_plane.y + d * (ubo.near_far_plane.x - ubo.near_far_plane.y));
-}
-
-float map(float value, float min1, float max1, float min2, float max2) {
-  return min2 + (value - min1) * (max2 - min2) / (max1 - min1);
-}
-
-float inout_bezier(float x) {
-    return x * x * (3 - 2*x);
 }
 
 vec4 compute_tesselation_level() {
@@ -210,7 +114,7 @@ vec4 compute_tesselation_level() {
             }
         }
 
-        float linear_depth = map(linearize_depth(project_point(vec4(inPos[i],1), inUV[i]).z), ubo.near_far_plane.x, ubo.near_far_plane.y, 0, 1);
+        float linear_depth = linearize_depth_01(project_point(vec4(inPos[i],1), inUV[i]).z, ubo.near_far_plane.x, ubo.near_far_plane.y);
 
         res[i] = abs_h / nr_samples * inout_bezier(1 - linear_depth);
     }

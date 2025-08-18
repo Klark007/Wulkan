@@ -149,7 +149,7 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>C:\VulkanSDK\1.3.290.0\Include;C:\VulkanSDK\1.3.268.0\Include;external\volk;external\vk-bootstrap;external\imgui\;external\miniz;external\include;external\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\VulkanSDK\1.3.290.0\Include;C:\VulkanSDK\1.3.268.0\Include;external\volk;external\vk-bootstrap;external\imgui\;external\miniz;external\tracy\public;external\include;external\</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -167,7 +167,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>C:\VulkanSDK\1.3.290.0\Include;C:\VulkanSDK\1.3.268.0\Include;external\volk;external\vk-bootstrap;external\imgui\;external\miniz;external\include;external\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\VulkanSDK\1.3.290.0\Include;C:\VulkanSDK\1.3.268.0\Include;external\volk;external\vk-bootstrap;external\imgui\;external\miniz;external\tracy\public;external\include;external\</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -242,9 +242,13 @@
     <ClCompile Include="src\engine\vk_wrap\VKW_ComputePipeline.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="shaders\common.shader" />
     <None Include="shaders\compile.bat" />
     <None Include="shaders\line\line.frag" />
     <None Include="shaders\line\line.vert" />
+    <None Include="shaders\pbr\shadow.shader" />
+    <None Include="shaders\sampling.shader" />
+    <None Include="shaders\terrain\terrain_common.shader" />
     <None Include="src\engine\vk_wrap\README.md" />
     <None Include="TODO.md" />
   </ItemGroup>

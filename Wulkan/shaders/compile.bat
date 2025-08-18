@@ -24,7 +24,7 @@ for /r %%i in (*.vert) do (
 
 echo !line!
 
-echo Fragment shaders: \n
+echo Fragment shaders:
 echo.
 for /r %%i in (*.frag) do (
     echo Compiling %%i into %%~ni_frag.spv
@@ -35,18 +35,7 @@ for /r %%i in (*.frag) do (
 
 echo !line!
 
-echo Tesselation evaluation shaders: \n
-echo.
-for /r %%i in (*.tese) do (
-    echo Compiling %%i into %%~ni_tese.spv
-    echo(
-
-    %GLSLO% -o %%~dpi%%~ni_tese.spv
-)
-
-echo !line!
-
-echo Tesselation control shaders: \n
+echo Tesselation control shaders: 
 echo.
 for /r %%i in (*.tesc) do (
     echo Compiling %%i into %%~ni_tesc.spv
@@ -57,7 +46,19 @@ for /r %%i in (*.tesc) do (
 
 echo !line!
 
-echo Compute shaders: \n
+echo Tesselation evaluation shaders:
+echo.
+for /r %%i in (*.tese) do (
+    echo Compiling %%i into %%~ni_tese.spv
+    echo(
+
+    %GLSLO% -o %%~dpi%%~ni_tese.spv
+)
+
+
+echo !line!
+
+echo Compute shaders: 
 echo.
 for /r %%i in (*.comp) do (
     echo Compiling %%i into %%~ni_comp.spv

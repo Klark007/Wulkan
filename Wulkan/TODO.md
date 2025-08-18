@@ -2,7 +2,7 @@
 
 ## General features
 * Implement best practises as reported by validation layers [X]
-* Shader includes with a shared file for common helper functions [ ] 
+* Shader includes with a shared file for common helper functions [X] 
 * Model Loading [ ]
 * PBRT materials [ ]
 * Anti Aliasing [ ] 

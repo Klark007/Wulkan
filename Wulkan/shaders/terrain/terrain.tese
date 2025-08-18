@@ -1,32 +1,15 @@
 #version 450
 // implements how properties will be interpolated for the newly tesselated vertices as well as projects said vertices
 
+#include "../common.shader"
+#include "terrain_common.shader"
 
 layout (quads, fractional_odd_spacing, cw) in;
 layout(location = 0) in vec2 inUV[];
 layout(location = 1) in vec3 inNormal[];
 layout(location = 2) in vec4 inColor[];
 
-layout(binding = 0) uniform UniformData {
-    mat4 view;
-    mat4 _inv_view;
-    mat4 _virtual_view;
-    mat4 proj;
-    vec2 _near_far_plane;
-} ubo;
-
 layout(binding = 4) uniform sampler2D height_map;
-
-
-layout( push_constant ) uniform constants
-{
-    mat4 model;
-    float _tesselation_strength;
-    float _max_tesselation;
-    float _texture_eps;
-    int _visualization_mode;
-    int _cascade_idx;
-} pc;
 
 layout(location = 0) out vec3 outWorldPos;
 layout(location = 1) out vec2 outUV;

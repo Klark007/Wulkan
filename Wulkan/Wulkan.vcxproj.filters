@@ -147,6 +147,10 @@
     <None Include="shaders\line\line.frag" />
     <None Include="shaders\line\line.vert" />
     <None Include="TODO.md" />
+    <None Include="shaders\terrain\terrain_common.shader" />
+    <None Include="shaders\common.shader" />
+    <None Include="shaders\pbr\shadow.shader" />
+    <None Include="shaders\sampling.shader" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\engine\CameraController.h">
