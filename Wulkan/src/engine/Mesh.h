@@ -10,6 +10,8 @@
 
 #include <glm/glm.hpp>
 
+#include <optional>
+
 // uv interleaved due to GPU allignment 
 struct Vertex {
 	glm::vec3 position;
@@ -24,17 +26,20 @@ class Mesh : public Shape
 public:
 	Mesh() = default;
 	void init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices);
+	// can also be initialized without owning the vertex buffer (i.e. shared between multiple meshes)
+	void init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, VkDeviceAddress vert_addr, const std::vector<uint32_t>& indices);
 	void del() override;
 
 	// binds the indices and calls vkCmdDrawIndexed, expects to be in active command buffer
 	inline void draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame, const VKW_GraphicsPipeline& pipeline) override;
 protected:
-	VKW_Buffer vertex_buffer;
+	std::optional<VKW_Buffer> vertex_buffer;
 	VkDeviceAddress vertex_address;
 
 	VKW_Buffer index_buffer;
 	uint32_t nr_indices;
 public:
+	void set_vertex_address(VkDeviceAddress address) { vertex_address = address; };
 	VkDeviceAddress get_vertex_address() const { return vertex_address; };
 };
 
@@ -46,3 +51,5 @@ inline void Mesh::draw(const VKW_CommandBuffer& command_buffer, uint32_t _curren
 	vkCmdDrawIndexed(command_buffer, nr_indices, 1, 0, 0, 0);
 }
 
+// initializes a vertex buffer and also sets it's device address
+void create_vertex_buffer(const VKW_Device& device, const VKW_CommandPool& transfer_pool, const std::vector<Vertex>& vertices, VKW_Buffer& vertex_buffer, VkDeviceAddress& vertex_address);

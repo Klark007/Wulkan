@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -200,6 +200,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="external\tracy\public\TracyClient.cpp" />
+    <ClCompile Include="src\engine\Material.cpp" />
+    <ClCompile Include="src\engine\ObjMesh.cpp" />
     <ClCompile Include="src\engine\PoissonSampling.cpp" />
     <ClCompile Include="src\engine\Frustum.cpp" />
     <ClCompile Include="src\engine\common.cpp" />
@@ -254,7 +256,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="external\include\rapidcsv.h" />
+    <ClInclude Include="external\include\tiny_obj_loader.h" />
     <ClInclude Include="external\include\tph_poisson.h" />
+    <ClInclude Include="src\engine\Material.h" />
+    <ClInclude Include="src\engine\ObjMesh.h" />
     <ClInclude Include="src\engine\PoissonSampling.h" />
     <ClInclude Include="src\engine\Frustum.h" />
     <ClInclude Include="src\engine\Line.h" />

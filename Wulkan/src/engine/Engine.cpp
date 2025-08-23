@@ -465,6 +465,9 @@ void Engine::init_data()
 	);
 	environment_map.set_descriptor_bindings(uniform_buffers, linear_texture_sampler);
 	cleanup_queue.add(&environment_map);
+
+	mesh.init(device, get_current_transfer_pool(), "models/base.obj");
+	cleanup_queue.add(&mesh);
 }
 
 void Engine::create_texture_samplers()
@@ -751,7 +754,7 @@ Required_Device_Features Engine::get_required_device_features()
 void glfm_mouse_move_callback(GLFWwindow* window, double pos_x, double pos_y) {
 	Engine* engine = reinterpret_cast<Engine*>(glfwGetWindowUserPointer(window));
 	if (engine) {
-		engine->camera_controller.handle_mouse(pos_x, pos_y);
+		engine->get_camera_controller().handle_mouse(pos_x, pos_y);
 	}
 	else {
 		throw SetupException("GLFW Engine User pointer not set", __FILE__, __LINE__);

@@ -6,18 +6,20 @@ TODO
 
 ### Dependencies
 
-GLFW \\
-Volk
-vk-bootstrap
-vma
-imgui
-glm
-rapidcsv
-stb_image
-tinyexr
-miniz (used by tinyexr)
-tph_poisson
-tracy
+* GLFW
+* Volk
+* vk-bootstrap
+* vma
+* imgui
+* glm
+* rapidcsv
+* stb_image
+* tinyexr
+* miniz (used by tinyexr)
+* tph_poisson
+* tracy
+* tinyobjloader
+
 
 ## Features
 Terrain with Dynamic Tesselation based on curvature and distance

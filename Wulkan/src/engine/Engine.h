@@ -34,6 +34,7 @@
 #include "Line.h"
 #include "Frustum.h"
 #include "DirectionalLight.h"
+#include "ObjMesh.h"
 
 #include "Gui.h"
 
@@ -110,7 +111,6 @@ private:
 	inline std::vector<const char*> get_required_device_extensions();
 	Required_Device_Features get_required_device_features();
 
-public: // TODO: remove public
 	VKW_Instance instance;
 	VKW_Surface surface;
 	VKW_Device device;
@@ -141,6 +141,16 @@ public: // TODO: remove public
 	VKW_Sampler mirror_texture_sampler;
 	VKW_Sampler shadow_map_gather_sampler;
 
+	// Input into shaders
+	VKW_DescriptorPool imgui_descriptor_pool;
+
+	VKW_DescriptorPool descriptor_pool;
+
+	std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT> uniform_buffers;
+
+	std::array<CommandStructs, MAX_FRAMES_IN_FLIGHT> command_structs;
+	std::array<SyncStructs, MAX_FRAMES_IN_FLIGHT> sync_structs;
+
 	// Terrain data
 	SharedTerrainData shared_terrain_data;
 	Terrain terrain;
@@ -151,21 +161,12 @@ public: // TODO: remove public
 
 	// Lines (for debugging etc)
 	SharedLineData shared_line_data;
-	
+
 	// Directional light
 	DirectionalLight directional_light;
 
 
-	// Input into shaders
-	VKW_DescriptorPool imgui_descriptor_pool;
-
-	VKW_DescriptorPool descriptor_pool;
-
-	std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT> uniform_buffers;
-
-
-	std::array<CommandStructs, MAX_FRAMES_IN_FLIGHT> command_structs;
-	std::array<SyncStructs, MAX_FRAMES_IN_FLIGHT> sync_structs;
+	ObjMesh mesh;
 
 	inline const VKW_CommandPool& get_current_graphics_pool() const;
 	inline const VKW_CommandPool& get_current_transfer_pool() const;
@@ -182,9 +183,8 @@ public: // TODO: remove public
 	GUI gui;
 	GUI_Input gui_input;
 	Camera camera;
-private:
-
 public:
+	CameraController& get_camera_controller() { return camera_controller; };
 
 	inline void resize_callback(unsigned int new_x, unsigned int new_y);
 	struct GLFWwindow* get_window() const { return window; };
