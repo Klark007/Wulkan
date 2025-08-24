@@ -77,7 +77,9 @@ inline VKW_GraphicsPipeline EnvironmentMap::create_pipeline(const VKW_Device* de
 	graphics_pipeline.set_culling_mode();
 	
 	graphics_pipeline.add_shader_stages({ vert_shader, frag_shader });
-	graphics_pipeline.add_descriptor_sets({ shared_environment_data.get_descriptor_set_layout() });
+
+	std::vector< VKW_DescriptorSetLayout> l{ shared_environment_data.get_descriptor_set_layout() };
+	graphics_pipeline.add_descriptor_sets(l);
 
 	graphics_pipeline.add_push_constants(shared_environment_data.get_push_consts_range());
 

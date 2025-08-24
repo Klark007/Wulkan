@@ -162,7 +162,9 @@ inline VKW_GraphicsPipeline Terrain::create_pipeline(const VKW_Device* device, T
 	else {
 		graphics_pipeline.add_shader_stages({ terrain_vert_shader, tess_ctrl_shader, tess_eval_shader });
 	}
-	graphics_pipeline.add_descriptor_sets({ shared_terrain_data.get_terrain_descriptor_set_layout() });
+
+	std::vector< VKW_DescriptorSetLayout> l{ shared_terrain_data.get_terrain_descriptor_set_layout() };
+	graphics_pipeline.add_descriptor_sets(l);
 
 	graphics_pipeline.add_push_constants(shared_terrain_data.get_push_consts_range());
 

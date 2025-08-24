@@ -57,7 +57,7 @@ void DirectionalLight::init(const VKW_Device* vkw_device, const std::array<VKW_C
 	}
 }
 
-void DirectionalLight::init_debug_lines(const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, SharedLineData* shared_line_data, const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& uniform_buffers)
+void DirectionalLight::init_debug_lines(const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, MaterialType<PushConstants, 1>& material_type, const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& uniform_buffers)
 {
 	if (!cast_shadows) {
 		throw SetupException("Tried to initialize debug lines of shadow casting for a directional light not casting shadows", __FILE__, __LINE__);
@@ -70,7 +70,7 @@ void DirectionalLight::init_debug_lines(const VKW_CommandPool& transfer_pool, co
 			*device,
 			transfer_pool,
 			descriptor_pool,
-			shared_line_data,
+			material_type,
 			// data is overwriten anyways (but size needs to be correct)
 			{
 				glm::vec3(0,0,0), glm::vec3(1, 0, 0),  glm::vec3(1, 1, 0),  glm::vec3(0, 1, 0),
@@ -90,7 +90,7 @@ void DirectionalLight::init_debug_lines(const VKW_CommandPool& transfer_pool, co
 			*device,
 			transfer_pool,
 			descriptor_pool,
-			shared_line_data,
+			material_type,
 			glm::mat4(1), // is overwritten anyways
 			(i < 4) ? line_colors.at(i) : glm::vec4(1, 0, 1, 1)
 		);

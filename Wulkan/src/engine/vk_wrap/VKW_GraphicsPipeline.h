@@ -8,12 +8,15 @@
 #include "VKW_DescriptorSet.h"
 #include "VKW_PushConstants.h"
 
+#include <span>
+
 class VKW_GraphicsPipeline : public VKW_Object {
 public:
 	VKW_GraphicsPipeline();
+
 	void init(const VKW_Device* vkw_device, const std::string& obj_name);
 	void del() override;
-	void clear();
+	void clear(); // clears all our settings to their defaults
 private:
 	const VKW_Device* device;
 	std::string name;
@@ -43,8 +46,8 @@ private:
 	std::vector<VkPushConstantRange> push_consts_range;
 
 	VkRenderingInfo attachment_state; // used for begin rendering, storing the area to be rendered into
-	std::unique_ptr<VkRenderingAttachmentInfo> color_attachment_info; // defines load ops (happen before first access) and store op (after last) for color attachment
-	std::unique_ptr<VkRenderingAttachmentInfo> depth_attachment_info;  // defines load ops (happen before first access) and store op (after last) for depth attachment
+	VkRenderingAttachmentInfo color_attachment_info; // defines load ops (happen before first access) and store op (after last) for color attachment
+	VkRenderingAttachmentInfo depth_attachment_info;  // defines load ops (happen before first access) and store op (after last) for depth attachment
 	
 	VkViewport viewport;
 	VkRect2D scissor;
@@ -94,6 +97,8 @@ public:
 
 	// adds Descriptorset to the pipeline
 	void add_descriptor_sets(const std::vector<VKW_DescriptorSetLayout>& layouts);
+	template <size_t N>
+	void add_descriptor_sets(const std::array<VKW_DescriptorSetLayout, N>& layouts);
 
 	// adds a pushconstant to the pipeline
 	template <class T>
@@ -191,6 +196,14 @@ inline void VKW_GraphicsPipeline::set_depth_attachment_format(VkFormat format)
 	depth_attachment_format = format;
 
 	render_info.depthAttachmentFormat = format;
+}
+
+template<size_t N>
+inline void VKW_GraphicsPipeline::add_descriptor_sets(const std::array<VKW_DescriptorSetLayout, N>& layouts)
+{
+	for (const VKW_DescriptorSetLayout layout : layouts) {
+		descriptor_set_layouts.push_back(layout);
+	}
 }
 
 template<class T>

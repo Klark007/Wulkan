@@ -230,32 +230,19 @@ void Engine::draw()
 			{
 				TracyVkZone(get_current_tracy_context(), cmd, "Debug Lines");
 
-				VKW_GraphicsPipeline& pipeline = line_pipeline;
-				pipeline.set_render_size(swapchain.get_extent());
-
-				pipeline.set_color_attachment(
-					color_render_target.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT),
-					false,
-					{ {1.0f, 0.0f, 1.0f, 1.0f} }
+				line_material.begin(
+					cmd,
+					swapchain.get_extent(),
+					color_render_target,
+					depth_render_target
 				);
 
+				
+				if (gui_input.shadow_draw_debug_frustums)
+					directional_light.draw_debug_lines(cmd, current_frame, {}, gui_input.nr_shadow_cascades);
+				
 
-				pipeline.set_depth_attachment(
-					depth_render_target.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT),
-					false,
-					1.0f
-				);
-
-				pipeline.begin_rendering(cmd);
-				{
-					pipeline.bind(cmd);
-
-					pipeline.set_dynamic_state(cmd);
-
-					if (gui_input.shadow_draw_debug_frustums)
-						directional_light.draw_debug_lines(cmd, current_frame, pipeline, gui_input.nr_shadow_cascades);
-				}
-				pipeline.end_rendering(cmd);
+				line_material.end(cmd);
 			}
 		
 			// transitions for copy into swapchain images
@@ -353,11 +340,13 @@ void Engine::init_vulkan()
 	create_uniform_buffers();
 
 	init_shared_data();
+	init_descriptor_set_layouts();
 	create_descriptor_sets();
+
+	create_materials();
 
 	init_data();
 
-	create_graphics_pipelines();
 }
 
 void Engine::init_instance()
@@ -400,9 +389,17 @@ void Engine::init_shared_data()
 
 	shared_environment_data.init(&device);
 	cleanup_queue.add(&shared_environment_data);
+}
 
-	shared_line_data.init(&device);
-	cleanup_queue.add(&shared_line_data);
+void Engine::init_descriptor_set_layouts()
+{
+	view_resources_set_layout.add_binding(
+		0, 
+		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 
+		VK_SHADER_STAGE_ALL
+	);
+	view_resources_set_layout.init(&device, "Shared view resource set layout");
+	cleanup_queue.add(&view_resources_set_layout);
 }
 
 void Engine::init_data()
@@ -430,7 +427,7 @@ void Engine::init_data()
 	directional_light.init_debug_lines(
 		get_current_transfer_pool(),
 		descriptor_pool,
-		&shared_line_data,
+		line_material,
 		uniform_buffers
 	);
 
@@ -499,7 +496,7 @@ void Engine::create_descriptor_sets()
 	descriptor_pool.add_layout(shared_terrain_data.get_terrain_descriptor_set_layout(), MAX_FRAMES_IN_FLIGHT);
 	descriptor_pool.add_layout(shared_terrain_data.get_curvature_descriptor_set_layout(), 1);
 	descriptor_pool.add_layout(shared_environment_data.get_descriptor_set_layout(), MAX_FRAMES_IN_FLIGHT);
-	descriptor_pool.add_layout(shared_line_data.get_descriptor_set_layout(), MAX_FRAMES_IN_FLIGHT*2*MAX_CASCADE_COUNT); // need 2 per cascade (one for the orthographic shadow camera and one for how the virtual camera is divided)
+	descriptor_pool.add_layout(view_resources_set_layout, MAX_FRAMES_IN_FLIGHT*2*MAX_CASCADE_COUNT); // need 2 per cascade (one for the orthographic shadow camera and one for how the virtual camera is divided)
 
 	descriptor_pool.init(&device, MAX_FRAMES_IN_FLIGHT*(2 + 2 * MAX_CASCADE_COUNT) + 1, "General descriptor pool");
 	cleanup_queue.add(&descriptor_pool);
@@ -547,7 +544,7 @@ void Engine::init_render_targets()
 	cleanup_queue.add(&depth_render_target);
 }
 
-void Engine::create_graphics_pipelines()
+void Engine::create_materials()
 {
 	// have different specialized pipelines for different cascade counts (specialization constants)
 	for (int i = 0; i < MAX_CASCADE_COUNT; i++) {
@@ -565,8 +562,8 @@ void Engine::create_graphics_pipelines()
 	environment_map_pipeline = EnvironmentMap::create_pipeline(&device, color_render_target, depth_render_target, shared_environment_data);
 	cleanup_queue.add(&environment_map_pipeline);
 
-	line_pipeline = Line::create_pipeline(&device, color_render_target, depth_render_target, shared_line_data);
-	cleanup_queue.add(&line_pipeline);
+	line_material = Line::create_material_type(&device, std::array{ view_resources_set_layout }, color_render_target, depth_render_target);
+	cleanup_queue.add(&line_material);
 }
 
 void Engine::create_swapchain()

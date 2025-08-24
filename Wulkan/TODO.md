@@ -5,14 +5,16 @@
 * Shader includes with a shared file for common helper functions [X] 
 * Separate sets for things bound at different freq [ ]
 * Shader printf suppport [ ] 
-* Make warnings only be compiled in debug mode[ ]
+* m_ convention[ ] 
+* Make warnings only be compiled in debug mode [ ]
+* Begin / End etc replacing with std::function to be called in that "context" [ ] 
 * Anti Aliasing [ ] 
 * Maybe experiment with Slang [ ] 
 * Check best practises and synchronization regularly [ ]
 
 # Models and Materials 
 * Basic model loading [ ]
-* Refactor the idea of Pipeline + Shared Data to smt closer to materials [ ]
+* Refactor the idea of Pipeline + Shared Data to smt closer to materials [X]
 * Draw Indirect [ ] 
 * Fix assumption that per model only one pipeline [ ]
 * Mesh shaders [ ] 

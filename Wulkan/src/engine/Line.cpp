@@ -1,35 +1,14 @@
 #include "Line.h"
 
-void SharedLineData::init(const VKW_Device* device)
-{
-	descriptor_set_layout.add_binding(
-		0,
-		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-		VK_SHADER_STAGE_VERTEX_BIT
-	);
-	descriptor_set_layout.init(device, "Line Desc Layout");
-
-	push_constant.init(VK_SHADER_STAGE_VERTEX_BIT, 0);
-}
-
-void SharedLineData::del()
-{
-	descriptor_set_layout.del();
-}
-
-void Line::init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, SharedLineData* shared_line_data, const std::vector<glm::vec3>& points, const std::vector<uint32_t>& indices, const glm::vec4 color)
+void Line::init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, MaterialType<PushConstants, 1>& material_type, const std::vector<glm::vec3>& points, const std::vector<uint32_t>& indices, const glm::vec4 color)
 {
 	std::vector<glm::vec4> colors{ points.size(), color };
-	init(device, transfer_pool, descriptor_pool, shared_line_data, points, indices, colors);
+	init(device, transfer_pool, descriptor_pool, material_type, points, indices, colors);
 }
 
-void Line::init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, SharedLineData* shared_line_data, const std::vector<glm::vec3>& points, const std::vector<uint32_t>& indices, const std::vector<glm::vec4>& colors) {
-	shared_data = shared_line_data;
+void Line::init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, MaterialType<PushConstants, 1>& material_type, const std::vector<glm::vec3>& points, const std::vector<uint32_t>& indices, const std::vector<glm::vec4>& colors) {
+	material = material_type.create_material_instance(device, descriptor_pool);
 	
-	for (VKW_DescriptorSet& set : descriptor_sets) {
-		set.init(&device, &descriptor_pool, shared_data->get_descriptor_set_layout(), "Line Desc Set");
-	}
-
 	vertices.resize(points.size());
 
 	for (int i = 0; i < points.size(); i++) {
@@ -92,7 +71,7 @@ void Line::update_vertices(const std::vector<glm::vec3>& points)
 void Line::set_descriptor_bindings(const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& uniform_buffers)
 {
 	for (unsigned int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-		const VKW_DescriptorSet& set = descriptor_sets.at(i);
+		const VKW_DescriptorSet& set = material.get_descriptor_set(i, 0);
 
 		set.update(0, uniform_buffers.at(i));
 	}
@@ -100,9 +79,7 @@ void Line::set_descriptor_bindings(const std::array<VKW_Buffer, MAX_FRAMES_IN_FL
 
 void Line::del()
 {
-	for (VKW_DescriptorSet& set : descriptor_sets) {
-		set.del();
-	}
+	material.del();
 
 	vertex_buffer.del();
 	index_buffer.del();

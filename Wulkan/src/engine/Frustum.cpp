@@ -1,6 +1,6 @@
 #include "Frustum.h"
 
-void Frustum::init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, SharedLineData* shared_line_data, glm::mat4 proj_view_mat, glm::vec4 color)
+void Frustum::init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, MaterialType<PushConstants, 1>& material_type , glm::mat4 proj_view_mat, glm::vec4 color)
 {
 	points.resize(8);
 	
@@ -22,7 +22,7 @@ void Frustum::init(const VKW_Device& device, const VKW_CommandPool& transfer_poo
 		color,
 	};
 
-	Line::init(device, transfer_pool, descriptor_pool, shared_line_data, points, indices, colors);
+	Line::init(device, transfer_pool, descriptor_pool, material_type, points, indices, colors);
 	set_camera_matrix(proj_view_mat);
 }
 

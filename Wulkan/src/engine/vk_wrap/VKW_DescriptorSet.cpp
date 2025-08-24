@@ -1,4 +1,5 @@
 #include "VKW_DescriptorSet.h"
+#include <format>
 
 void VKW_DescriptorSetLayout::init(const VKW_Device* vkw_device, const std::string& obj_name)
 {
@@ -55,6 +56,7 @@ void VKW_DescriptorSet::init(const VKW_Device* vkw_device, const VKW_DescriptorP
 
 void VKW_DescriptorSet::bind(const VKW_CommandBuffer& command_buffer, VkPipelineBindPoint bind_point, VkPipelineLayout layout) const
 {
+	// TODO: Change first set (0) to bind multiple sets at the same time
 	vkCmdBindDescriptorSets(command_buffer, bind_point, layout, 0, 1, &descriptor_set, 0, VK_NULL_HANDLE);
 }
 

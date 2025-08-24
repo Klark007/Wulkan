@@ -92,11 +92,12 @@ private:
 	void create_uniform_buffers();
 	void create_descriptor_sets();
 
+	void init_descriptor_set_layouts();
 	void init_data();
 
 	void init_render_targets();
 
-	void create_graphics_pipelines();
+	void create_materials();
 	void create_swapchain();
 	void recreate_swapchain();
 	void recreate_render_targets(); // resizes textures that are being rendered into and correlate with window size
@@ -132,8 +133,7 @@ private:
 
 	VKW_GraphicsPipeline environment_map_pipeline;
 
-	VKW_GraphicsPipeline line_pipeline;
-
+	MaterialType<PushConstants, 1> line_material;
 
 	// general sampler for texture (Linear sampling, repeat address mode)
 	VKW_Sampler nearest_texture_sampler;
@@ -151,6 +151,9 @@ private:
 	std::array<CommandStructs, MAX_FRAMES_IN_FLIGHT> command_structs;
 	std::array<SyncStructs, MAX_FRAMES_IN_FLIGHT> sync_structs;
 
+	// Descriptor set layouts
+	VKW_DescriptorSetLayout view_resources_set_layout;
+
 	// Terrain data
 	SharedTerrainData shared_terrain_data;
 	Terrain terrain;
@@ -158,9 +161,6 @@ private:
 	// Environment map
 	SharedEnvironmentData shared_environment_data;
 	EnvironmentMap environment_map;
-
-	// Lines (for debugging etc)
-	SharedLineData shared_line_data;
 
 	// Directional light
 	DirectionalLight directional_light;
