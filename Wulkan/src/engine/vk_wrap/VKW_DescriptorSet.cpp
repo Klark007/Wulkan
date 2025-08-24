@@ -54,10 +54,9 @@ void VKW_DescriptorSet::init(const VKW_Device* vkw_device, const VKW_DescriptorP
 	}
 }
 
-void VKW_DescriptorSet::bind(const VKW_CommandBuffer& command_buffer, VkPipelineBindPoint bind_point, VkPipelineLayout layout) const
+void VKW_DescriptorSet::bind(const VKW_CommandBuffer& command_buffer, VkPipelineBindPoint bind_point, VkPipelineLayout layout, uint32_t set_idx) const
 {
-	// TODO: Change first set (0) to bind multiple sets at the same time
-	vkCmdBindDescriptorSets(command_buffer, bind_point, layout, 0, 1, &descriptor_set, 0, VK_NULL_HANDLE);
+	vkCmdBindDescriptorSets(command_buffer, bind_point, layout, set_idx, 1, &descriptor_set, 0, VK_NULL_HANDLE);
 }
 
 void VKW_DescriptorSet::del()

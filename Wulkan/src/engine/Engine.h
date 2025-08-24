@@ -97,7 +97,7 @@ private:
 
 	void init_render_targets();
 
-	void create_materials();
+	void create_render_passes();
 	void create_swapchain();
 	void recreate_swapchain();
 	void recreate_render_targets(); // resizes textures that are being rendered into and correlate with window size
@@ -127,13 +127,13 @@ private:
 
 
 	// mostly for debugging reasons
-	std::array<VKW_GraphicsPipeline, MAX_CASCADE_COUNT> terrain_pipelines;
-	VKW_GraphicsPipeline terrain_depth_pipeline;
-	std::array<VKW_GraphicsPipeline, MAX_CASCADE_COUNT> terrain_wireframe_pipelines;
+	std::array<RenderPass<TerrainPushConstants, 3>, MAX_CASCADE_COUNT> terrain_render_passes;
+	RenderPass<TerrainPushConstants, 3>  terrain_depth_render_pass;
+	std::array<RenderPass<TerrainPushConstants, 3>, MAX_CASCADE_COUNT> terrain_wireframe_render_passes;
 
 	VKW_GraphicsPipeline environment_map_pipeline;
 
-	MaterialType<PushConstants, 1> line_material;
+	RenderPass<PushConstants, 1> line_render_pass;
 
 	// general sampler for texture (Linear sampling, repeat address mode)
 	VKW_Sampler nearest_texture_sampler;
@@ -153,9 +153,10 @@ private:
 
 	// Descriptor set layouts
 	VKW_DescriptorSetLayout view_resources_set_layout;
+	VKW_DescriptorSetLayout shadow_resources_set_layout;
+	VKW_DescriptorSetLayout terrain_resources_set_layout;
 
 	// Terrain data
-	SharedTerrainData shared_terrain_data;
 	Terrain terrain;
 
 	// Environment map

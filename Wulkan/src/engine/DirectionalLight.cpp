@@ -57,7 +57,7 @@ void DirectionalLight::init(const VKW_Device* vkw_device, const std::array<VKW_C
 	}
 }
 
-void DirectionalLight::init_debug_lines(const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, MaterialType<PushConstants, 1>& material_type, const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& uniform_buffers)
+void DirectionalLight::init_debug_lines(const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, RenderPass<PushConstants, 1>& render_pass, const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& uniform_buffers)
 {
 	if (!cast_shadows) {
 		throw SetupException("Tried to initialize debug lines of shadow casting for a directional light not casting shadows", __FILE__, __LINE__);
@@ -70,7 +70,7 @@ void DirectionalLight::init_debug_lines(const VKW_CommandPool& transfer_pool, co
 			*device,
 			transfer_pool,
 			descriptor_pool,
-			material_type,
+			render_pass,
 			// data is overwriten anyways (but size needs to be correct)
 			{
 				glm::vec3(0,0,0), glm::vec3(1, 0, 0),  glm::vec3(1, 1, 0),  glm::vec3(0, 1, 0),
@@ -90,7 +90,7 @@ void DirectionalLight::init_debug_lines(const VKW_CommandPool& transfer_pool, co
 			*device,
 			transfer_pool,
 			descriptor_pool,
-			material_type,
+			render_pass,
 			glm::mat4(1), // is overwritten anyways
 			(i < 4) ? line_colors.at(i) : glm::vec4(1, 0, 1, 1)
 		);
@@ -214,6 +214,41 @@ void DirectionalLight::set_uniforms(const Camera& camera, int nr_current_cascade
 	uniform.shadow_mode = shadow_mode;
 
 	memcpy(uniform_buffers.at(current_frame).get_mapped_address(), &uniform, sizeof(DirectionalLightUniform));
+}
+
+VKW_DescriptorSetLayout DirectionalLight::create_shadow_descriptor_layout(const VKW_Device& device)
+{
+	VKW_DescriptorSetLayout layout{};
+
+	// uniform buffer for rendering directional lights
+	layout.add_binding(
+		0,
+		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+		VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT | VK_SHADER_STAGE_FRAGMENT_BIT
+	);
+
+	// shadow map (seperate sampler and image due to needing two different samplers)
+	layout.add_binding(
+		1,
+		VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
+		VK_SHADER_STAGE_FRAGMENT_BIT
+	);
+
+	layout.add_binding(
+		2,
+		VK_DESCRIPTOR_TYPE_SAMPLER,
+		VK_SHADER_STAGE_FRAGMENT_BIT
+	);
+
+	layout.add_binding(
+		3,
+		VK_DESCRIPTOR_TYPE_SAMPLER,
+		VK_SHADER_STAGE_FRAGMENT_BIT
+	);
+
+	layout.init(&device, "Shadow descriptor set layout");
+
+	return layout;
 }
 
 void DirectionalLight::del()

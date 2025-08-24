@@ -9,8 +9,6 @@
 layout (quads, fractional_odd_spacing, cw) in;
 layout(location = 0) in vec2 inUV[];
 
-layout(binding = 4) uniform sampler2D height_map;
-
 void main()
 {
     vec2 uv1 = mix(inUV[0], inUV[1], gl_TessCoord.x);

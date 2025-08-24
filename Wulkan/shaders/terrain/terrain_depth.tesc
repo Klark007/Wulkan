@@ -9,9 +9,6 @@
 layout(location = 0) in vec3 inPos[];
 layout(location = 1) in vec2 inUV[];
 
-layout(binding = 4) uniform sampler2D height_map;
-layout(binding = 5) uniform sampler2D curvature;
-
 layout (vertices = 4) out;
 
 layout(location = 0) out vec2 outUV[4];

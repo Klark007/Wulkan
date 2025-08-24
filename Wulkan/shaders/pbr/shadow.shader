@@ -4,7 +4,7 @@
 #include "../sampling.shader"
 
 layout(constant_id = 0) const int cascade_count = 4;
-layout(std430, binding = 1) uniform DirectionalLightData {
+layout(std430, set = 1, binding = 0) uniform DirectionalLightData {
     mat4 proj_views[cascade_count];
     vec4 cascade_splits;
     vec2 shadow_extends[cascade_count];  // phyical extends of orthographic projections horizontaly and vertically
@@ -16,6 +16,10 @@ layout(std430, binding = 1) uniform DirectionalLightData {
     int nr_shadow_occluder_samples;      
     int shadow_mode;				     // 0: no shadows, 1: hard shadows, 2: soft shadows 
 } directional_light_ubo;
+
+layout(set = 1, binding = 1) uniform texture2DArray shadow_map;
+layout(set = 1, binding = 2) uniform sampler shadow_sampler;
+layout(set = 1, binding = 3) uniform sampler shadow_gather_sampler;
 
 #ifndef SHADOW_UNIFORM_ONLY
 float shadow(vec3 world_pos, uint cascade_idx) 

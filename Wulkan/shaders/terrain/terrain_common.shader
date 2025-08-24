@@ -2,16 +2,27 @@
 #define TERRAIN_COMMON_INCLUDE
 
 #include "../common.shader"
+#extension GL_EXT_buffer_reference : require
+
+layout(buffer_reference, std430) readonly buffer VertexBuffer{
+	Vertex vertices[];
+};
 
 layout( push_constant ) uniform constants
 {
     mat4 model;
+    VertexBuffer vertex_buffer;
     float tesselation_strength;
     float max_tesselation;
     float texture_eps;
     int visualization_mode;
     int cascade_idx;
 } pc;
+
+layout(set = 2, binding = 0) uniform sampler2D albedo;
+layout(set = 2, binding = 1) uniform sampler2D normal_map;
+layout(set = 2, binding = 2) uniform sampler2D height_map;
+layout(set = 2, binding = 3) uniform sampler2D curvature;
 
 bool is_culled(vec3 pos[4], vec2 uv[4], mat4 MVP, sampler2D hm) {
     // extract frustum planes in object space https://www.gamedevs.org/uploads/fast-extraction-viewing-frustum-planes-from-world-view-projection-matrix.pdf

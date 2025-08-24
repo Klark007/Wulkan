@@ -46,7 +46,9 @@ public:
 	// sets camera's position to destination + direction * distance
 	void init(const VKW_Device* vkw_device, const std::array<VKW_CommandPool, MAX_FRAMES_IN_FLIGHT>& graphics_pools, glm::vec3 destination, glm::vec3 direction, float distance, uint32_t shadow_res_x, uint32_t shadow_res_y, float orthographic_height,float near_plane, float far_plane);
 	
-	void init_debug_lines(const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, MaterialType<PushConstants, 1>& material_type, const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& uniform_buffers);
+	void init_debug_lines(const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, RenderPass<PushConstants, 1>& render_pass, const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& uniform_buffers);
+
+	static VKW_DescriptorSetLayout create_shadow_descriptor_layout(const VKW_Device& device);
 
 	void del() override;
 private:
@@ -56,7 +58,7 @@ private:
 	glm::vec3 col;
 	float str;
 
-	bool cast_shadows; // TODO: fully support non casting lights again
+	bool cast_shadows;
 	glm::vec3 dest;
 	float dist;
 

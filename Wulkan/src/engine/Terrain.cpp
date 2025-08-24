@@ -3,104 +3,11 @@
 
 #include "DirectionalLight.h"
 
-void SharedTerrainData::init(const VKW_Device* device)
+#include <format>
+
+void Terrain::init(const VKW_Device& device, const VKW_CommandPool& graphics_pool, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, const VKW_Sampler* sampler, RenderPass<TerrainPushConstants, 3>& render_pass, const std::string& height_path, const std::string& albedo_path, const std::string& normal_path, uint32_t mesh_res)
 {
-	// begin create create descriptor set layout
-	// uniform buffer containing projection & view matrix
-	terrain_descriptor_set_layout.add_binding(
-		0,
-		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-		VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT | VK_SHADER_STAGE_FRAGMENT_BIT
-	);
-
-	// uniform buffer for rendering directional lights
-	terrain_descriptor_set_layout.add_binding(
-		1,
-		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-		VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT | VK_SHADER_STAGE_FRAGMENT_BIT
-	);
-
-	// terrain texture and sampler
-	// albedo
-	terrain_descriptor_set_layout.add_binding(
-		2,
-		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-		VK_SHADER_STAGE_FRAGMENT_BIT
-	);
-
-	// normal map
-	terrain_descriptor_set_layout.add_binding(
-		3,
-		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-		VK_SHADER_STAGE_FRAGMENT_BIT
-	);
-
-	// height map
-	terrain_descriptor_set_layout.add_binding(
-		4,
-		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-		VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT | VK_SHADER_STAGE_FRAGMENT_BIT
-	);
-
-	// curvature map
-	terrain_descriptor_set_layout.add_binding(
-		5,
-		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-		VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_FRAGMENT_BIT
-	);
-
-	// shadow map (seperate sampler and image due to needing two different samplers)
-	terrain_descriptor_set_layout.add_binding(
-		6,
-		VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
-		VK_SHADER_STAGE_FRAGMENT_BIT
-	);
-
-	terrain_descriptor_set_layout.add_binding(
-		7,
-		VK_DESCRIPTOR_TYPE_SAMPLER,
-		VK_SHADER_STAGE_FRAGMENT_BIT
-	);
-
-	terrain_descriptor_set_layout.add_binding(
-		8,
-		VK_DESCRIPTOR_TYPE_SAMPLER,
-		VK_SHADER_STAGE_FRAGMENT_BIT
-	);
-
-	terrain_descriptor_set_layout.init(device, "Terrain Desc Layout");
-	
-	// curvature precompute descriptor set layout
-	// read from height map
-	curvature_descriptor_set_layout.add_binding(
-		0,
-		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, // read only 
-		VK_SHADER_STAGE_COMPUTE_BIT
-	);
-
-	// write into curvature texture
-	curvature_descriptor_set_layout.add_binding(
-		1,
-		VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, // supports load, store and atomic operations
-		VK_SHADER_STAGE_COMPUTE_BIT
-	);
-	curvature_descriptor_set_layout.init(device, "Curvature Desc Layout");
-
-	// end create create descriptor set layout
-
-	push_constant.init(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT | VK_SHADER_STAGE_FRAGMENT_BIT , 0);
-	vertex_push_constant.init(VK_SHADER_STAGE_VERTEX_BIT, sizeof(TerrainPushConstants));
-}
-
-void SharedTerrainData::del()
-{
-	terrain_descriptor_set_layout.del();	
-	curvature_descriptor_set_layout.del();	
-}
-
-void Terrain::init(const VKW_Device& device, const VKW_CommandPool& graphics_pool, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, const VKW_Sampler* sampler, SharedTerrainData* shared_terrain_data, const std::string& height_path, const std::string& albedo_path, const std::string& normal_path, uint32_t mesh_res)
-{
-	shared_data = shared_terrain_data;
+	material = render_pass.create_material_instance(device, descriptor_pool);
 	texture_sampler = sampler;
 
 	// textures to be used
@@ -167,10 +74,6 @@ void Terrain::init(const VKW_Device& device, const VKW_CommandPool& graphics_poo
 			terrain_indices.push_back(ix + (iy + 1) * mesh_res);
 		}
 	}
-
-	for (VKW_DescriptorSet& set : descriptor_sets) {
-		set.init(&device, &descriptor_pool, shared_data->get_terrain_descriptor_set_layout(), "Terrain Desc Set");
-	}
 	
 	mesh.init(device, transfer_pool, terrain_vertices, terrain_indices);
 }
@@ -179,29 +82,47 @@ void Terrain::set_descriptor_bindings(const std::array<VKW_Buffer, MAX_FRAMES_IN
 {
 	// set the bindings
 	for (unsigned int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-		const VKW_DescriptorSet& set = descriptor_sets.at(i);
+		const VKW_DescriptorSet& set0 = material.get_descriptor_set(i, 0);
+		const VKW_DescriptorSet& set1 = material.get_descriptor_set(i, 1);
+		const VKW_DescriptorSet& set2 = material.get_descriptor_set(i, 2);
 
-		set.update(0, general_ubo.at(i));
-		set.update(1, shadow_map_ubo.at(i));
+		set0.update(0, general_ubo.at(i));
 
-		set.update(2, albedo.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), *texture_sampler);
-		set.update(3, normal_map.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), *texture_sampler);
-		set.update(4, height_map.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), *texture_sampler);
-		set.update(5, curvatue.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), *texture_sampler);
-		
-		set.update(6, shadow_map.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D_ARRAY, 0, MAX_CASCADE_COUNT));
-		set.update(7, shadow_map_sampler);
-		set.update(8, shadow_map_gather_sampler);
+		set1.update(0, shadow_map_ubo.at(i));
+		set1.update(1, shadow_map.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D_ARRAY, 0, MAX_CASCADE_COUNT));
+		set1.update(2, shadow_map_sampler);
+		set1.update(3, shadow_map_gather_sampler);
+
+		set2.update(0, albedo.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), *texture_sampler);
+		set2.update(1, normal_map.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), *texture_sampler);
+		set2.update(2, height_map.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), *texture_sampler);
+		set2.update(3, curvatue.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), *texture_sampler);
 	}
 }
 
 void Terrain::precompute_curvature(const VKW_Device& device, const VKW_CommandPool& graphics_pool, const VKW_DescriptorPool& descriptor_pool)
-{
-	// descriptor sets
-	VKW_DescriptorSetLayout compute_layout = shared_data->get_curvature_descriptor_set_layout();
+{	
+	VKW_DescriptorSetLayout curvature_descriptor_layout{};
 
+	// curvature precompute descriptor set layout
+	// read from height map
+	curvature_descriptor_layout.add_binding(
+		0,
+		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, // read only 
+		VK_SHADER_STAGE_COMPUTE_BIT
+	);
+
+	// write into curvature texture
+	curvature_descriptor_layout.add_binding(
+		1,
+		VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, // supports load, store and atomic operations
+		VK_SHADER_STAGE_COMPUTE_BIT
+	);
+	curvature_descriptor_layout.init(&device, "Curvature Desc Layout");
+
+	// descriptor sets
 	VKW_DescriptorSet compute_desc_set{};
-	compute_desc_set.init(&device, &descriptor_pool, compute_layout, "Curvature Desc Set");
+	compute_desc_set.init(&device, &descriptor_pool, curvature_descriptor_layout, "Curvature Desc Set");
 
 	// transition layout of curvatue
 	curvatue.transition_layout(&graphics_pool, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL);
@@ -212,7 +133,7 @@ void Terrain::precompute_curvature(const VKW_Device& device, const VKW_CommandPo
 
 	// compute pipeline
 	VKW_ComputePipeline pipeline{};
-	pipeline.add_descriptor_sets({ compute_layout });
+	pipeline.add_descriptor_sets({ curvature_descriptor_layout });
 	pipeline.init(&device, "shaders/terrain/curvature_comp.spv", "Curvature compute pipeline");
 
 	VKW_CommandBuffer command_buffer{};
@@ -235,8 +156,130 @@ void Terrain::precompute_curvature(const VKW_Device& device, const VKW_CommandPo
 	}
 	command_buffer.submit_single_use();
 
+	curvature_descriptor_layout.del();
 	pipeline.del();
 	compute_desc_set.del();
+}
+
+RenderPass<TerrainPushConstants, 3> Terrain::create_render_pass(const VKW_Device* device, const std::array<VKW_DescriptorSetLayout, 3>& layouts, Texture& color_rt, Texture& depth_rt, bool depth_only, bool wireframe_mode, bool bias_depth, int nr_shadow_cascades)
+{
+	RenderPass<TerrainPushConstants, 3> render_pass{};
+
+	// Push constants
+	VKW_PushConstant<TerrainPushConstants> push_constant{};
+	push_constant.init(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0);
+
+	// Graphics pipeline
+	VKW_GraphicsPipeline graphics_pipeline{};
+
+	VKW_Shader terrain_vert_shader{};
+	terrain_vert_shader.init(device, "shaders/terrain/terrain_vert.spv", VK_SHADER_STAGE_VERTEX_BIT, "Terrain vertex shader");
+
+	VKW_SpecializationConstants<int, 1> specialization_const{};
+	specialization_const.init({ nr_shadow_cascades }, { 0 });
+
+	VKW_Shader terrain_frag_shader{};
+	terrain_frag_shader.init(device, "shaders/terrain/terrain_frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT, "Terrain fragment shader", "main", specialization_const.get_info());
+
+	VKW_Shader tess_ctrl_shader{};
+	if (!depth_only) {
+		tess_ctrl_shader.init(device, "shaders/terrain/terrain_tesc.spv", VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, "Terrain tesselation control shader");
+	}
+	else {
+		tess_ctrl_shader.init(device, "shaders/terrain/terrain_depth_tesc.spv", VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, "Terrain-depth tesselation control shader", "main", specialization_const.get_info());
+	}
+	VKW_Shader tess_eval_shader{};
+	if (!depth_only) {
+		tess_eval_shader.init(device, "shaders/terrain/terrain_tese.spv", VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, "Terrain tesselation evaluation shader");
+	}
+	else {
+		tess_eval_shader.init(device, "shaders/terrain/terrain_depth_tese.spv", VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, "Terrain-depth tesselation evaluation shader", "main", specialization_const.get_info());
+	}
+
+	graphics_pipeline.set_topology(VK_PRIMITIVE_TOPOLOGY_PATCH_LIST);
+	if (wireframe_mode) {
+		graphics_pipeline.set_wireframe_mode();
+	}
+	graphics_pipeline.set_culling_mode();
+	graphics_pipeline.enable_depth_test();
+	graphics_pipeline.enable_depth_write();
+
+	graphics_pipeline.enable_tesselation();
+	graphics_pipeline.set_tesselation_patch_size(4);
+
+	if (!depth_only) {
+		graphics_pipeline.add_shader_stages({ terrain_vert_shader, terrain_frag_shader, tess_ctrl_shader, tess_eval_shader });
+	}
+	else {
+		graphics_pipeline.add_shader_stages({ terrain_vert_shader, tess_ctrl_shader, tess_eval_shader });
+	}
+
+	graphics_pipeline.add_descriptor_sets(layouts);
+
+	graphics_pipeline.add_push_constants({ push_constant.get_range() });
+
+	if (!depth_only) {
+		graphics_pipeline.set_color_attachment_format(color_rt.get_format());
+	}
+	graphics_pipeline.set_depth_attachment_format(depth_rt.get_format());
+
+	if (depth_only && bias_depth) {
+		graphics_pipeline.enable_dynamic_depth_bias();
+	}
+
+	graphics_pipeline.init(device, "Terrain graphics pipeline");
+
+	terrain_vert_shader.del();
+	terrain_frag_shader.del();
+	tess_ctrl_shader.del();
+	tess_eval_shader.del();
+
+	render_pass.init(
+		graphics_pipeline,
+		layouts,
+		push_constant,
+		depth_only ? std::format("Terrain Depth Renderpass ({})", nr_shadow_cascades) : std::format("Terrain Renderpass ({})", nr_shadow_cascades)
+	);
+
+	return render_pass;
+}
+
+VKW_DescriptorSetLayout Terrain::create_descriptor_set_layout(const VKW_Device& device)
+{
+	VKW_DescriptorSetLayout layout{};
+
+	// terrain texture and sampler
+	// albedo
+	layout.add_binding(
+		0,
+		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+		VK_SHADER_STAGE_FRAGMENT_BIT
+	);
+
+	// normal map
+	layout.add_binding(
+		1,
+		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+		VK_SHADER_STAGE_FRAGMENT_BIT
+	);
+
+	// height map
+	layout.add_binding(
+		2,
+		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+		VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT | VK_SHADER_STAGE_FRAGMENT_BIT
+	);
+
+	// curvature map
+	layout.add_binding(
+		3,
+		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+		VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_FRAGMENT_BIT
+	);
+
+	layout.init(&device, "Terrain Desc Layout");
+
+	return layout;
 }
 
 void Terrain::del()
@@ -246,8 +289,5 @@ void Terrain::del()
 	albedo.del();
 	normal_map.del();
 	mesh.del();
-
-	for (VKW_DescriptorSet& set : descriptor_sets) {
-		set.del();
-	}
+	material.del();
 }

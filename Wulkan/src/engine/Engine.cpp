@@ -125,26 +125,26 @@ void Engine::draw()
 			{
 				TracyVkZone(get_current_tracy_context(), shadow_cmd, "Shadow [Depth Only]");
 
-				VKW_GraphicsPipeline& pipeline = terrain_depth_pipeline;
-				pipeline.set_render_size(directional_light.get_texture().get_extent());
-
+				RenderPass<TerrainPushConstants, 3>& render_pass = terrain_depth_render_pass;
+				
 				for (uint32_t i = 0; i < nr_cascades; i++) {
-					pipeline.set_depth_attachment(
+					render_pass.begin(
+						shadow_cmd,
+						directional_light.get_texture().get_extent(),
+						VK_NULL_HANDLE, // don't attach a color image view
 						directional_light.get_texture().get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D, i, 1),
-						true,
-						1.0f
+						false,                      // don't clear color
+						{ 1,0,1,1 },                // ignore
+						true,                       // clear depth
+						1.0,		                // clear to far value
+						gui_input.depth_bias,       // const depth bias
+						gui_input.slope_depth_bias // slope depth bias
 					);
 
-					pipeline.begin_rendering(shadow_cmd);
-					{
-						pipeline.bind(shadow_cmd);
-						pipeline.set_dynamic_state(shadow_cmd);
-						pipeline.set_depth_bias(gui_input.depth_bias, gui_input.slope_depth_bias, shadow_cmd);
-
-						terrain.set_cascade_idx(i);
-						terrain.draw(shadow_cmd, current_frame, pipeline);
-					}
-					pipeline.end_rendering(shadow_cmd);
+					terrain.set_cascade_idx(i);
+					terrain.draw(shadow_cmd, current_frame, {});
+					
+					render_pass.end(shadow_cmd);
 				}
 			}
 		}
@@ -199,42 +199,28 @@ void Engine::draw()
 			{
 				TracyVkZone(get_current_tracy_context(), cmd, "Terrain");
 
-				VKW_GraphicsPipeline& pipeline = (gui_input.terrain_wireframe_mode) ? terrain_wireframe_pipelines.at(gui_input.nr_shadow_cascades - 1) : terrain_pipelines.at(gui_input.nr_shadow_cascades - 1);
-				pipeline.set_render_size(swapchain.get_extent());
-
-				pipeline.set_color_attachment(
+				RenderPass<TerrainPushConstants, 3>& render_pass = (gui_input.terrain_wireframe_mode) ? terrain_wireframe_render_passes.at(gui_input.nr_shadow_cascades - 1) : terrain_render_passes.at(gui_input.nr_shadow_cascades - 1);
+				render_pass.begin(
+					cmd,
+					swapchain.get_extent(),
 					color_render_target.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT),
-					false,
-					{ {1.0f, 0.0f, 1.0f, 1.0f} }
-				);
-			
-
-				pipeline.set_depth_attachment(
-					depth_render_target.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT),
-					false,
-					1.0f
+					depth_render_target.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT)
 				);
 
-				pipeline.begin_rendering(cmd);
-				{
-					pipeline.bind(cmd);
+				terrain.draw(cmd, current_frame, {});
 
-					pipeline.set_dynamic_state(cmd);
-					
-					terrain.draw(cmd, current_frame, pipeline);
-				}
-				pipeline.end_rendering(cmd);
+				render_pass.end(cmd);
 			}
 
 			// draw lines
 			{
 				TracyVkZone(get_current_tracy_context(), cmd, "Debug Lines");
 
-				line_material.begin(
+				line_render_pass.begin(
 					cmd,
 					swapchain.get_extent(),
-					color_render_target,
-					depth_render_target
+					color_render_target.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT),
+					depth_render_target.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT)
 				);
 
 				
@@ -242,7 +228,7 @@ void Engine::draw()
 					directional_light.draw_debug_lines(cmd, current_frame, {}, gui_input.nr_shadow_cascades);
 				
 
-				line_material.end(cmd);
+				line_render_pass.end(cmd);
 			}
 		
 			// transitions for copy into swapchain images
@@ -343,7 +329,7 @@ void Engine::init_vulkan()
 	init_descriptor_set_layouts();
 	create_descriptor_sets();
 
-	create_materials();
+	create_render_passes();
 
 	init_data();
 
@@ -384,9 +370,6 @@ void Engine::create_queues()
 
 void Engine::init_shared_data()
 {
-	shared_terrain_data.init(&device);
-	cleanup_queue.add(&shared_terrain_data);
-
 	shared_environment_data.init(&device);
 	cleanup_queue.add(&shared_environment_data);
 }
@@ -400,6 +383,12 @@ void Engine::init_descriptor_set_layouts()
 	);
 	view_resources_set_layout.init(&device, "Shared view resource set layout");
 	cleanup_queue.add(&view_resources_set_layout);
+
+	shadow_resources_set_layout = DirectionalLight::create_shadow_descriptor_layout(device);
+	cleanup_queue.add(&shadow_resources_set_layout);
+
+	terrain_resources_set_layout = Terrain::create_descriptor_set_layout(device);
+	cleanup_queue.add(&terrain_resources_set_layout);
 }
 
 void Engine::init_data()
@@ -427,7 +416,7 @@ void Engine::init_data()
 	directional_light.init_debug_lines(
 		get_current_transfer_pool(),
 		descriptor_pool,
-		line_material,
+		line_render_pass,
 		uniform_buffers
 	);
 
@@ -441,7 +430,7 @@ void Engine::init_data()
 		get_current_transfer_pool(),
 		descriptor_pool,
 		&mirror_texture_sampler,
-		&shared_terrain_data,
+		terrain_render_passes[2],
 
 		"textures/terrain/heightmap.png", // height map
 		"textures/terrain/texture.png",   // albedo
@@ -493,12 +482,16 @@ void Engine::create_descriptor_sets()
 	cleanup_queue.add(&imgui_descriptor_pool);
 	
 	// each Terrain instance needs MAX_FRAMES_IN_FLIGHT many descriptor sets
-	descriptor_pool.add_layout(shared_terrain_data.get_terrain_descriptor_set_layout(), MAX_FRAMES_IN_FLIGHT);
-	descriptor_pool.add_layout(shared_terrain_data.get_curvature_descriptor_set_layout(), 1);
+	
 	descriptor_pool.add_layout(shared_environment_data.get_descriptor_set_layout(), MAX_FRAMES_IN_FLIGHT);
-	descriptor_pool.add_layout(view_resources_set_layout, MAX_FRAMES_IN_FLIGHT*2*MAX_CASCADE_COUNT); // need 2 per cascade (one for the orthographic shadow camera and one for how the virtual camera is divided)
+	
+	descriptor_pool.add_layout(view_resources_set_layout, MAX_FRAMES_IN_FLIGHT*(2*MAX_CASCADE_COUNT + 1)); // for lines
+	descriptor_pool.add_layout(shadow_resources_set_layout, MAX_FRAMES_IN_FLIGHT);
+	descriptor_pool.add_layout(terrain_resources_set_layout, MAX_FRAMES_IN_FLIGHT);
+	descriptor_pool.add_type(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1); // precompute curvature
+	descriptor_pool.add_type(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1); // precompute curvature
 
-	descriptor_pool.init(&device, MAX_FRAMES_IN_FLIGHT*(2 + 2 * MAX_CASCADE_COUNT) + 1, "General descriptor pool");
+	descriptor_pool.init(&device, MAX_FRAMES_IN_FLIGHT*(4 + 2 * MAX_CASCADE_COUNT) + 1, "General descriptor pool");
 	cleanup_queue.add(&descriptor_pool);
 }
 
@@ -544,26 +537,53 @@ void Engine::init_render_targets()
 	cleanup_queue.add(&depth_render_target);
 }
 
-void Engine::create_materials()
+void Engine::create_render_passes()
 {
-	// have different specialized pipelines for different cascade counts (specialization constants)
+	// have different specialized render passes for different cascade counts (specialization constants)
+	std::array<VKW_DescriptorSetLayout, 3> descriptor_set_layouts{ view_resources_set_layout, shadow_resources_set_layout, terrain_resources_set_layout };
+	
 	for (int i = 0; i < MAX_CASCADE_COUNT; i++) {
-		terrain_pipelines.at(i) = Terrain::create_pipeline(&device, color_render_target, depth_render_target, shared_terrain_data, false, false, false, i+1);
-		cleanup_queue.add(&terrain_pipelines.at(i));
+		terrain_render_passes.at(i) = Terrain::create_render_pass(
+			&device,
+			descriptor_set_layouts,
+			color_render_target,
+			depth_render_target,
+			false, // not depth only
+			false, // not wireframe
+			false, // not bias depth
+			i + 1
+		);
+		cleanup_queue.add(&terrain_render_passes.at(i));
 
-		terrain_wireframe_pipelines.at(i) = Terrain::create_pipeline(&device, color_render_target, depth_render_target, shared_terrain_data, false, true, false, i+1); // wireframe but not depth only
-		cleanup_queue.add(&terrain_wireframe_pipelines.at(i));
+		terrain_wireframe_render_passes.at(i) = Terrain::create_render_pass(
+			&device,
+			descriptor_set_layouts, 
+			color_render_target,
+			depth_render_target,
+			false, // not depth only
+			true,  // wireframe
+			false, // not bias depth
+			i + 1
+		);
+		cleanup_queue.add(&terrain_wireframe_render_passes.at(i));
 	}
 
-
-	terrain_depth_pipeline = Terrain::create_pipeline(&device, color_render_target, depth_render_target, shared_terrain_data, true, false, true);
-	cleanup_queue.add(&terrain_depth_pipeline);
+	terrain_depth_render_pass = Terrain::create_render_pass(
+		&device,
+		descriptor_set_layouts, 
+		color_render_target,
+		depth_render_target,
+		true,  // depth only
+		false, // not wireframe
+		true   // bias depth
+	);
+	cleanup_queue.add(&terrain_depth_render_pass);
 
 	environment_map_pipeline = EnvironmentMap::create_pipeline(&device, color_render_target, depth_render_target, shared_environment_data);
 	cleanup_queue.add(&environment_map_pipeline);
 
-	line_material = Line::create_material_type(&device, std::array{ view_resources_set_layout }, color_render_target, depth_render_target);
-	cleanup_queue.add(&line_material);
+	line_render_pass = Line::create_render_pass(&device, std::array{ view_resources_set_layout }, color_render_target, depth_render_target);
+	cleanup_queue.add(&line_render_pass);
 }
 
 void Engine::create_swapchain()

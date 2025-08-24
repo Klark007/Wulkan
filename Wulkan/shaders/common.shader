@@ -10,7 +10,7 @@ struct Vertex {
 };
 
 #extension GL_EXT_scalar_block_layout : enable
-layout(std430, binding = 0) uniform UniformData {
+layout(std430, set = 0, binding = 0) uniform UniformData {
     mat4 view;
     mat4 inv_view;
     mat4 virtual_view;

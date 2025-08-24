@@ -9,8 +9,6 @@ layout(location = 0) in vec2 inUV[];
 layout(location = 1) in vec3 inNormal[];
 layout(location = 2) in vec4 inColor[];
 
-layout(binding = 4) uniform sampler2D height_map;
-
 layout(location = 0) out vec3 outWorldPos;
 layout(location = 1) out vec2 outUV;
 layout(location = 2) out vec3 outNormal;

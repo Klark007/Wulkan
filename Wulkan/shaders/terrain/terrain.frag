@@ -10,15 +10,6 @@ layout(location = 2) in vec3 inNormal;
 layout(location = 3) in vec4 inColor;
 layout(location = 4) in float model_height;
 
-layout(binding = 2) uniform sampler2D albedo;
-layout(binding = 3) uniform sampler2D normal_map;
-layout(binding = 4) uniform sampler2D height_map;
-layout(binding = 5) uniform sampler2D curvature;
-
-layout(binding = 6) uniform texture2DArray shadow_map;
-layout(binding = 7) uniform sampler shadow_sampler;
-layout(binding = 8) uniform sampler shadow_gather_sampler;
-
 // requires the above uniforms to be defined
 #include "../pbr/shadow.shader"
 
