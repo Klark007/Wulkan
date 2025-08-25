@@ -86,8 +86,6 @@ private:
 	void create_device();
 	void create_queues();
 
-	void init_shared_data();
-
 	void create_texture_samplers();
 	void create_uniform_buffers();
 	void create_descriptor_sets();
@@ -131,7 +129,7 @@ private:
 	RenderPass<TerrainPushConstants, 3>  terrain_depth_render_pass;
 	std::array<RenderPass<TerrainPushConstants, 3>, MAX_CASCADE_COUNT> terrain_wireframe_render_passes;
 
-	VKW_GraphicsPipeline environment_map_pipeline;
+	RenderPass<EnvironmentMapPushConstants, 2> environment_render_pass;
 
 	RenderPass<PushConstants, 1> line_render_pass;
 
@@ -152,15 +150,15 @@ private:
 	std::array<SyncStructs, MAX_FRAMES_IN_FLIGHT> sync_structs;
 
 	// Descriptor set layouts
-	VKW_DescriptorSetLayout view_resources_set_layout;
-	VKW_DescriptorSetLayout shadow_resources_set_layout;
-	VKW_DescriptorSetLayout terrain_resources_set_layout;
+	VKW_DescriptorSetLayout view_desc_set_layout;
+	VKW_DescriptorSetLayout shadow_desc_set_layout;
+	VKW_DescriptorSetLayout terrain_desc_set_layout;
+	VKW_DescriptorSetLayout environment_desc_set_layout;
 
 	// Terrain data
 	Terrain terrain;
 
 	// Environment map
-	SharedEnvironmentData shared_environment_data;
 	EnvironmentMap environment_map;
 
 	// Directional light

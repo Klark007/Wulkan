@@ -6,6 +6,7 @@
 * Separate sets for things bound at different freq [X]
 * Shader printf suppport [ ] 
 * m_ convention[ ] 
+* Descriptor Pool improvements [ ] 
 * Make warnings only be compiled in debug mode [ ]
 * Improve descriptor pool [ ] 
 * Maybe cut down on parameters in favor of accessing via engine [ ] 

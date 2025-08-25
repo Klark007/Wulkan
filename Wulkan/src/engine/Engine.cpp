@@ -124,11 +124,9 @@ void Engine::draw()
 			// draw using depth only pipelines
 			{
 				TracyVkZone(get_current_tracy_context(), shadow_cmd, "Shadow [Depth Only]");
-
-				RenderPass<TerrainPushConstants, 3>& render_pass = terrain_depth_render_pass;
 				
 				for (uint32_t i = 0; i < nr_cascades; i++) {
-					render_pass.begin(
+					terrain_depth_render_pass.begin(
 						shadow_cmd,
 						directional_light.get_texture().get_extent(),
 						VK_NULL_HANDLE, // don't attach a color image view
@@ -144,7 +142,7 @@ void Engine::draw()
 					terrain.set_cascade_idx(i);
 					terrain.draw(shadow_cmd, current_frame, {});
 					
-					render_pass.end(shadow_cmd);
+					terrain_depth_render_pass.end(shadow_cmd);
 				}
 			}
 		}
@@ -168,6 +166,22 @@ void Engine::draw()
 			{
 				TracyVkZone(get_current_tracy_context(), cmd, "Environment map");
 
+				environment_render_pass.begin(
+					cmd,
+					swapchain.get_extent(),
+					color_render_target.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT),
+					depth_render_target.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT),
+					true,                         // color clear
+					{ {0.2f, 0.2f, 0.2f, 1.0f} }, // color value
+					true,                         // depth clear
+					1.0f                          // depth value
+				);
+
+				environment_map.draw(cmd, current_frame, {});
+
+				environment_render_pass.end(cmd);
+				
+				/*
 				VKW_GraphicsPipeline& pipeline = environment_map_pipeline;
 				pipeline.set_render_size(swapchain.get_extent());
 
@@ -192,6 +206,7 @@ void Engine::draw()
 					environment_map.draw(cmd, current_frame, pipeline);
 				}
 				pipeline.end_rendering(cmd);
+				*/
 			}
 		
 
@@ -325,7 +340,6 @@ void Engine::init_vulkan()
 
 	create_uniform_buffers();
 
-	init_shared_data();
 	init_descriptor_set_layouts();
 	create_descriptor_sets();
 
@@ -368,27 +382,24 @@ void Engine::create_queues()
 	std::cout << "Chosen queues:" << graphics_queue.get_queue_family() << "," << present_queue.get_queue_family() << "," << transfer_queue.get_queue_family() << std::endl;
 }
 
-void Engine::init_shared_data()
-{
-	shared_environment_data.init(&device);
-	cleanup_queue.add(&shared_environment_data);
-}
-
 void Engine::init_descriptor_set_layouts()
 {
-	view_resources_set_layout.add_binding(
+	view_desc_set_layout.add_binding(
 		0, 
 		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 
 		VK_SHADER_STAGE_ALL
 	);
-	view_resources_set_layout.init(&device, "Shared view resource set layout");
-	cleanup_queue.add(&view_resources_set_layout);
+	view_desc_set_layout.init(&device, "Shared view resource set layout");
+	cleanup_queue.add(&view_desc_set_layout);
 
-	shadow_resources_set_layout = DirectionalLight::create_shadow_descriptor_layout(device);
-	cleanup_queue.add(&shadow_resources_set_layout);
+	shadow_desc_set_layout = DirectionalLight::create_shadow_descriptor_layout(device);
+	cleanup_queue.add(&shadow_desc_set_layout);
 
-	terrain_resources_set_layout = Terrain::create_descriptor_set_layout(device);
-	cleanup_queue.add(&terrain_resources_set_layout);
+	terrain_desc_set_layout = Terrain::create_descriptor_set_layout(device);
+	cleanup_queue.add(&terrain_desc_set_layout);
+
+	environment_desc_set_layout = EnvironmentMap::create_descriptor_set_layout(device);
+	cleanup_queue.add(&environment_desc_set_layout);
 }
 
 void Engine::init_data()
@@ -445,7 +456,7 @@ void Engine::init_data()
 		get_current_graphics_pool(),
 		get_current_transfer_pool(),
 		descriptor_pool,
-		&shared_environment_data,
+		environment_render_pass,
 
 		"textures/environment_maps/day_cube_map_%.exr"
 	);
@@ -481,17 +492,14 @@ void Engine::create_descriptor_sets()
 	imgui_descriptor_pool.init(&device, 1, "Imgui descriptor pool");
 	cleanup_queue.add(&imgui_descriptor_pool);
 	
-	// each Terrain instance needs MAX_FRAMES_IN_FLIGHT many descriptor sets
-	
-	descriptor_pool.add_layout(shared_environment_data.get_descriptor_set_layout(), MAX_FRAMES_IN_FLIGHT);
-	
-	descriptor_pool.add_layout(view_resources_set_layout, MAX_FRAMES_IN_FLIGHT*(2*MAX_CASCADE_COUNT + 1)); // for lines
-	descriptor_pool.add_layout(shadow_resources_set_layout, MAX_FRAMES_IN_FLIGHT);
-	descriptor_pool.add_layout(terrain_resources_set_layout, MAX_FRAMES_IN_FLIGHT);
+	descriptor_pool.add_layout(view_desc_set_layout, MAX_FRAMES_IN_FLIGHT*(2*MAX_CASCADE_COUNT + 2)); // for lines
+	descriptor_pool.add_layout(shadow_desc_set_layout, MAX_FRAMES_IN_FLIGHT);
+	descriptor_pool.add_layout(terrain_desc_set_layout, MAX_FRAMES_IN_FLIGHT);
+	descriptor_pool.add_layout(environment_desc_set_layout, MAX_FRAMES_IN_FLIGHT);
 	descriptor_pool.add_type(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1); // precompute curvature
 	descriptor_pool.add_type(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1); // precompute curvature
 
-	descriptor_pool.init(&device, MAX_FRAMES_IN_FLIGHT*(4 + 2 * MAX_CASCADE_COUNT) + 1, "General descriptor pool");
+	descriptor_pool.init(&device, MAX_FRAMES_IN_FLIGHT*(5 + 2 * MAX_CASCADE_COUNT) + 1, "General descriptor pool");
 	cleanup_queue.add(&descriptor_pool);
 }
 
@@ -540,7 +548,7 @@ void Engine::init_render_targets()
 void Engine::create_render_passes()
 {
 	// have different specialized render passes for different cascade counts (specialization constants)
-	std::array<VKW_DescriptorSetLayout, 3> descriptor_set_layouts{ view_resources_set_layout, shadow_resources_set_layout, terrain_resources_set_layout };
+	std::array<VKW_DescriptorSetLayout, 3> descriptor_set_layouts{ view_desc_set_layout, shadow_desc_set_layout, terrain_desc_set_layout };
 	
 	for (int i = 0; i < MAX_CASCADE_COUNT; i++) {
 		terrain_render_passes.at(i) = Terrain::create_render_pass(
@@ -579,10 +587,10 @@ void Engine::create_render_passes()
 	);
 	cleanup_queue.add(&terrain_depth_render_pass);
 
-	environment_map_pipeline = EnvironmentMap::create_pipeline(&device, color_render_target, depth_render_target, shared_environment_data);
-	cleanup_queue.add(&environment_map_pipeline);
+	environment_render_pass = EnvironmentMap::create_render_pass(&device, { view_desc_set_layout, environment_desc_set_layout}, color_render_target, depth_render_target);
+	cleanup_queue.add(&environment_render_pass);
 
-	line_render_pass = Line::create_render_pass(&device, std::array{ view_resources_set_layout }, color_render_target, depth_render_target);
+	line_render_pass = Line::create_render_pass(&device, std::array{ view_desc_set_layout }, color_render_target, depth_render_target);
 	cleanup_queue.add(&line_render_pass);
 }
 
