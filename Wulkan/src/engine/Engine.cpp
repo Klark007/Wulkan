@@ -180,33 +180,6 @@ void Engine::draw()
 				environment_map.draw(cmd, current_frame, {});
 
 				environment_render_pass.end(cmd);
-				
-				/*
-				VKW_GraphicsPipeline& pipeline = environment_map_pipeline;
-				pipeline.set_render_size(swapchain.get_extent());
-
-				// would theoretically not need to clear the screen
-				pipeline.set_color_attachment(
-					color_render_target.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT),
-					true,
-					{ {0.2f, 0.2f, 0.2f, 1.0f} }
-				);
-
-				pipeline.set_depth_attachment(
-					depth_render_target.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT),
-					true,
-					1.0f
-				);
-			
-				pipeline.begin_rendering(cmd);
-				{
-					pipeline.bind(cmd);
-
-					pipeline.set_dynamic_state(cmd);
-					environment_map.draw(cmd, current_frame, pipeline);
-				}
-				pipeline.end_rendering(cmd);
-				*/
 			}
 		
 

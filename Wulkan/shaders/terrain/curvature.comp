@@ -5,7 +5,7 @@ layout (local_size_x = 16, local_size_y = 16) in;
 
 layout(binding = 0) uniform sampler2D height_map;
 
-layout(rg16f, binding = 1) uniform image2D curvature;
+layout(r16f, binding = 1) uniform image2D curvature;
 
 
 float sample_height_map(ivec2 tex_coord, ivec2 size) {
