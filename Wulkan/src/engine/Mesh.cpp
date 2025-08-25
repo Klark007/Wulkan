@@ -3,7 +3,7 @@
 void Mesh::init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices)
 {
 	
-	vertex_buffer = {{}};
+	vertex_buffer = std::optional<VKW_Buffer>{VKW_Buffer{}};
 	
 	VkDeviceAddress address;
 	create_vertex_buffer(device, transfer_pool, vertices, *vertex_buffer, address);
