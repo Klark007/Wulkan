@@ -103,6 +103,10 @@ void Engine::update()
 	directional_light.set_sample_info(gui_input.receiver_sample_region, gui_input.occluder_sample_region, gui_input.nr_shadow_receiver_samples, gui_input.nr_shadow_occluder_samples);
 	directional_light.set_shadow_mode(gui_input.shadow_mode);
 
+	mesh.set_model_matrix(
+		glm::translate(glm::scale(glm::mat4(1), glm::vec3(0.8)), glm::vec3(10, 0, 25 + cos(glfwGetTime() / 2) / 3))
+	);
+
 	update_uniforms();
 }
 
@@ -198,6 +202,22 @@ void Engine::draw()
 				terrain.draw(cmd, current_frame, {});
 
 				render_pass.end(cmd);
+			}
+
+			// draw meshes
+			{
+				TracyVkZone(get_current_tracy_context(), cmd, "PBR Meshes");
+
+				pbr_render_pass.begin(
+					cmd,
+					swapchain.get_extent(),
+					color_render_target.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT),
+					depth_render_target.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT)
+				);
+
+				mesh.draw(cmd, current_frame, {});
+
+				pbr_render_pass.end(cmd);
 			}
 
 			// draw lines
@@ -373,6 +393,9 @@ void Engine::init_descriptor_set_layouts()
 
 	environment_desc_set_layout = EnvironmentMap::create_descriptor_set_layout(device);
 	cleanup_queue.add(&environment_desc_set_layout);
+
+	pbr_desc_set_layout = ObjMesh::create_descriptor_set_layout(device);
+	cleanup_queue.add(&pbr_desc_set_layout);
 }
 
 void Engine::init_data()
@@ -436,7 +459,8 @@ void Engine::init_data()
 	environment_map.set_descriptor_bindings(uniform_buffers, linear_texture_sampler);
 	cleanup_queue.add(&environment_map);
 
-	mesh.init(device, get_current_transfer_pool(), "models/base.obj");
+	mesh.init(device, get_current_transfer_pool(), descriptor_pool, pbr_render_pass,"models/smooth_normals.obj");
+	mesh.set_descriptor_bindings(uniform_buffers, directional_light.get_uniform_buffers(), directional_light.get_texture(), linear_texture_sampler, shadow_map_gather_sampler);
 	cleanup_queue.add(&mesh);
 }
 
@@ -465,14 +489,15 @@ void Engine::create_descriptor_sets()
 	imgui_descriptor_pool.init(&device, 1, "Imgui descriptor pool");
 	cleanup_queue.add(&imgui_descriptor_pool);
 	
-	descriptor_pool.add_layout(view_desc_set_layout, MAX_FRAMES_IN_FLIGHT*(2*MAX_CASCADE_COUNT + 2)); // for lines
-	descriptor_pool.add_layout(shadow_desc_set_layout, MAX_FRAMES_IN_FLIGHT);
+	descriptor_pool.add_layout(view_desc_set_layout, MAX_FRAMES_IN_FLIGHT*(2*MAX_CASCADE_COUNT + 2 + 4));
+	descriptor_pool.add_layout(shadow_desc_set_layout, 5*MAX_FRAMES_IN_FLIGHT);
 	descriptor_pool.add_layout(terrain_desc_set_layout, MAX_FRAMES_IN_FLIGHT);
 	descriptor_pool.add_layout(environment_desc_set_layout, MAX_FRAMES_IN_FLIGHT);
+	descriptor_pool.add_layout(pbr_desc_set_layout, 4 * MAX_FRAMES_IN_FLIGHT);
 	descriptor_pool.add_type(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1); // precompute curvature
 	descriptor_pool.add_type(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1); // precompute curvature
 
-	descriptor_pool.init(&device, MAX_FRAMES_IN_FLIGHT*(5 + 2 * MAX_CASCADE_COUNT) + 1, "General descriptor pool");
+	descriptor_pool.init(&device, MAX_FRAMES_IN_FLIGHT*(5 + 12 + 2 * MAX_CASCADE_COUNT) + 1, "General descriptor pool");
 	cleanup_queue.add(&descriptor_pool);
 }
 
@@ -563,8 +588,11 @@ void Engine::create_render_passes()
 	environment_render_pass = EnvironmentMap::create_render_pass(&device, { view_desc_set_layout, environment_desc_set_layout}, color_render_target, depth_render_target);
 	cleanup_queue.add(&environment_render_pass);
 
-	line_render_pass = Line::create_render_pass(&device, std::array{ view_desc_set_layout }, color_render_target, depth_render_target);
+	line_render_pass = Line::create_render_pass(&device, { view_desc_set_layout }, color_render_target, depth_render_target);
 	cleanup_queue.add(&line_render_pass);
+
+	pbr_render_pass = ObjMesh::create_render_pass(&device, { view_desc_set_layout, shadow_desc_set_layout, pbr_desc_set_layout }, color_render_target, depth_render_target);
+	cleanup_queue.add(&pbr_render_pass);
 }
 
 void Engine::create_swapchain()

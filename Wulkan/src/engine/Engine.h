@@ -133,6 +133,8 @@ private:
 
 	RenderPass<PushConstants, 1> line_render_pass;
 
+	RenderPass<PushConstants, OBJ_MESH_DESC_SET_COUNT> pbr_render_pass;
+
 	// general sampler for texture (Linear sampling, repeat address mode)
 	VKW_Sampler nearest_texture_sampler;
 	VKW_Sampler linear_texture_sampler;
@@ -154,6 +156,7 @@ private:
 	VKW_DescriptorSetLayout shadow_desc_set_layout;
 	VKW_DescriptorSetLayout terrain_desc_set_layout;
 	VKW_DescriptorSetLayout environment_desc_set_layout;
+	VKW_DescriptorSetLayout pbr_desc_set_layout;
 
 	// Terrain data
 	Terrain terrain;

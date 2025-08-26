@@ -3,11 +3,14 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader.h"
 
+#include "DirectionalLight.h"
+
 #include <format>
 #include <iostream>
 
-void ObjMesh::init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, const std::string& obj_path, const std::string& mtl_path)
+void ObjMesh::init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, RenderPass<PushConstants, OBJ_MESH_DESC_SET_COUNT>& render_pass,const std::string& obj_path, const std::string& mtl_path)
 {
+	// open file
 	size_t file_ext_idx = obj_path.rfind(".") + 1;
 	if (obj_path.substr(file_ext_idx, obj_path.size()) != "obj") {
 		throw IOException(
@@ -36,14 +39,14 @@ void ObjMesh::init(const VKW_Device& device, const VKW_CommandPool& transfer_poo
 	auto& shapes = reader.GetShapes();
 	auto& materials = reader.GetMaterials();
 
-	meshes = std::vector<Mesh>(materials.size());
+	// process mesh data
+	m_meshes = std::vector<Mesh>(materials.size());
 
 	std::vector<Vertex> vertices;
 	std::vector<std::vector<uint32_t>> indices = std::vector<std::vector<uint32_t>>(materials.size());
 	//std::unordered_map<Vertex, uint32_t> unique_vertices;
 
 	// TODO: big buffers for position, normals etc shared between all shapes
-	// vertices.reserve(attrib.vertices.size() / 3);
 
 	// Loop over shapes
 	for (const tinyobj::shape_t& shape : shapes) {
@@ -101,22 +104,155 @@ void ObjMesh::init(const VKW_Device& device, const VKW_CommandPool& transfer_poo
 	}
 
 	// create vertex buffer
-	create_vertex_buffer(device, transfer_pool, vertices, vertex_buffer, vertex_buffer_address);
+	create_vertex_buffer(device, transfer_pool, vertices, m_vertex_buffer, m_vertex_buffer_address);
 
 	// create meshes
-	for (size_t i = 0; i < meshes.size(); i++) {
-		meshes[i].init(device, transfer_pool, vertex_buffer_address, indices[i]);
+	for (size_t i = 0; i < m_meshes.size(); i++) {
+		m_meshes[i].init(device, transfer_pool, m_vertex_buffer_address, indices[i]);
+	}
+	// create material instances 
+	m_materials.reserve(materials.size());
+	for (size_t i = 0; i < materials.size(); i++) {
+		m_materials.push_back(render_pass.create_material_instance(device, descriptor_pool));
 	}
 
+	// create and set uniform buffers
+	for (size_t frame_idx = 0; frame_idx < MAX_FRAMES_IN_FLIGHT; frame_idx++) {
+		m_uniform_buffers[frame_idx].resize(materials.size());
+		for (size_t mat_idx = 0; mat_idx < materials.size(); mat_idx++) {
+			VKW_Buffer& uniform_buffer = m_uniform_buffers[frame_idx][mat_idx];
+
+			// TODO: different memory as we don't plan to change those on the fly
+			uniform_buffer.init(
+				&device,
+				sizeof(PBRUniform),
+				VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+				sharing_exlusive(),
+				true,
+				std::format("PBR Uniform {} ({})", materials[mat_idx].name, frame_idx)
+			);
+			uniform_buffer.map();
+
+			// gamma correction for colors
+			PBRUniform uniform{
+				glm::pow(glm::vec3{ materials[mat_idx].diffuse[0], materials[mat_idx].diffuse[1], materials[mat_idx].diffuse[2] }, glm::vec3{2.2f}),
+				0
+			};
+
+			memcpy(uniform_buffer.get_mapped_address(), &uniform, sizeof(PBRUniform));
+		}
+	}
+}
+
+void ObjMesh::set_descriptor_bindings(const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& general_ubo, const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& shadow_map_ubo, Texture& shadow_map, const VKW_Sampler& shadow_map_sampler, const VKW_Sampler& shadow_map_gather_sampler)
+{
+	for (size_t mat_idx = 0; mat_idx < m_materials.size(); mat_idx++) {
+		auto& mat = m_materials[mat_idx];
+		for (unsigned int frame_idx = 0; frame_idx < MAX_FRAMES_IN_FLIGHT; frame_idx++) {
+			const VKW_DescriptorSet& set0 = mat.get_descriptor_set(frame_idx, 0);
+			const VKW_DescriptorSet& set1 = mat.get_descriptor_set(frame_idx, 1);
+			const VKW_DescriptorSet& set2 = mat.get_descriptor_set(frame_idx, 2);
+
+			set0.update(0, general_ubo.at(frame_idx));
+
+			set1.update(0, shadow_map_ubo.at(frame_idx));
+			set1.update(1, shadow_map.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D_ARRAY, 0, MAX_CASCADE_COUNT));
+			set1.update(2, shadow_map_sampler);
+			set1.update(3, shadow_map_gather_sampler);
+
+			set2.update(0, m_uniform_buffers[frame_idx][mat_idx]);
+		}
+	}
+}
+
+RenderPass<PushConstants, OBJ_MESH_DESC_SET_COUNT> ObjMesh::create_render_pass(const VKW_Device* device, const std::array<VKW_DescriptorSetLayout, OBJ_MESH_DESC_SET_COUNT>& layouts, Texture& color_rt, Texture& depth_rt, bool depth_only, bool bias_depth)
+{
+	RenderPass<PushConstants, OBJ_MESH_DESC_SET_COUNT > render_pass{};
+
+	// Push constants
+	VKW_PushConstant<PushConstants> push_constant{};
+	push_constant.init(VK_SHADER_STAGE_VERTEX_BIT);
+
+	// Graphics pipeline
+	VKW_GraphicsPipeline graphics_pipeline{};
+
+	VKW_Shader vert_shader{};
+	vert_shader.init(device, "shaders/pbr/pbr_vert.spv", VK_SHADER_STAGE_VERTEX_BIT, "PBR vertex shader");
+
+	VKW_Shader frag_shader{};
+	frag_shader.init(device, "shaders/pbr/pbr_frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT, "PBR fragment shader");
+
+	graphics_pipeline.set_topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+	graphics_pipeline.set_culling_mode();
+	graphics_pipeline.enable_depth_test();
+	graphics_pipeline.enable_depth_write();
+
+	if (depth_only) {
+		graphics_pipeline.add_shader_stages({ vert_shader });
+	}
+	else {
+		graphics_pipeline.add_shader_stages({ vert_shader, frag_shader });
+	}
+
+	graphics_pipeline.add_descriptor_sets(layouts);
+	graphics_pipeline.add_push_constants({ push_constant.get_range() });
+
+	if (!depth_only) {
+		graphics_pipeline.set_color_attachment_format(color_rt.get_format());
+	}
+	graphics_pipeline.set_depth_attachment_format(depth_rt.get_format());
+
+	if (depth_only && bias_depth) {
+		graphics_pipeline.enable_dynamic_depth_bias();
+	}
+
+	graphics_pipeline.init(device, "PBR graphics pipeline");
+
+	vert_shader.del();
+	frag_shader.del();
+
+	// end graphics pipeline
+
+	render_pass.init(
+		graphics_pipeline,
+		layouts,
+		push_constant,
+		"Obj Pbr Material"
+	);
+
+	return render_pass;
+}
+
+VKW_DescriptorSetLayout ObjMesh::create_descriptor_set_layout(const VKW_Device& device)
+{
+	VKW_DescriptorSetLayout layout{};
+
+	layout.add_binding(
+		0,
+		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+		VK_SHADER_STAGE_FRAGMENT_BIT
+	);
+
+	layout.init(&device, "PBR Descriptor Set Layout");
+
+	return layout;
 }
 
 void ObjMesh::del()
 {
-	for(Mesh & m: meshes) {
-		m.del();
+	for(Mesh & mesh: m_meshes) {
+		mesh.del();
+	}
+
+	for (auto& mat : m_materials) {
+		mat.del();
 	}
 	
+	m_vertex_buffer.del();
 
-	vertex_buffer.del();
+	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+		for (VKW_Buffer& uniform_buffer : m_uniform_buffers[i]) {
+			uniform_buffer.del();
+		}
+	}
 }
-

@@ -38,8 +38,8 @@ inline void Line::draw(const VKW_CommandBuffer& command_buffer, uint32_t current
 		command_buffer,
 		current_frame,
 		{
-			vertex_address,
-			model
+			model,
+			vertex_address
 		}
 	);
 

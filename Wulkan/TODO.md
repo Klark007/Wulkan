@@ -3,14 +3,19 @@
 ## General features
 * Implement best practises as reported by validation layers [X]
 * Shader includes with a shared file for common helper functions [X] 
-* Separate sets for things bound at different freq [X]
+
+* Remove Pipeline from draw[ ] 
+* Separate sets for things bound at different freq (also allocate only if we need a unique one per object, otherwise just give a copy (and only bind if not copy is already bound (at position))) [ ]
 * Shader printf suppport [ ] 
 * m_ convention[ ] 
 * Descriptor Pool improvements [ ] 
+
 * Make warnings only be compiled in debug mode [ ]
 * Improve descriptor pool [ ] 
+* Maybe combine buffer + layout for uniforms [ ] 
 * Maybe cut down on parameters in favor of accessing via engine [ ] 
 * Maybe Begin / End etc replacing with std::function to be called in that "context" [ ] 
+
 * Anti Aliasing [ ] 
 * Maybe experiment with Slang [ ] 
 * Check best practises and synchronization regularly [ ]

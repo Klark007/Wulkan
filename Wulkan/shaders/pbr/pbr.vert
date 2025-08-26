@@ -13,14 +13,14 @@ layout(buffer_reference, std430) readonly buffer VertexBuffer{
 //push constants block
 layout( push_constant ) uniform constants
 {	
-	VertexBuffer vertex_buffer;
 	mat4 model;
-} push_constant;
+	VertexBuffer vertex_buffer;
+} pc;
 
 void main() 
 {	
-	Vertex v = push_constant.vertex_buffer.vertices[gl_VertexIndex];
+	Vertex v = pc.vertex_buffer.vertices[gl_VertexIndex];
 
-	gl_Position = ubo.proj * ubo.view * vec4(v.position, 1.0f);
+	gl_Position = ubo.proj * ubo.view * pc.model * vec4(v.position, 1.0f);
 	outColor = v.color.rgb;
 }

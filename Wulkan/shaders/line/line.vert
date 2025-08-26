@@ -13,8 +13,8 @@ layout(buffer_reference, std430) readonly buffer VertexBuffer{
 //push constants block
 layout( push_constant ) uniform constants
 {	
-	VertexBuffer vertex_buffer;
 	mat4 model;
+	VertexBuffer vertex_buffer;
 } push_constant;
 
 void main() 

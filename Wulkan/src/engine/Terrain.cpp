@@ -178,9 +178,6 @@ RenderPass<TerrainPushConstants, 3> Terrain::create_render_pass(const VKW_Device
 	VKW_SpecializationConstants<int, 1> specialization_const{};
 	specialization_const.init({ nr_shadow_cascades }, { 0 });
 
-	VKW_Shader terrain_frag_shader{};
-	terrain_frag_shader.init(device, "shaders/terrain/terrain_frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT, "Terrain fragment shader", "main", specialization_const.get_info());
-
 	VKW_Shader tess_ctrl_shader{};
 	if (!depth_only) {
 		tess_ctrl_shader.init(device, "shaders/terrain/terrain_tesc.spv", VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, "Terrain tesselation control shader");
@@ -196,6 +193,9 @@ RenderPass<TerrainPushConstants, 3> Terrain::create_render_pass(const VKW_Device
 		tess_eval_shader.init(device, "shaders/terrain/terrain_depth_tese.spv", VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, "Terrain-depth tesselation evaluation shader", "main", specialization_const.get_info());
 	}
 
+	VKW_Shader terrain_frag_shader{};
+	terrain_frag_shader.init(device, "shaders/terrain/terrain_frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT, "Terrain fragment shader", "main", specialization_const.get_info());
+
 	graphics_pipeline.set_topology(VK_PRIMITIVE_TOPOLOGY_PATCH_LIST);
 	if (wireframe_mode) {
 		graphics_pipeline.set_wireframe_mode();
@@ -208,7 +208,7 @@ RenderPass<TerrainPushConstants, 3> Terrain::create_render_pass(const VKW_Device
 	graphics_pipeline.set_tesselation_patch_size(4);
 
 	if (!depth_only) {
-		graphics_pipeline.add_shader_stages({ terrain_vert_shader, terrain_frag_shader, tess_ctrl_shader, tess_eval_shader });
+		graphics_pipeline.add_shader_stages({ terrain_vert_shader, tess_ctrl_shader, tess_eval_shader, terrain_frag_shader });
 	}
 	else {
 		graphics_pipeline.add_shader_stages({ terrain_vert_shader, tess_ctrl_shader, tess_eval_shader });
@@ -230,9 +230,9 @@ RenderPass<TerrainPushConstants, 3> Terrain::create_render_pass(const VKW_Device
 	graphics_pipeline.init(device, "Terrain graphics pipeline");
 
 	terrain_vert_shader.del();
-	terrain_frag_shader.del();
 	tess_ctrl_shader.del();
 	tess_eval_shader.del();
+	terrain_frag_shader.del();
 
 	render_pass.init(
 		graphics_pipeline,
