@@ -183,7 +183,9 @@ RenderPass<PushConstants, OBJ_MESH_DESC_SET_COUNT> ObjMesh::create_render_pass(c
 	frag_shader.init(device, "shaders/pbr/pbr_frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT, "PBR fragment shader");
 
 	graphics_pipeline.set_topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-	graphics_pipeline.set_culling_mode();
+	if (!depth_only) {
+		graphics_pipeline.set_culling_mode();
+	}
 	graphics_pipeline.enable_depth_test();
 	graphics_pipeline.enable_depth_write();
 

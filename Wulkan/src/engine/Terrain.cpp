@@ -200,7 +200,9 @@ RenderPass<TerrainPushConstants, 3> Terrain::create_render_pass(const VKW_Device
 	if (wireframe_mode) {
 		graphics_pipeline.set_wireframe_mode();
 	}
-	graphics_pipeline.set_culling_mode();
+	if (!depth_only) {
+		graphics_pipeline.set_culling_mode();
+	}
 	graphics_pipeline.enable_depth_test();
 	graphics_pipeline.enable_depth_write();
 
