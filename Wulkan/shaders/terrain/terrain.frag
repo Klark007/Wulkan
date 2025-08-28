@@ -1,7 +1,6 @@
 #version 450
 // frag shader for terrain, supporting cascaded shadow maps and contact hardening soft shadows
 
-#include "../common.shader"
 #include "terrain_common.shader"
 
 layout(location = 0) in vec3 inWorldPos;
@@ -17,45 +16,20 @@ layout(location = 0) out vec4 outColor;
 
 void main() {
     vec3 obj_normal = normalize(texture(normal_map, inUV).rgb * 2 - 1);
-    vec3 world_normal = normalize(mat3(transpose((pc.model))) * obj_normal); // normals are in object space not tangent space
+    vec3 world_normal = normalize(mat3(transpose(pc.model)) * obj_normal); // normals are in object space not tangent space
     world_normal.y *= -1;
-
-    vec4 view_pos = ubo.virtual_view * vec4(inWorldPos, 1.0); 
-    uint cascade_idx = cascade_count;
-    for (uint i = 0; i < cascade_count; i++) {
-        if (-view_pos.z < directional_light_ubo.cascade_splits[i]) {
-            cascade_idx = i;
-            break;
-        }
-    }
 
     switch (pc.visualization_mode) {
         case 0: // shading    
-            float cos_theata =  max(
-                dot(
-                    world_normal, 
-                    spherical_to_dir(directional_light_ubo.light_direction)
-                ), 0.1
+            float cos_theata =  dot(
+                world_normal, 
+                spherical_to_dir(directional_light_ubo.light_direction)
             );
 
             
-            float in_shadow = 1.0;
-            switch (directional_light_ubo.shadow_mode) {
-                case 0:
-                    in_shadow = 1.0;
-                    break;
-                case 1:
-                    in_shadow = max(shadow(inWorldPos, cascade_idx), 0.1);
-                    break;
-                case 2:
-                    in_shadow = max(soft_shadow(inWorldPos, cascade_idx), 0.1);
-                    break;
-                default:
-                    in_shadow = 1.0;
-                    break;
-            }
+            float in_shadow = shadow(inWorldPos);
 
-            outColor = texture(albedo, inUV) * vec4(directional_light_ubo.light_color, 1) * cos_theata * in_shadow;
+            outColor = texture(albedo, inUV) * vec4(directional_light_ubo.light_color, 1) * max(cos_theata * in_shadow, 0.05);
             break;
         case 1: // tesselation level
             outColor = inColor;
@@ -73,6 +47,15 @@ void main() {
             outColor = vec4(vec3(res)*100, 1);
             break;
         case 5: // shadow map cascade
+            vec4 view_pos = ubo.virtual_view * vec4(inWorldPos, 1.0); 
+
+            uint cascade_idx = cascade_count;
+            for (uint i = 0; i < cascade_count; i++) {
+                if (-view_pos.z < directional_light_ubo.cascade_splits[i]) {
+                    cascade_idx = i;
+                    break;
+                }
+            }
             switch (cascade_idx) {
                 case 0:
                     outColor = vec4(1,0,0,1);

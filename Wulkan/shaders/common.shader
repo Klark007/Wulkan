@@ -1,6 +1,8 @@
 #ifndef SHARED_COMMON_INCLUDE
 #define SHARED_COMMON_INCLUDE
 
+#extension GL_EXT_buffer_reference : require
+
 struct Vertex {
 	vec3 position;
 	float uv_x;
@@ -8,6 +10,20 @@ struct Vertex {
 	float uv_y;
 	vec4 color;
 };
+
+layout(buffer_reference, std430) readonly buffer VertexBuffer{ 
+	Vertex vertices[];
+};
+
+#ifndef REDEFINE_PUSH_CONSTANT
+layout( push_constant ) uniform PushConstant
+{	
+	mat4 model;
+	mat4 inv_model;
+	VertexBuffer vertex_buffer;
+	int cascade_idx;
+} pc;
+#endif
 
 #extension GL_EXT_scalar_block_layout : enable
 layout(std430, set = 0, binding = 0) uniform UniformData {

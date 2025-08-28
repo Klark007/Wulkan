@@ -292,14 +292,14 @@ void DirectionalLight::end_depth_pass(int current_frame)
 	);
 }
 
-void DirectionalLight::draw_debug_lines(const VKW_CommandBuffer& command_buffer, uint32_t current_frame, const VKW_GraphicsPipeline& pipeline, int nr_current_cascades)
+void DirectionalLight::draw_debug_lines(const VKW_CommandBuffer& command_buffer, uint32_t current_frame, int nr_current_cascades)
 {
 	if (!initialized_debug_lines) {
 		throw SetupException("Tried to draw debug lines without initalizing them", __FILE__, __LINE__);
 	}
 
 	for (int i = 0; i < nr_current_cascades; i++) {
-		splitted_camera_frustums.at(i).draw(command_buffer, current_frame, pipeline);
-		shadow_camera_frustums.at(i).draw(command_buffer, current_frame, pipeline);
+		splitted_camera_frustums.at(i).draw(command_buffer, current_frame);
+		shadow_camera_frustums.at(i).draw(command_buffer, current_frame);
 	}
 }

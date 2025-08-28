@@ -25,7 +25,7 @@ public:
 
 	// goes over all materials in obj and renders them, expects to be in active command buffer
 	// TODO: Current assumption is that all materials in ObjMesh use the same pipeline
-	inline void draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame, const VKW_GraphicsPipeline& pipeline) override;
+	inline void draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame) override;
 private:
 	std::vector<Mesh> m_meshes; // one mesh per material
 	std::vector<MaterialInstance<PushConstants, OBJ_MESH_DESC_SET_COUNT>> m_materials;
@@ -37,7 +37,7 @@ private:
 };
 
 
-inline void ObjMesh::draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame, const VKW_GraphicsPipeline& pipeline)
+inline void ObjMesh::draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame)
 {
 	for (size_t i = 0; i < m_materials.size(); i++) {
 		m_materials[i].bind(
@@ -51,6 +51,6 @@ inline void ObjMesh::draw(const VKW_CommandBuffer& command_buffer, uint32_t curr
 			}
 		);
 
-		m_meshes[i].draw(command_buffer, current_frame, pipeline);
+		m_meshes[i].draw(command_buffer, current_frame);
 	}
 }

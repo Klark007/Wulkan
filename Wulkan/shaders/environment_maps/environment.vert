@@ -2,21 +2,18 @@
 #extension GL_EXT_buffer_reference : require
 // environment map vertex shader
 
+#define REDEFINE_PUSH_CONSTANT // We want our special push constant definition
 #include "../common.shader" 
-
-layout(buffer_reference, std430) readonly buffer VertexBuffer{
-	Vertex vertices[];
-};
 
 layout( push_constant ) uniform constants
 {
 	VertexBuffer vertex_buffer;
-} push_constant;
+} pc;
 
 layout(location = 0) out vec3 outUVW;
 
 void main() {
-	Vertex v = push_constant.vertex_buffer.vertices[gl_VertexIndex];
+	Vertex v = pc.vertex_buffer.vertices[gl_VertexIndex];
 	
 	vec4 pos = vec4(v.position, 1.0);
 

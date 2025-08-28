@@ -1,7 +1,6 @@
 #version 450
 // Controlls how strong this quad will be tesselated
 
-#include "../common.shader"
 #include "terrain_common.shader"
 
 layout(location = 0) in vec3 inPos[];

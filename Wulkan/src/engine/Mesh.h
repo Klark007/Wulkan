@@ -31,7 +31,7 @@ public:
 	void del() override;
 
 	// binds the indices and calls vkCmdDrawIndexed, expects to be in active command buffer
-	inline void draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame, const VKW_GraphicsPipeline& pipeline) override;
+	inline void draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame) override;
 protected:
 	std::optional<VKW_Buffer> vertex_buffer;
 	VkDeviceAddress vertex_address;
@@ -43,7 +43,7 @@ public:
 	VkDeviceAddress get_vertex_address() const { return vertex_address; };
 };
 
-inline void Mesh::draw(const VKW_CommandBuffer& command_buffer, uint32_t _current_frame, const VKW_GraphicsPipeline& _pipeline)
+inline void Mesh::draw(const VKW_CommandBuffer& command_buffer, uint32_t _current_frame)
 {
 	// bind index buffer
 	vkCmdBindIndexBuffer(command_buffer, index_buffer, 0, VK_INDEX_TYPE_UINT32);

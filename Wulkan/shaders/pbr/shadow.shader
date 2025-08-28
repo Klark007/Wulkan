@@ -22,7 +22,43 @@ layout(set = 1, binding = 2) uniform sampler shadow_sampler;
 layout(set = 1, binding = 3) uniform sampler shadow_gather_sampler;
 
 #ifndef SHADOW_UNIFORM_ONLY
-float shadow(vec3 world_pos, uint cascade_idx) 
+
+float hard_shadow(vec3 world_pos, uint cascade_idx);
+float soft_shadow(vec3 world_pos, uint cascade_idx);
+
+float shadow(vec3 world_pos) 
+{
+    vec4 view_pos = ubo.virtual_view * vec4(world_pos, 1.0); 
+
+    // compute cascade idx
+    uint cascade_idx = cascade_count;
+    for (uint i = 0; i < cascade_count; i++) {
+        if (-view_pos.z < directional_light_ubo.cascade_splits[i]) {
+            cascade_idx = i;
+            break;
+        }
+    }
+
+    float in_shadow = 1.0;
+    switch (directional_light_ubo.shadow_mode) {
+        case 0:
+            in_shadow = 1.0;
+            break;
+        case 1:
+            in_shadow = hard_shadow(world_pos, cascade_idx);
+            break;
+        case 2:
+            in_shadow = soft_shadow(world_pos, cascade_idx);
+            break;
+        default:
+            in_shadow = 1.0;
+            break;
+    }
+
+    return in_shadow;
+}
+
+float hard_shadow(vec3 world_pos, uint cascade_idx) 
 {
     vec4 shadow_coord = directional_light_ubo.proj_views[cascade_idx] * vec4(world_pos, 1.0);
     shadow_coord /= shadow_coord.w;

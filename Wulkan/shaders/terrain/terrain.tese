@@ -1,7 +1,6 @@
 #version 450
 // implements how properties will be interpolated for the newly tesselated vertices as well as projects said vertices
 
-#include "../common.shader"
 #include "terrain_common.shader"
 
 layout (quads, fractional_odd_spacing, cw) in;

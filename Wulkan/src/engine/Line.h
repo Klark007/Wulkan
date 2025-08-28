@@ -17,7 +17,7 @@ public:
 
 	void del() override;
 
-	inline void draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame, const VKW_GraphicsPipeline& pipeline) override;
+	inline void draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame) override;
 protected:
 	std::vector<Vertex> vertices;
 	VKW_Buffer vertex_buffer;
@@ -32,7 +32,7 @@ public:
 	void update_vertices(const std::vector<glm::vec3>& points);
 };
 
-inline void Line::draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame, const VKW_GraphicsPipeline& pipeline)
+inline void Line::draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame)
 {
 	material.bind(
 		command_buffer,

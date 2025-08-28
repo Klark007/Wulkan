@@ -24,7 +24,7 @@ public:
 	static RenderPass<EnvironmentMapPushConstants, 2> create_render_pass(const VKW_Device* device, const std::array<VKW_DescriptorSetLayout, 2>& layouts, Texture& color_rt, Texture& depth_rt);
 	static VKW_DescriptorSetLayout create_descriptor_set_layout(const VKW_Device& device);
 
-	inline void draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame, const VKW_GraphicsPipeline& pipeline) override;
+	inline void draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame) override;
 private:
 	Texture cube_map;
 	Mesh mesh; // incorrect normals and uv
@@ -33,7 +33,7 @@ private:
 	MaterialInstance< EnvironmentMapPushConstants, 2> material;
 };
 
-inline void EnvironmentMap::draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame, const VKW_GraphicsPipeline& pipeline)
+inline void EnvironmentMap::draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame)
 {
 	material.bind(
 		command_buffer,
@@ -41,6 +41,6 @@ inline void EnvironmentMap::draw(const VKW_CommandBuffer& command_buffer, uint32
 		{ mesh.get_vertex_address() }
 	);
 
-	mesh.draw(command_buffer, current_frame, pipeline);
+	mesh.draw(command_buffer, current_frame);
 }
 

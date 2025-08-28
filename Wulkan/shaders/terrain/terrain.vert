@@ -1,7 +1,6 @@
 #version 450
 // pass vertices without projecting them
 
-#include "../common.shader"
 #include "terrain_common.shader"
 
 layout(location = 0) out vec3 outPos;

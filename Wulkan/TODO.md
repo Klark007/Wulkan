@@ -21,12 +21,13 @@
 * Check best practises and synchronization regularly [ ]
 
 # Models and Materials 
-* Basic model loading [ ]
+* Basic model loading [X]
 * Refactor the idea of Pipeline + Shared Data to smt closer to materials [X]
+* Shadows [X] 
+* PBR Shader [ ] 
 * Draw Indirect [ ] 
 * Fix assumption that per model only one pipeline [ ]
 * Mesh shaders [ ] 
-* PBRT Shader [ ] 
 
 # Tracy 
 * CPU side basics [X]

@@ -1,12 +1,8 @@
 #ifndef TERRAIN_COMMON_INCLUDE
 #define TERRAIN_COMMON_INCLUDE
 
+#define REDEFINE_PUSH_CONSTANT // We want our special push constant definition
 #include "../common.shader"
-#extension GL_EXT_buffer_reference : require
-
-layout(buffer_reference, std430) readonly buffer VertexBuffer{
-	Vertex vertices[];
-};
 
 layout( push_constant ) uniform constants
 {

@@ -43,7 +43,7 @@ public:
 	static RenderPass<TerrainPushConstants, 3> create_render_pass(const VKW_Device* device, const std::array<VKW_DescriptorSetLayout, 3>& layouts, Texture& color_rt, Texture& depth_rt, bool depth_only = false, bool wireframe_mode = false, bool bias_depth = false, int nr_shadow_cascades = 3);
 	static VKW_DescriptorSetLayout create_descriptor_set_layout(const VKW_Device& device);
 
-	inline void draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame, const VKW_GraphicsPipeline& pipeline) override;
+	inline void draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame) override;
 private:
 	Mesh mesh;
 	const VKW_Sampler* texture_sampler;
@@ -69,7 +69,7 @@ public:
 	inline void set_visualization_mode(TerrainVisualizationMode mode) { visualization_mode = mode; }; // switch between shading and debug views
 };
 
-inline void Terrain::draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame, const VKW_GraphicsPipeline& pipeline)
+inline void Terrain::draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame)
 {
 	material.bind(
 		command_buffer,
@@ -85,5 +85,5 @@ inline void Terrain::draw(const VKW_CommandBuffer& command_buffer, uint32_t curr
 		}
 	);
 
-	mesh.draw(command_buffer, current_frame, pipeline);
+	mesh.draw(command_buffer, current_frame);
 }

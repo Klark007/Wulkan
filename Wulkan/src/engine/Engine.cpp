@@ -144,7 +144,7 @@ void Engine::draw()
 					);
 
 					terrain.set_cascade_idx(i);
-					terrain.draw(shadow_cmd, current_frame, {});
+					terrain.draw(shadow_cmd, current_frame);
 					
 					terrain_depth_render_pass.end(shadow_cmd);
 
@@ -162,7 +162,7 @@ void Engine::draw()
 					);
 
 					mesh.set_cascade_idx(i);
-					mesh.draw(shadow_cmd, current_frame, {});
+					mesh.draw(shadow_cmd, current_frame);
 
 					pbr_depth_pass.end(shadow_cmd);
 					
@@ -200,7 +200,7 @@ void Engine::draw()
 					1.0f                          // depth value
 				);
 
-				environment_map.draw(cmd, current_frame, {});
+				environment_map.draw(cmd, current_frame);
 
 				environment_render_pass.end(cmd);
 			}
@@ -218,7 +218,7 @@ void Engine::draw()
 					depth_render_target.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT)
 				);
 
-				terrain.draw(cmd, current_frame, {});
+				terrain.draw(cmd, current_frame);
 
 				render_pass.end(cmd);
 			}
@@ -234,7 +234,7 @@ void Engine::draw()
 					depth_render_target.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT)
 				);
 
-				mesh.draw(cmd, current_frame, {});
+				mesh.draw(cmd, current_frame);
 
 				pbr_render_pass.end(cmd);
 			}
@@ -252,7 +252,7 @@ void Engine::draw()
 
 				
 				if (gui_input.shadow_draw_debug_frustums)
-					directional_light.draw_debug_lines(cmd, current_frame, {}, gui_input.nr_shadow_cascades);
+					directional_light.draw_debug_lines(cmd, current_frame, gui_input.nr_shadow_cascades);
 				
 
 				line_render_pass.end(cmd);
