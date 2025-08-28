@@ -44,8 +44,10 @@ inline void ObjMesh::draw(const VKW_CommandBuffer& command_buffer, uint32_t curr
 			command_buffer,
 			current_frame,
 			{
-				model,
-				m_meshes[i].get_vertex_address()
+				m_model,
+				m_inv_model,
+				m_meshes[i].get_vertex_address(),
+				m_cascade_idx
 			}
 		);
 

@@ -249,6 +249,7 @@
     <None Include="shaders\line\line.vert" />
     <None Include="shaders\pbr\pbr.frag" />
     <None Include="shaders\pbr\pbr.vert" />
+    <None Include="shaders\pbr\pbr_depth.vert" />
     <None Include="shaders\pbr\shadow.shader" />
     <None Include="shaders\sampling.shader" />
     <None Include="shaders\terrain\terrain_common.shader" />

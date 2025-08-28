@@ -177,7 +177,12 @@ RenderPass<PushConstants, OBJ_MESH_DESC_SET_COUNT> ObjMesh::create_render_pass(c
 	VKW_GraphicsPipeline graphics_pipeline{};
 
 	VKW_Shader vert_shader{};
-	vert_shader.init(device, "shaders/pbr/pbr_vert.spv", VK_SHADER_STAGE_VERTEX_BIT, "PBR vertex shader");
+	if (!depth_only) {
+		vert_shader.init(device, "shaders/pbr/pbr_vert.spv", VK_SHADER_STAGE_VERTEX_BIT, "PBR vertex shader");
+	}
+	else {
+		vert_shader.init(device, "shaders/pbr/pbr_depth_vert.spv", VK_SHADER_STAGE_VERTEX_BIT, "PBR vertex shader");
+	}
 
 	VKW_Shader frag_shader{};
 	frag_shader.init(device, "shaders/pbr/pbr_frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT, "PBR fragment shader");

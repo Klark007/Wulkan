@@ -92,7 +92,7 @@ void Engine::update()
 	terrain.set_tesselation_strength(gui_input.terrain_tesselation);
 	terrain.set_max_tesselation(gui_input.max_terrain_tesselation);
 	terrain.set_model_matrix(
-		glm::scale(glm::mat4(1), glm::vec3(25.0, 25.0, 25.0 * gui_input.terrain_height_scale))
+		glm::scale(glm::rotate(glm::mat4(1), 0.0f, glm::vec3(1, 0, 0)), glm::vec3(25.0, 25.0, 25.0 * gui_input.terrain_height_scale))
 	);
 	terrain.set_texture_eps(gui_input.terrain_texture_eps);
 	terrain.set_visualization_mode(gui_input.terrain_vis_mode);
@@ -140,13 +140,32 @@ void Engine::draw()
 						true,                       // clear depth
 						1.0,		                // clear to far value
 						gui_input.depth_bias,       // const depth bias
-						gui_input.slope_depth_bias // slope depth bias
+						gui_input.slope_depth_bias  // slope depth bias
 					);
 
 					terrain.set_cascade_idx(i);
 					terrain.draw(shadow_cmd, current_frame, {});
 					
 					terrain_depth_render_pass.end(shadow_cmd);
+
+					pbr_depth_pass.begin(
+						shadow_cmd,
+						directional_light.get_texture().get_extent(),
+						VK_NULL_HANDLE, // don't attach a color image view
+						directional_light.get_texture().get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D, i, 1),
+						false,                      // don't clear color
+						{ 1,0,1,1 },                // ignore
+						false,                      // clear depth
+						0.0,		                // ignore
+						gui_input.depth_bias,       // const depth bias
+						gui_input.slope_depth_bias  // slope depth bias
+					);
+
+					mesh.set_cascade_idx(i);
+					mesh.draw(shadow_cmd, current_frame, {});
+
+					pbr_depth_pass.end(shadow_cmd);
+					
 				}
 			}
 		}
@@ -593,6 +612,9 @@ void Engine::create_render_passes()
 
 	pbr_render_pass = ObjMesh::create_render_pass(&device, { view_desc_set_layout, shadow_desc_set_layout, pbr_desc_set_layout }, color_render_target, depth_render_target);
 	cleanup_queue.add(&pbr_render_pass);
+
+	pbr_depth_pass = ObjMesh::create_render_pass(&device, { view_desc_set_layout, shadow_desc_set_layout, pbr_desc_set_layout }, color_render_target, depth_render_target, true, true);
+	cleanup_queue.add(&pbr_depth_pass);
 }
 
 void Engine::create_swapchain()

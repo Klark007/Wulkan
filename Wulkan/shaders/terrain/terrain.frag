@@ -64,7 +64,7 @@ void main() {
             outColor = texture(height_map, inUV);
             break;
         case 3: // normal
-            outColor = vec4(abs(obj_normal), 1);
+            outColor = vec4(abs(world_normal), 1);
             break;
         case 4: // error
             float texture_height = texture(height_map, inUV).r;

@@ -39,7 +39,9 @@ struct UniformStruct {
 // std430
 struct PushConstants {
     alignas(16) glm::mat4 model;
+    alignas(16) glm::mat4 inv_model;
     alignas(8) VkDeviceAddress vertex_buffer;
+    alignas(4) int cascade_idx;
 };
 
 #ifdef NDEBUG

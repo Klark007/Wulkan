@@ -156,6 +156,7 @@
     <None Include="shaders\sampling.shader" />
     <None Include="shaders\pbr\pbr.frag" />
     <None Include="shaders\pbr\pbr.vert" />
+    <None Include="shaders\pbr\pbr_depth.vert" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\engine\CameraController.h">

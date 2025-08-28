@@ -14,7 +14,9 @@ layout(buffer_reference, std430) readonly buffer VertexBuffer{
 layout( push_constant ) uniform constants
 {	
 	mat4 model;
+	mat4 inv_model;
 	VertexBuffer vertex_buffer;
+	int cascade_idx;
 } push_constant;
 
 void main() 

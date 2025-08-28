@@ -75,13 +75,13 @@ inline void Terrain::draw(const VKW_CommandBuffer& command_buffer, uint32_t curr
 		command_buffer,
 		current_frame,
 		{
-			model,
+			m_model,
 			mesh.get_vertex_address(),
 			tesselation_strength,
 			max_tesselation,
 			texture_eps,
 			visualization_mode,
-			cascade_idx
+			m_cascade_idx
 		}
 	);
 

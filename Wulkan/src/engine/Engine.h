@@ -134,6 +134,7 @@ private:
 	RenderPass<PushConstants, 1> line_render_pass;
 
 	RenderPass<PushConstants, OBJ_MESH_DESC_SET_COUNT> pbr_render_pass;
+	RenderPass<PushConstants, OBJ_MESH_DESC_SET_COUNT> pbr_depth_pass;
 
 	// general sampler for texture (Linear sampling, repeat address mode)
 	VKW_Sampler nearest_texture_sampler;
