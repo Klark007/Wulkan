@@ -3,8 +3,8 @@
 ## General features
 * Implement best practises as reported by validation layers [X]
 * Shader includes with a shared file for common helper functions [X] 
+* Remove Pipeline from draw[X]
 
-* Remove Pipeline from draw[ ] 
 * Separate sets for things bound at different freq (also allocate only if we need a unique one per object, otherwise just give a copy (and only bind if not copy is already bound (at position))) [ ]
 * Shader printf suppport [ ] 
 * m_ convention[ ] 

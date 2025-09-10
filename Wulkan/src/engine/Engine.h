@@ -169,7 +169,7 @@ private:
 	DirectionalLight directional_light;
 
 
-	ObjMesh mesh;
+	std::array<ObjMesh, 4> meshes;
 
 	inline const VKW_CommandPool& get_current_graphics_pool() const;
 	inline const VKW_CommandPool& get_current_transfer_pool() const;

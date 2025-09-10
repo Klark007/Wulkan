@@ -7,7 +7,13 @@ constexpr size_t OBJ_MESH_DESC_SET_COUNT = 3;
 
 struct PBRUniform {
 	alignas(16) glm::vec3 diffuse;
-	alignas(4) uint32_t configuration;
+	alignas(4) float metallic;
+
+	alignas(16) glm::vec3 specular;
+	alignas(4) float roughness;
+
+	alignas(16) glm::vec3 emission;
+	alignas(4) uint32_t configuration; // 0 bit: if true read from albedo texture
 };
 
 class ObjMesh : public Shape

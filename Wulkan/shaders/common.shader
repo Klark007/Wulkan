@@ -3,6 +3,9 @@
 
 #extension GL_EXT_buffer_reference : require
 
+#define M_PI         3.14159265358979323846f
+#define INV_PI       0.31830988618379067154f
+
 struct Vertex {
 	vec3 position;
 	float uv_x;
