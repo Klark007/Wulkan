@@ -721,9 +721,9 @@ void Engine::create_sync_structs()
 		VK_CHECK_E(vkCreateSemaphore(device, &semaphore_create_info, nullptr, &sync_structs.at(i).render_semaphore), SetupException);
 		VK_CHECK_E(vkCreateFence(device, &fence_create_info, nullptr, &sync_structs.at(i).render_fence), SetupException);
 
-		device.name_object((uint64_t)sync_structs.at(i).swapchain_semaphore, VK_OBJECT_TYPE_SEMAPHORE, "Swapchain semaphore");
-		device.name_object((uint64_t)sync_structs.at(i).render_semaphore, VK_OBJECT_TYPE_SEMAPHORE, "Render semaphore");
-		device.name_object((uint64_t)sync_structs.at(i).render_fence, VK_OBJECT_TYPE_FENCE, "Render fence");
+		device.name_object((uint64_t)sync_structs.at(i).swapchain_semaphore, VK_OBJECT_TYPE_SEMAPHORE, std::format("Swapchain semaphore {}", i) );
+		device.name_object((uint64_t)sync_structs.at(i).render_semaphore, VK_OBJECT_TYPE_SEMAPHORE, std::format("Render semaphore {}", i));
+		device.name_object((uint64_t)sync_structs.at(i).render_fence, VK_OBJECT_TYPE_FENCE, std::format("Render fence{}", i));
 	}
 }
 

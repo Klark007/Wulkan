@@ -220,7 +220,7 @@ inline VkSemaphore Engine::get_current_swapchain_semaphore() const
 
 inline VkSemaphore Engine::get_current_render_semaphore() const
 {
-	return sync_structs[current_frame].render_semaphore;
+	return sync_structs[current_swapchain_image_idx % MAX_FRAMES_IN_FLIGHT].render_semaphore;
 }
 
 inline VkFence Engine::get_current_render_fence() const
