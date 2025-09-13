@@ -79,37 +79,56 @@ void Engine::update()
 {
 	ZoneScoped;
 
-	glfwPollEvents();
+	{
+		ZoneScopedN("IO handling");
+		{
+			ZoneScopedN("GLFW Poll");
 
-	camera_controller.update_time();
-	camera_controller.handle_keys();
+			glfwPollEvents();
+		}
 
-	gui_input = gui.get_input();
+		camera_controller.update_time();
+		camera_controller.handle_keys();
 
-	camera_controller.set_move_strength(gui_input.camera_movement_speed);
-	camera_controller.set_rotation_strength(gui_input.camera_rotation_speed);
+		gui_input = gui.get_input();
 
-	terrain.set_tesselation_strength(gui_input.terrain_tesselation);
-	terrain.set_max_tesselation(gui_input.max_terrain_tesselation);
-	terrain.set_model_matrix(
-		glm::scale(glm::rotate(glm::mat4(1), 0.0f, glm::vec3(1, 0, 0)), glm::vec3(25.0, 25.0, 25.0 * gui_input.terrain_height_scale))
-	);
-	terrain.set_texture_eps(gui_input.terrain_texture_eps);
-	terrain.set_visualization_mode(gui_input.terrain_vis_mode);
+		camera_controller.set_move_strength(gui_input.camera_movement_speed);
+		camera_controller.set_rotation_strength(gui_input.camera_rotation_speed);
 
-	directional_light.set_direction(glm::normalize(gui_input.sun_direction));
-	directional_light.set_color(gui_input.sun_color);
-	directional_light.set_intensity(gui_input.sun_intensity);
-	directional_light.set_sample_info(gui_input.receiver_sample_region, gui_input.occluder_sample_region, gui_input.nr_shadow_receiver_samples, gui_input.nr_shadow_occluder_samples);
-	directional_light.set_shadow_mode(gui_input.shadow_mode);
+	}
 
-	meshes[0].set_model_matrix(
-		glm::translate(glm::scale(glm::mat4(1), glm::vec3(0.8)), glm::vec3(10, 0, 25 + cos(glfwGetTime() / 2) / 3))
-	);
+	{
+		ZoneScopedN("Terrain updates");
+		terrain.set_tesselation_strength(gui_input.terrain_tesselation);
+		terrain.set_max_tesselation(gui_input.max_terrain_tesselation);
+		terrain.set_model_matrix(
+			glm::scale(glm::rotate(glm::mat4(1), 0.0f, glm::vec3(1, 0, 0)), glm::vec3(25.0, 25.0, 25.0 * gui_input.terrain_height_scale))
+		);
+		terrain.set_texture_eps(gui_input.terrain_texture_eps);
+		terrain.set_visualization_mode(gui_input.terrain_vis_mode);
+	}
 
-	meshes[1].set_model_matrix(
-		glm::translate(glm::mat4(1), glm::vec3(5,0,30))
-	);
+	{
+		ZoneScopedN("Directional light updates");
+
+		directional_light.set_direction(glm::normalize(gui_input.sun_direction));
+		directional_light.set_color(gui_input.sun_color);
+		directional_light.set_intensity(gui_input.sun_intensity);
+		directional_light.set_sample_info(gui_input.receiver_sample_region, gui_input.occluder_sample_region, gui_input.nr_shadow_receiver_samples, gui_input.nr_shadow_occluder_samples);
+		directional_light.set_shadow_mode(gui_input.shadow_mode);
+	}
+
+	{
+		ZoneScopedN("Meshes updates");
+
+		meshes[0].set_model_matrix(
+			glm::translate(glm::scale(glm::mat4(1), glm::vec3(0.8)), glm::vec3(10, 0, 25 + cos(glfwGetTime() / 2) / 3))
+		);
+
+		meshes[1].set_model_matrix(
+			glm::translate(glm::mat4(1), glm::vec3(5,0,30))
+		);
+	}
 
 	update_uniforms();
 }
@@ -121,6 +140,7 @@ void Engine::draw()
 	// shadow pass		
 	get_current_graphics_pool().reset();
 
+	/*
 	{
 		// TODO: Use camera controllers active camera
 		int nr_cascades = gui_input.nr_shadow_cascades;
@@ -177,6 +197,7 @@ void Engine::draw()
 		}
 		directional_light.end_depth_pass(current_frame);
 	}
+	*/
 
 	{
 
@@ -210,8 +231,8 @@ void Engine::draw()
 
 				environment_render_pass.end(cmd);
 			}
-		
-
+			
+			/*
 			// draw terrain
 			{
 				TracyVkZone(get_current_tracy_context(), cmd, "Terrain");
@@ -264,6 +285,7 @@ void Engine::draw()
 
 				line_render_pass.end(cmd);
 			}
+			*/
 		
 			// transitions for copy into swapchain images
 			Texture::transition_layout(cmd, color_render_target, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
@@ -761,6 +783,8 @@ bool Engine::aquire_image()
 
 void Engine::update_uniforms()
 {
+	ZoneScoped;
+
 	UniformStruct uniform{};
 	uniform.proj = camera.generate_projection_mat();
 	uniform.proj[1][1] *= -1; // see https://community.khronos.org/t/confused-when-using-glm-for-projection/108548/2 for reason for the multiplication
