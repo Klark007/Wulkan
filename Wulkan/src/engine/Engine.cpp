@@ -52,6 +52,8 @@ Engine::~Engine()
 
 void Engine::run()
 {
+	tracy::SetThreadName("Main thread (IO)");
+
 	camera_controller.init_time();
 
 	render_thread = std::thread(&Engine::render_thread_func, this);
@@ -74,6 +76,8 @@ void Engine::run()
 
 void Engine::render_thread_func()
 {
+	tracy::SetThreadName("Render thread");
+
 	std::cout << "Start rendering" << std::endl;
 
 	while (!should_window_close.load()) {
