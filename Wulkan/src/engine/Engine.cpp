@@ -27,12 +27,14 @@ void Engine::init(unsigned int w, unsigned int h)
 
 	camera = Camera( glm::vec3(0.0, 60.0, 25.0), glm::vec3(0.0, 10.0, 8.0), res_x, res_y, glm::radians(45.0f), 0.1f, 100.0f );
 	camera_controller = CameraController(window, &camera);
-	gui.init(window, instance, device, graphics_queue, imgui_descriptor_pool, &swapchain, &camera_controller);
+	gui.init(window, instance, device, graphics_queue, imgui_descriptor_pool, &swapchain, &camera_controller, &glfw_input_mutex);
 	cleanup_queue.add(&gui);
  }
 
 Engine::~Engine()
 {
+	render_thread.join();
+
 	for (unsigned int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 		VK_DESTROY(sync_structs.at(i).swapchain_semaphore, vkDestroySemaphore, device, sync_structs.at(i).swapchain_semaphore);
 		VK_DESTROY(sync_structs.at(i).render_semaphore, vkDestroySemaphore, device, sync_structs.at(i).render_semaphore);
@@ -52,7 +54,29 @@ void Engine::run()
 {
 	camera_controller.init_time();
 
+	render_thread = std::thread(&Engine::render_thread_func, this);
+
 	while (!glfwWindowShouldClose(window)) {
+		ZoneScopedN("IO (GLFW)");
+
+		glfwPollEvents();
+
+		glfw_input_mutex.lock();
+		camera_controller.update_time();
+		camera_controller.handle_keys(); // needs to be called by main thread
+		glfw_input_mutex.unlock();
+	}
+	
+	std::cout << "Close window" << std::endl;
+	should_window_close.store(true);
+}
+	
+
+void Engine::render_thread_func()
+{
+	std::cout << "Start rendering" << std::endl;
+
+	while (!should_window_close.load()) {
 		update();
 
 		if (aquire_image()) {
@@ -73,28 +97,18 @@ void Engine::run()
 
 	vkDeviceWaitIdle(device);
 }
-	
 
 void Engine::update()
 {
 	ZoneScoped;
 
 	{
-		ZoneScopedN("IO handling");
-		{
-			ZoneScopedN("GLFW Poll");
-
-			glfwPollEvents();
-		}
-
-		camera_controller.update_time();
-		camera_controller.handle_keys();
-
-		gui_input = gui.get_input();
+		ZoneScopedN("IO");
 
 		camera_controller.set_move_strength(gui_input.camera_movement_speed);
 		camera_controller.set_rotation_strength(gui_input.camera_rotation_speed);
 
+		gui_input = gui.get_input();
 	}
 
 	{
@@ -140,12 +154,13 @@ void Engine::draw()
 	// shadow pass		
 	get_current_graphics_pool().reset();
 
-	/*
 	{
 		// TODO: Use camera controllers active camera
 		int nr_cascades = gui_input.nr_shadow_cascades;
-		directional_light.set_uniforms(camera, nr_cascades, current_frame);
 
+		glfw_input_mutex.lock();
+		directional_light.set_uniforms(camera, nr_cascades, current_frame);
+		glfw_input_mutex.unlock();
 
 		const VKW_CommandBuffer& shadow_cmd = directional_light.begin_depth_pass(current_frame);
 		{
@@ -197,10 +212,8 @@ void Engine::draw()
 		}
 		directional_light.end_depth_pass(current_frame);
 	}
-	*/
 
 	{
-
 		const VKW_CommandBuffer& cmd = get_current_command_buffer();
 
 		// begin command buffer
@@ -232,7 +245,6 @@ void Engine::draw()
 				environment_render_pass.end(cmd);
 			}
 			
-			/*
 			// draw terrain
 			{
 				TracyVkZone(get_current_tracy_context(), cmd, "Terrain");
@@ -285,7 +297,6 @@ void Engine::draw()
 
 				line_render_pass.end(cmd);
 			}
-			*/
 		
 			// transitions for copy into swapchain images
 			Texture::transition_layout(cmd, color_render_target, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
@@ -785,6 +796,8 @@ void Engine::update_uniforms()
 {
 	ZoneScoped;
 
+	glfw_input_mutex.lock();
+
 	UniformStruct uniform{};
 	uniform.proj = camera.generate_projection_mat();
 	uniform.proj[1][1] *= -1; // see https://community.khronos.org/t/confused-when-using-glm-for-projection/108548/2 for reason for the multiplication
@@ -794,7 +807,8 @@ void Engine::update_uniforms()
 	uniform.virtual_view = camera.generate_virtual_view_mat();
 
 	uniform.near_far_plane = glm::vec2(camera.get_near_plane(), camera.get_far_plane());
-	
+	glfw_input_mutex.unlock();
+
 	memcpy(uniform_buffers.at(current_frame).get_mapped_address(), &uniform, sizeof(UniformStruct));
 }
 
@@ -846,7 +860,9 @@ Required_Device_Features Engine::get_required_device_features()
 void glfm_mouse_move_callback(GLFWwindow* window, double pos_x, double pos_y) {
 	Engine* engine = reinterpret_cast<Engine*>(glfwGetWindowUserPointer(window));
 	if (engine) {
+		engine->get_glfw_input_mutex().lock();
 		engine->get_camera_controller().handle_mouse(pos_x, pos_y);
+		engine->get_glfw_input_mutex().unlock();
 	}
 	else {
 		throw SetupException("GLFW Engine User pointer not set", __FILE__, __LINE__);

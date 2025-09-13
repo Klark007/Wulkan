@@ -2,6 +2,8 @@
 
 #include "imgui.h"
 
+#include <mutex>
+
 #include "CameraController.h"
 #include "vk_wrap/VKW_Object.h"
 #include "vk_wrap/VKW_Instance.h"
@@ -47,19 +49,20 @@ class GUI : public VKW_Object
 {
 public:
 	GUI() = default;
-	void init(GLFWwindow* window, const VKW_Instance& instance, const VKW_Device& device, const VKW_Queue& graphics_queue, const VKW_DescriptorPool& descriptor_pool, const VKW_Swapchain* vkw_swapchain, CameraController* camera_controller);
+	void init(GLFWwindow* window, const VKW_Instance& instance, const VKW_Device& device, const VKW_Queue& graphics_queue, const VKW_DescriptorPool& descriptor_pool, const VKW_Swapchain* vkw_swapchain, CameraController* camera_controller, std::mutex* camera_mutex);
 	void del() override;
 
 	// draws directly into current swap chain image (in format VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
 	void draw(const VKW_CommandBuffer& cmd, uint32_t image_idx);
 private:
-	const VKW_Swapchain* swapchain;
-	CameraController* camera_controller;
+	const VKW_Swapchain* m_swapchain;
+	CameraController* m_camera_controller;
+	std::mutex* m_camera_mutex;
 
-	GUI_Input data;
+	GUI_Input m_data;
 
 	void draw_gui(const VKW_CommandBuffer& cmd);
 public:
-	inline const GUI_Input& get_input() const { return data; };
+	inline const GUI_Input& get_input() const { return m_data; };
 };
 

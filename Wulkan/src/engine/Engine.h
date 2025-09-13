@@ -7,6 +7,10 @@
 
 #include "common.h"
 
+#include <thread>
+#include <atomic>
+#include <mutex>
+
 #include "vk_wrap/VKW_Instance.h"
 #include "vk_wrap/VKW_Surface.h"
 #include "vk_wrap/VKW_Device.h"
@@ -71,6 +75,16 @@ private:
 	unsigned int res_x, res_y;
 
 	unsigned int current_frame;
+
+	// Note on multithreading
+	// Thus far we only seperate (glfw) IO from rendering (in seperate thread)
+	// We don't force that when one finshes a frame that it needs to wait for the other one to finish as well
+	// IO can have multiple frames or also only update every 2nd frame (i.e. if windows has many events)
+	// See: https://stackoverflow.com/questions/32255136/glfw-pollevents-really-really-slow
+	void render_thread_func();
+	std::thread render_thread;
+	std::atomic_bool should_window_close = false;
+
 	void update();
 	void draw();
 	void present();
@@ -182,11 +196,14 @@ private:
 	unsigned int current_swapchain_image_idx;
 	DeletionQueue cleanup_queue;
 
+	std::mutex glfw_input_mutex; // needs to be locked to read/write to Camera and Camera Controller
 	CameraController camera_controller;
+	Camera camera;
+
 	GUI gui;
 	GUI_Input gui_input;
-	Camera camera;
 public:
+	std::mutex& get_glfw_input_mutex() { return glfw_input_mutex; };
 	CameraController& get_camera_controller() { return camera_controller; };
 
 	inline void resize_callback(unsigned int new_x, unsigned int new_y);
