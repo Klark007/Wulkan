@@ -61,7 +61,10 @@ void Engine::run()
 	while (!glfwWindowShouldClose(window)) {
 		ZoneScopedN("IO (GLFW)");
 
-		glfwPollEvents();
+		{
+			ZoneScopedN("GLFW Poll");
+			glfwPollEvents();
+		}
 
 		glfw_input_mutex.lock();
 		camera_controller.update_time();
@@ -864,9 +867,11 @@ Required_Device_Features Engine::get_required_device_features()
 void glfm_mouse_move_callback(GLFWwindow* window, double pos_x, double pos_y) {
 	Engine* engine = reinterpret_cast<Engine*>(glfwGetWindowUserPointer(window));
 	if (engine) {
-		engine->get_glfw_input_mutex().lock();
+		ZoneScopedN("Mouse callback");
+
+		engine->get_glfw_input_recursive_mutex().lock();
 		engine->get_camera_controller().handle_mouse(pos_x, pos_y);
-		engine->get_glfw_input_mutex().unlock();
+		engine->get_glfw_input_recursive_mutex().unlock();
 	}
 	else {
 		throw SetupException("GLFW Engine User pointer not set", __FILE__, __LINE__);

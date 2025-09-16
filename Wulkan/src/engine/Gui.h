@@ -49,7 +49,7 @@ class GUI : public VKW_Object
 {
 public:
 	GUI() = default;
-	void init(GLFWwindow* window, const VKW_Instance& instance, const VKW_Device& device, const VKW_Queue& graphics_queue, const VKW_DescriptorPool& descriptor_pool, const VKW_Swapchain* vkw_swapchain, CameraController* camera_controller, std::mutex* camera_mutex);
+	void init(GLFWwindow* window, const VKW_Instance& instance, const VKW_Device& device, const VKW_Queue& graphics_queue, const VKW_DescriptorPool& descriptor_pool, const VKW_Swapchain* vkw_swapchain, CameraController* camera_controller, std::recursive_mutex* camera_recursive_mutex);
 	void del() override;
 
 	// draws directly into current swap chain image (in format VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
@@ -57,7 +57,7 @@ public:
 private:
 	const VKW_Swapchain* m_swapchain;
 	CameraController* m_camera_controller;
-	std::mutex* m_camera_mutex;
+	std::recursive_mutex* m_camera_recursive_mutex;
 
 	GUI_Input m_data;
 

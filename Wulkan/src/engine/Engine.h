@@ -196,14 +196,14 @@ private:
 	unsigned int current_swapchain_image_idx;
 	DeletionQueue cleanup_queue;
 
-	std::mutex glfw_input_mutex; // needs to be locked to read/write to Camera and Camera Controller
+	std::recursive_mutex glfw_input_mutex; // needs to be locked to read/write to Camera and Camera Controller
 	CameraController camera_controller;
 	Camera camera;
 
 	GUI gui;
 	GUI_Input gui_input;
 public:
-	std::mutex& get_glfw_input_mutex() { return glfw_input_mutex; };
+	std::recursive_mutex& get_glfw_input_recursive_mutex() { return glfw_input_mutex; };
 	CameraController& get_camera_controller() { return camera_controller; };
 
 	inline void resize_callback(unsigned int new_x, unsigned int new_y);

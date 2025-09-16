@@ -13,10 +13,10 @@ static void check_imgui_result(VkResult result) {
 	VK_CHECK_ET(result, RuntimeException, "IMGUI Vulkan error");
 }
 
-void GUI::init(GLFWwindow* window, const VKW_Instance& instance, const VKW_Device& device, const VKW_Queue& graphics_queue, const VKW_DescriptorPool& descriptor_pool, const VKW_Swapchain* vkw_swapchain, CameraController* camera_controller, std::mutex* camera_mutex)
+void GUI::init(GLFWwindow* window, const VKW_Instance& instance, const VKW_Device& device, const VKW_Queue& graphics_queue, const VKW_DescriptorPool& descriptor_pool, const VKW_Swapchain* vkw_swapchain, CameraController* camera_controller, std::recursive_mutex* camera_recursive_mutex)
 {
 	m_camera_controller = camera_controller;
-	m_camera_mutex = camera_mutex;
+	m_camera_recursive_mutex = camera_recursive_mutex;
 
 	m_swapchain = vkw_swapchain;
 	IMGUI_CHECKVERSION();
@@ -99,7 +99,7 @@ void GUI::draw_gui(const VKW_CommandBuffer& cmd)
 			ImGui::SliderFloat("Rotation speed", &m_data.camera_rotation_speed, 0.0005f, 0.005f);
 
 			// TODO: support smt like https://github.com/btzy/nativefiledialog-extended
-			m_camera_mutex->lock();
+			m_camera_recursive_mutex->lock();
 			static char path[256] = "out/pose.csv";
 			ImGui::InputText("Camera pose path:", path, IM_ARRAYSIZE(path));
 			if (ImGui::Button("Store position")) {
@@ -111,7 +111,7 @@ void GUI::draw_gui(const VKW_CommandBuffer& cmd)
 				std::cout << "Loading camera pose from " << path << std::endl;
 				m_camera_controller->import_active_camera(path);
 			}
-			m_camera_mutex->unlock();
+			m_camera_recursive_mutex->unlock();
 		}
 
 		if (ImGui::CollapsingHeader("Terrain")) {
