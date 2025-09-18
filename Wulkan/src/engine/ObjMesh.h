@@ -13,6 +13,7 @@ struct PBRUniform {
 	alignas(4) float roughness;
 
 	alignas(16) glm::vec3 emission;
+	alignas(4) float eta;
 	alignas(4) uint32_t configuration; // 0 bit: if true read from albedo texture
 };
 

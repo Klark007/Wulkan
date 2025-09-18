@@ -134,8 +134,24 @@ void ObjMesh::init(const VKW_Device& device, const VKW_CommandPool& transfer_poo
 			uniform_buffer.map();
 
 			// gamma correction for colors
+			tinyobj::material_t mat = materials[mat_idx];
+			std::cout << "NAME: " << mat.diffuse_texname << std::endl;
+			
+			assert(mat.diffuse_texname == "", "Cant support diffuse textures yet");
+			assert(mat.specular_texname == "", "Cant support specular textures yet");
+			assert(mat.metallic_texname == "", "Cant support metallic textures yet");
+			assert(mat.ambient_texname == "", "Cant support ambient textures yet");
+			assert(mat.emissive_texname == "", "Cant support emission textures yet");
+
 			PBRUniform uniform{
-				glm::pow(glm::vec3{ materials[mat_idx].diffuse[0], materials[mat_idx].diffuse[1], materials[mat_idx].diffuse[2] }, glm::vec3{2.2f}),
+				glm::pow(glm::vec3{ mat.diffuse[0], mat.diffuse[1], mat.diffuse[2] }, glm::vec3{2.2f}), // gamma correction
+				mat.metallic,
+
+				glm::vec3{ mat.specular[0], mat.specular[1], mat.specular[2] },
+				mat.roughness,
+
+				glm::vec3{ mat.emission[0], mat.emission[1], mat.emission[2]},
+				1.000277f / mat.ior, // exterior IOR / interior IOR
 				0
 			};
 

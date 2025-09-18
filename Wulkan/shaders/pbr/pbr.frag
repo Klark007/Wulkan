@@ -13,7 +13,7 @@ layout (location = 0) out vec4 outColor;
 void main() 
 {
 	vec3 w_i = spherical_to_dir(directional_light_ubo.light_direction); // incoming / light dir
-	vec3 n   = inWorldNormal; // reflect (halfway vector)
+	vec3 n   = normalize(inWorldNormal);
 	
 	vec3 camera_pos = vec3(ubo.inv_view[3][0], ubo.inv_view[3][1], ubo.inv_view[3][2]);
 	vec3 w_o = normalize(camera_pos - inWorldPos); // view direction
