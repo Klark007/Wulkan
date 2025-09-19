@@ -25,8 +25,10 @@
 * Basic model loading [X]
 * Refactor the idea of Pipeline + Shared Data to smt closer to materials [X]
 * Shadows [X] 
-* PBR Shader [ ] 
+* PBR Shader [~]
 * Draw Indirect [ ] 
+* Move textures (and maybe uniform buffers) into m_materials_[] 
+* Support more parameters [ ]
 * Fix assumption that per model only one pipeline [ ]
 * Mesh shaders [ ] 
 

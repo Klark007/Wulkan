@@ -182,7 +182,7 @@ private:
 	// Directional light
 	DirectionalLight directional_light;
 
-
+	Texture texture_not_found;
 	std::array<ObjMesh, 4> meshes;
 
 	inline const VKW_CommandPool& get_current_graphics_pool() const;

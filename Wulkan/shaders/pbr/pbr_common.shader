@@ -15,6 +15,8 @@ layout(std430, set = 2, binding = 0) uniform PBRData {
 	uint configuration;
 } pbr_uniforms;
 
+layout(set = 2, binding = 1) uniform sampler2D diffuse_tex;
+
 	// TODO: Could share cos^2 instead of just cos_theta
 vec3 diffuse(vec3 albedo, float cos_theta_i, float cos_theta_o, float cos_theta_d) {
 	float t1 = pow(1 - cos_theta_i, 5);
@@ -27,7 +29,7 @@ vec3 diffuse(vec3 albedo, float cos_theta_i, float cos_theta_o, float cos_theta_
 
 float eval_D(float cos_theta_h) {
 	// see B2 Eq 8
-	float roughness = max(pbr_uniforms.roughness, 0.01);
+	float roughness = max(pbr_uniforms.roughness, 1e-5);
 	float alpha = roughness * roughness;
 	// TODO check about div by pi
 	float temp = 1 + (alpha * alpha - 1) * cos_theta_h * cos_theta_h;
@@ -85,7 +87,7 @@ vec3 specular(vec3 albedo, float cos_theta_i, float cos_theta_o, float cos_theta
 	return (D * F * G) / (4 * cos_theta_i * cos_theta_o);
 }
 
-vec3 pbr(vec3 w_i, vec3 w_o, vec3 n, vec3 light_color, float in_shadow) {
+vec3 pbr(vec3 w_i, vec3 w_o, vec3 n, vec3 light_color, vec2 uv, float in_shadow) {
 	vec3 w_h = normalize(w_i + w_o);
 	
 	// angle between incoming/outcoming and normal
@@ -97,7 +99,8 @@ vec3 pbr(vec3 w_i, vec3 w_o, vec3 n, vec3 light_color, float in_shadow) {
 
 	float diffuse_weight = 1 - pbr_uniforms.metallic;
 
-	vec3 albedo = pbr_uniforms.diffuse;
+	uint use_diffuse_texture = pbr_uniforms.configuration & 1<<0;
+	vec3 albedo = (1 - use_diffuse_texture) *  pbr_uniforms.diffuse + use_diffuse_texture * texture(diffuse_tex, uv).rgb;
 	vec3 color = specular(albedo,  cos_theta_i, cos_theta_o, cos_theta_d, cos_theta_h);
 	
 	if (diffuse_weight > 0) {

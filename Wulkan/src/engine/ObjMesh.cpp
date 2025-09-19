@@ -8,7 +8,7 @@
 #include <format>
 #include <iostream>
 
-void ObjMesh::init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, RenderPass<PushConstants, OBJ_MESH_DESC_SET_COUNT>& render_pass,const std::string& obj_path, const std::string& mtl_path)
+void ObjMesh::init(const VKW_Device& device, const VKW_CommandPool& graphics_pool, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, RenderPass<PushConstants, OBJ_MESH_DESC_SET_COUNT>& render_pass,const std::string& obj_path, const std::string& mtl_path)
 {
 	// open file
 	size_t file_ext_idx = obj_path.rfind(".") + 1;
@@ -134,10 +134,12 @@ void ObjMesh::init(const VKW_Device& device, const VKW_CommandPool& transfer_poo
 			uniform_buffer.map();
 
 			// gamma correction for colors
-			tinyobj::material_t mat = materials[mat_idx];
-			std::cout << "NAME: " << mat.diffuse_texname << std::endl;
-			
-			assert(mat.diffuse_texname == "", "Cant support diffuse textures yet");
+			tinyobj::material_t mat = materials[mat_idx];			
+			uint32_t config = 0;
+			if (mat.diffuse_texname != "") {
+				config |= 1 << 0;
+			}
+
 			assert(mat.specular_texname == "", "Cant support specular textures yet");
 			assert(mat.metallic_texname == "", "Cant support metallic textures yet");
 			assert(mat.ambient_texname == "", "Cant support ambient textures yet");
@@ -152,15 +154,34 @@ void ObjMesh::init(const VKW_Device& device, const VKW_CommandPool& transfer_poo
 
 				glm::vec3{ mat.emission[0], mat.emission[1], mat.emission[2]},
 				1.000277f / mat.ior, // exterior IOR / interior IOR
-				0
+				config
 			};
 
 			memcpy(uniform_buffer.get_mapped_address(), &uniform, sizeof(PBRUniform));
 		}
 	}
+
+	m_diffuse_textures.reserve(materials.size());
+	for (size_t mat_idx = 0; mat_idx < materials.size(); mat_idx++) {
+		tinyobj::material_t mat = materials[mat_idx];
+		if (mat.diffuse_texname != "") {
+			m_diffuse_textures.push_back({
+				create_texture_from_path(
+					&device,
+					&graphics_pool,
+					mat.diffuse_texname,
+					Texture_Type::Tex_RGB,
+					std::format("{} diffuse texture", materials[mat_idx].name)
+				)
+			});
+		}
+		else {
+			m_diffuse_textures.push_back({});
+		}
+	}
 }
 
-void ObjMesh::set_descriptor_bindings(const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& general_ubo, const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& shadow_map_ubo, Texture& shadow_map, const VKW_Sampler& shadow_map_sampler, const VKW_Sampler& shadow_map_gather_sampler)
+void ObjMesh::set_descriptor_bindings(const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& general_ubo, const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& shadow_map_ubo, Texture& shadow_map, const VKW_Sampler& shadow_map_sampler, const VKW_Sampler& shadow_map_gather_sampler, Texture& texture_fallback, const VKW_Sampler& general_sampler)
 {
 	for (size_t mat_idx = 0; mat_idx < m_materials.size(); mat_idx++) {
 		auto& mat = m_materials[mat_idx];
@@ -177,6 +198,12 @@ void ObjMesh::set_descriptor_bindings(const std::array<VKW_Buffer, MAX_FRAMES_IN
 			set1.update(3, shadow_map_gather_sampler);
 
 			set2.update(0, m_uniform_buffers[frame_idx][mat_idx]);
+			if (m_diffuse_textures[mat_idx].has_value()) {
+				set2.update(1, m_diffuse_textures[mat_idx].value().get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), general_sampler);
+			}
+			else {
+				set2.update(1, texture_fallback.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), general_sampler);
+			}
 		}
 	}
 }
@@ -256,6 +283,13 @@ VKW_DescriptorSetLayout ObjMesh::create_descriptor_set_layout(const VKW_Device& 
 		VK_SHADER_STAGE_FRAGMENT_BIT
 	);
 
+	// diffuse texture
+	layout.add_binding(
+		1,
+		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+		VK_SHADER_STAGE_FRAGMENT_BIT
+	);
+
 	layout.init(&device, "PBR Descriptor Set Layout");
 
 	return layout;
@@ -276,6 +310,12 @@ void ObjMesh::del()
 	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 		for (VKW_Buffer& uniform_buffer : m_uniform_buffers[i]) {
 			uniform_buffer.del();
+		}
+	}
+
+	for (std::optional<Texture> opt_text : m_diffuse_textures) {
+		if (opt_text.has_value()) {
+			opt_text.value().del();
 		}
 	}
 }

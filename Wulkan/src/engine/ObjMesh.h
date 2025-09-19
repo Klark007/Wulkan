@@ -21,8 +21,8 @@ class ObjMesh : public Shape
 {
 public:
 	ObjMesh() = default;
-	void init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, RenderPass<PushConstants, OBJ_MESH_DESC_SET_COUNT>& render_pass, const std::string& obj_path, const std::string& mtl_path="./models/");
-	void set_descriptor_bindings(const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& general_ubo, const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& shadow_map_ubo, Texture& shadow_map, const VKW_Sampler& shadow_map_sampler, const VKW_Sampler& shadow_map_gather_sampler);
+	void init(const VKW_Device& device, const VKW_CommandPool& graphics_pool, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, RenderPass<PushConstants, OBJ_MESH_DESC_SET_COUNT>& render_pass, const std::string& obj_path, const std::string& mtl_path="./models/");
+	void set_descriptor_bindings(const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& general_ubo, const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& shadow_map_ubo, Texture& shadow_map, const VKW_Sampler& shadow_map_sampler, const VKW_Sampler& shadow_map_gather_sampler, Texture& texture_fallback, const VKW_Sampler& general_sampler);
 	void del() override;
 
 	// TODO: could be kept seperate
@@ -39,7 +39,8 @@ private:
 	VKW_Buffer m_vertex_buffer;
 	VkDeviceAddress m_vertex_buffer_address;
 
-	// TODO: also seperate
+	// TODO: into materials class instead?
+	std::vector<std::optional<Texture>> m_diffuse_textures;
 	std::array<std::vector<VKW_Buffer>, MAX_FRAMES_IN_FLIGHT> m_uniform_buffers; // per frame, per material uniform buffer's
 };
 

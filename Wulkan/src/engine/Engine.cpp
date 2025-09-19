@@ -153,6 +153,10 @@ void Engine::update()
 		meshes[2].set_model_matrix(
 			glm::translate(glm::mat4(1), glm::vec3(-5, 0, 30))
 		);
+
+		meshes[3].set_model_matrix(
+			glm::translate(glm::mat4(1), glm::vec3(0, 0, 25))
+		);
 	}
 
 	update_uniforms();
@@ -529,20 +533,29 @@ void Engine::init_data()
 	environment_map.set_descriptor_bindings(uniform_buffers, linear_texture_sampler);
 	cleanup_queue.add(&environment_map);
 
-	meshes[0].init(device, get_current_transfer_pool(), descriptor_pool, pbr_render_pass, "models/smooth_normals.obj");
-	meshes[0].set_descriptor_bindings(uniform_buffers, directional_light.get_uniform_buffers(), directional_light.get_texture(), linear_texture_sampler, shadow_map_gather_sampler);
+	texture_not_found = create_texture_from_path(
+		&device,
+		&get_current_graphics_pool(),
+		"textures/texture_not_found.png",
+		Texture_Type::Tex_RGB,
+		"Texture Not Found fallback"
+	);
+	cleanup_queue.add(&texture_not_found);
+
+	meshes[0].init(device, get_current_graphics_pool(), get_current_transfer_pool(), descriptor_pool, pbr_render_pass, "models/smooth_normals.obj");
+	meshes[0].set_descriptor_bindings(uniform_buffers, directional_light.get_uniform_buffers(), directional_light.get_texture(), linear_texture_sampler, shadow_map_gather_sampler, texture_not_found, linear_texture_sampler);
 	cleanup_queue.add(&meshes[0]);
 
-	meshes[1].init(device, get_current_transfer_pool(), descriptor_pool, pbr_render_pass, "models/mitsuba_diffuse_only.obj");
-	meshes[1].set_descriptor_bindings(uniform_buffers, directional_light.get_uniform_buffers(), directional_light.get_texture(), linear_texture_sampler, shadow_map_gather_sampler);
+	meshes[1].init(device, get_current_graphics_pool(), get_current_transfer_pool(), descriptor_pool, pbr_render_pass, "models/mitsuba_diffuse_only.obj");
+	meshes[1].set_descriptor_bindings(uniform_buffers, directional_light.get_uniform_buffers(), directional_light.get_texture(), linear_texture_sampler, shadow_map_gather_sampler, texture_not_found, linear_texture_sampler);
 	cleanup_queue.add(&meshes[1]);
 
-	meshes[2].init(device, get_current_transfer_pool(), descriptor_pool, pbr_render_pass, "models/mitsuba_specular_only.obj");
-	meshes[2].set_descriptor_bindings(uniform_buffers, directional_light.get_uniform_buffers(), directional_light.get_texture(), linear_texture_sampler, shadow_map_gather_sampler);
+	meshes[2].init(device, get_current_graphics_pool(), get_current_transfer_pool(), descriptor_pool, pbr_render_pass, "models/mitsuba_specular_only.obj");
+	meshes[2].set_descriptor_bindings(uniform_buffers, directional_light.get_uniform_buffers(), directional_light.get_texture(), linear_texture_sampler, shadow_map_gather_sampler, texture_not_found, linear_texture_sampler);
 	cleanup_queue.add(&meshes[2]);
 
-	meshes[3].init(device, get_current_transfer_pool(), descriptor_pool, pbr_render_pass, "models/smooth_normals.obj");
-	meshes[3].set_descriptor_bindings(uniform_buffers, directional_light.get_uniform_buffers(), directional_light.get_texture(), linear_texture_sampler, shadow_map_gather_sampler);
+	meshes[3].init(device, get_current_graphics_pool(), get_current_transfer_pool(), descriptor_pool, pbr_render_pass, "models/mitsuba_texture.obj");
+	meshes[3].set_descriptor_bindings(uniform_buffers, directional_light.get_uniform_buffers(), directional_light.get_texture(), linear_texture_sampler, shadow_map_gather_sampler, texture_not_found, linear_texture_sampler);
 	cleanup_queue.add(&meshes[3]);
 }
 
