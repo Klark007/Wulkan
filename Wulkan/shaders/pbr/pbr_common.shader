@@ -82,8 +82,7 @@ vec3 specular(vec3 albedo, float cos_theta_i, float cos_theta_o, float cos_theta
 
 	float G = eval_G(cos_theta_i) * eval_G(cos_theta_o);
 
-	return vec3(D);
-	//return (D * F * G) / (4 * cos_theta_i * cos_theta_o);
+	return (D * F * G) / (4 * cos_theta_i * cos_theta_o);
 }
 
 vec3 pbr(vec3 w_i, vec3 w_o, vec3 n, vec3 light_color, float in_shadow) {
@@ -100,11 +99,10 @@ vec3 pbr(vec3 w_i, vec3 w_o, vec3 n, vec3 light_color, float in_shadow) {
 
 	vec3 albedo = pbr_uniforms.diffuse;
 	vec3 color = specular(albedo,  cos_theta_i, cos_theta_o, cos_theta_d, cos_theta_h);
-	/*
+	
 	if (diffuse_weight > 0) {
 		color += diffuse_weight * diffuse(albedo, cos_theta_i, cos_theta_o, cos_theta_d);
 	}
-	*/
 	// + ambient * albedo
 	
 	return color * light_color * max(cos_theta_i * in_shadow, 0.05);

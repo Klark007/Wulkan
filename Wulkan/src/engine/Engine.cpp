@@ -149,6 +149,10 @@ void Engine::update()
 		meshes[1].set_model_matrix(
 			glm::translate(glm::mat4(1), glm::vec3(5,0,30))
 		);
+
+		meshes[2].set_model_matrix(
+			glm::translate(glm::mat4(1), glm::vec3(-5, 0, 30))
+		);
 	}
 
 	update_uniforms();
@@ -533,7 +537,7 @@ void Engine::init_data()
 	meshes[1].set_descriptor_bindings(uniform_buffers, directional_light.get_uniform_buffers(), directional_light.get_texture(), linear_texture_sampler, shadow_map_gather_sampler);
 	cleanup_queue.add(&meshes[1]);
 
-	meshes[2].init(device, get_current_transfer_pool(), descriptor_pool, pbr_render_pass, "models/smooth_normals.obj");
+	meshes[2].init(device, get_current_transfer_pool(), descriptor_pool, pbr_render_pass, "models/mitsuba_specular_only.obj");
 	meshes[2].set_descriptor_bindings(uniform_buffers, directional_light.get_uniform_buffers(), directional_light.get_texture(), linear_texture_sampler, shadow_map_gather_sampler);
 	cleanup_queue.add(&meshes[2]);
 
