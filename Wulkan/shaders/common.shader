@@ -1,6 +1,7 @@
 #ifndef SHARED_COMMON_INCLUDE
 #define SHARED_COMMON_INCLUDE
 
+#extension GL_EXT_debug_printf : enable
 #extension GL_EXT_buffer_reference : require
 
 #define M_PI         3.14159265358979323846f

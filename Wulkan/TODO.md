@@ -4,12 +4,13 @@
 * Implement best practises as reported by validation layers [X]
 * Shader includes with a shared file for common helper functions [X] 
 * Remove Pipeline from draw[X]
+* Shader printf suppport [X] 
 
 * Update glfw due to https://github.com/glfw/glfw/issues/2684 or switch to SDL [ ]
 * Separate sets for things bound at different freq (also allocate only if we need a unique one per object, otherwise just give a copy (and only bind if not copy is already bound (at position))) [ ]
-* Shader printf suppport [ ] 
 * m_ convention[ ] 
 * Descriptor Pool improvements [ ] 
+* First frame analysis [ ] 
 
 * Make warnings only be compiled in debug mode [ ]
 * Improve descriptor pool [ ] 
