@@ -2,14 +2,27 @@
 
 #include <fstream>
 
+#include <iostream>
 void VKW_Shader::init(const VKW_Device* vkw_device, const std::string& path, VkShaderStageFlagBits stage, const std::string& obj_name, const std::string& entry_func, const VkSpecializationInfo* spezialisation_const)
 {
 	device = vkw_device;
 	name = obj_name;
 
+#ifdef NDEBUG
 	// open file and read compiled shader into it
 	// start at end of file to compute buffer size
 	std::ifstream file(path, std::ios::ate | std::ios::binary);
+#else
+	// replace *_{Type}.spv with *_d{Type}.spv
+	size_t last_underscore = path.rfind("_");
+	std::string actual_path = path.substr(0, last_underscore+1) + "d" + path.substr(last_underscore + 1);
+
+	std::ifstream file(actual_path, std::ios::ate | std::ios::binary);
+
+#endif
+
+
+	
 
 	if (!file.is_open()) {
 		throw IOException(std::format("Failed to open shader file at {}", path), __FILE__, __LINE__);

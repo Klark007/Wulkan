@@ -10,6 +10,8 @@ for /l %%i in (1,1,%width%) do set "line=!line!-"
 
 :: Optimized version
 set GLSLO=glslc.exe %%i -O --target-env=vulkan1.3
+:: With debug info
+set GLSLD=glslc.exe %%i -g --target-env=vulkan1.3
 
 echo !line!
 
@@ -20,6 +22,7 @@ for /r %%i in (*.vert) do (
     echo(
 
     %GLSLO% -o %%~dpi%%~ni_vert.spv
+    %GLSLD% -o %%~dpi%%~ni_dvert.spv
 )
 
 echo !line!
@@ -31,6 +34,7 @@ for /r %%i in (*.frag) do (
     echo(
 
     %GLSLO% -o %%~dpi%%~ni_frag.spv
+    %GLSLD% -o %%~dpi%%~ni_dfrag.spv
 )
 
 echo !line!
@@ -42,6 +46,7 @@ for /r %%i in (*.tesc) do (
     echo(
 
     %GLSLO% -o %%~dpi%%~ni_tesc.spv
+    %GLSLD% -o %%~dpi%%~ni_dtesc.spv
 )
 
 echo !line!
@@ -53,6 +58,7 @@ for /r %%i in (*.tese) do (
     echo(
 
     %GLSLO% -o %%~dpi%%~ni_tese.spv
+    %GLSLD% -o %%~dpi%%~ni_dtese.spv
 )
 
 
@@ -65,6 +71,7 @@ for /r %%i in (*.comp) do (
     echo(
 
     %GLSLO% -o %%~dpi%%~ni_comp.spv
+    %GLSLD% -o %%~dpi%%~ni_dcomp.spv
 )
 
 echo !line!

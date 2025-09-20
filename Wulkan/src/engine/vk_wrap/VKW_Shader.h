@@ -10,6 +10,7 @@ class VKW_Shader : public VKW_Object
 {
 public:
 	VKW_Shader() = default;
+	// assumes a *_d{Type}.spv and a *_d{Type}.spv with Types such as frag, vert, comp etc
 	void init(const VKW_Device* device, const std::string& path, VkShaderStageFlagBits stage, const std::string& obj_name, const std::string& entry_func = "main", const VkSpecializationInfo* spezialisation_const = NULL);
 	void del() override;
 private:
