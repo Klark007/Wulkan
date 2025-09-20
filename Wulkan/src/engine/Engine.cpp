@@ -182,6 +182,7 @@ void Engine::draw()
 			// draw using depth only pipelines
 			{
 				TracyVkZone(get_current_tracy_context(), shadow_cmd, "Shadow [Depth Only]");
+				shadow_cmd.begin_debug_zone("Shadow [Depth Only]");
 				
 				for (uint32_t i = 0; i < nr_cascades; i++) {
 					terrain_depth_render_pass.begin(
@@ -223,6 +224,8 @@ void Engine::draw()
 					pbr_depth_pass.end(shadow_cmd);
 					
 				}
+
+				shadow_cmd.end_debug_zone();
 			}
 		}
 		directional_light.end_depth_pass(current_frame);
@@ -243,7 +246,8 @@ void Engine::draw()
 			// draw environment map
 			{
 				TracyVkZone(get_current_tracy_context(), cmd, "Environment map");
-
+				cmd.begin_debug_zone("Environment map");
+				
 				environment_render_pass.begin(
 					cmd,
 					swapchain.get_extent(),
@@ -258,11 +262,14 @@ void Engine::draw()
 				environment_map.draw(cmd, current_frame);
 
 				environment_render_pass.end(cmd);
+
+				cmd.end_debug_zone();
 			}
 			
 			// draw terrain
 			{
 				TracyVkZone(get_current_tracy_context(), cmd, "Terrain");
+				cmd.begin_debug_zone("Terrain pass");
 
 				RenderPass<TerrainPushConstants, 3>& render_pass = (gui_input.terrain_wireframe_mode) ? terrain_wireframe_render_passes.at(gui_input.nr_shadow_cascades - 1) : terrain_render_passes.at(gui_input.nr_shadow_cascades - 1);
 				render_pass.begin(
@@ -275,11 +282,14 @@ void Engine::draw()
 				terrain.draw(cmd, current_frame);
 
 				render_pass.end(cmd);
+
+				cmd.end_debug_zone();
 			}
 
 			// draw meshes
 			{
 				TracyVkZone(get_current_tracy_context(), cmd, "PBR Meshes");
+				cmd.begin_debug_zone("PBR pass");
 
 				pbr_render_pass.begin(
 					cmd,
@@ -292,11 +302,14 @@ void Engine::draw()
 					meshes[i].draw(cmd, current_frame);
 
 				pbr_render_pass.end(cmd);
+
+				cmd.end_debug_zone();
 			}
 
 			// draw lines
 			{
 				TracyVkZone(get_current_tracy_context(), cmd, "Debug Lines");
+				cmd.begin_debug_zone("Line pass");
 
 				line_render_pass.begin(
 					cmd,
@@ -311,6 +324,7 @@ void Engine::draw()
 				
 
 				line_render_pass.end(cmd);
+				cmd.end_debug_zone();
 			}
 		
 			// transitions for copy into swapchain images
@@ -323,10 +337,16 @@ void Engine::draw()
 		
 			// transition for imgui
 			Texture::transition_layout(cmd, swapchain.images_at(current_swapchain_image_idx), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+			{
+				TracyVkZone(get_current_tracy_context(), cmd, "Imgui");
+				cmd.begin_debug_zone("ImGUI Pass");
 
-			// draw imgui
-			gui.draw(cmd, current_swapchain_image_idx);
+				// draw imgui
+				gui.draw(cmd, current_swapchain_image_idx);
 
+				cmd.end_debug_zone();
+			}
+			
 			// transition for present
 			Texture::transition_layout(cmd, swapchain.images_at(current_swapchain_image_idx), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 		}

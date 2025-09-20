@@ -31,4 +31,25 @@ private:
 public:
 	inline VkCommandBuffer get_command_buffer() const { return command_buffer; };
 	inline operator VkCommandBuffer() const { return command_buffer; };
+
+	inline void begin_debug_zone(const std::string& name) const;
+	inline void end_debug_zone() const;
 };
+
+void VKW_CommandBuffer::begin_debug_zone(const std::string& name) const
+{
+#ifndef NDEBUG
+	VkDebugUtilsLabelEXT label_info{};
+	label_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
+	label_info.pLabelName = name.c_str();
+
+	vkCmdBeginDebugUtilsLabelEXT(command_buffer, &label_info);
+#endif
+}
+
+inline void VKW_CommandBuffer::end_debug_zone() const
+{
+#ifndef NDEBUG
+	vkCmdEndDebugUtilsLabelEXT(command_buffer);
+#endif
+}
