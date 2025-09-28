@@ -8,7 +8,7 @@
 #include <format>
 #include <iostream>
 
-void ObjMesh::init(const VKW_Device& device, const VKW_CommandPool& graphics_pool, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, RenderPass<PushConstants, OBJ_MESH_DESC_SET_COUNT>& render_pass,const std::string& obj_path, const std::string& mtl_path)
+void ObjMesh::init(const VKW_Device& device, const VKW_CommandPool& graphics_pool, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, RenderPass<PushConstants, PBR_MAT_DESC_SET_COUNT>& render_pass,const std::string& obj_path, const std::string& mtl_path)
 {
 	// open file
 	size_t file_ext_idx = obj_path.rfind(".") + 1;
@@ -110,10 +110,12 @@ void ObjMesh::init(const VKW_Device& device, const VKW_CommandPool& graphics_poo
 	for (size_t i = 0; i < m_meshes.size(); i++) {
 		m_meshes[i].init(device, transfer_pool, m_vertex_buffer_address, indices[i]);
 	}
+
 	// create material instances 
 	m_materials.reserve(materials.size());
 	for (size_t i = 0; i < materials.size(); i++) {
-		m_materials.push_back(render_pass.create_material_instance(device, descriptor_pool));
+		m_materials.push_back({});
+		m_materials[i].init(device, descriptor_pool, render_pass);
 	}
 
 	// create and set uniform buffers
@@ -208,9 +210,9 @@ void ObjMesh::set_descriptor_bindings(const std::array<VKW_Buffer, MAX_FRAMES_IN
 	}
 }
 
-RenderPass<PushConstants, OBJ_MESH_DESC_SET_COUNT> ObjMesh::create_render_pass(const VKW_Device* device, const std::array<VKW_DescriptorSetLayout, OBJ_MESH_DESC_SET_COUNT>& layouts, Texture& color_rt, Texture& depth_rt, bool depth_only, bool bias_depth)
+RenderPass<PushConstants, PBR_MAT_DESC_SET_COUNT> ObjMesh::create_render_pass(const VKW_Device* device, const std::array<VKW_DescriptorSetLayout, PBR_MAT_DESC_SET_COUNT>& layouts, Texture& color_rt, Texture& depth_rt, bool depth_only, bool bias_depth)
 {
-	RenderPass<PushConstants, OBJ_MESH_DESC_SET_COUNT > render_pass{};
+	RenderPass<PushConstants, PBR_MAT_DESC_SET_COUNT> render_pass{};
 
 	// Push constants
 	VKW_PushConstant<PushConstants> push_constant{};

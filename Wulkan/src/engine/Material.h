@@ -15,7 +15,7 @@ public:
 
 	// Important layouts array order matters
 	// It corresponds to the order in which the multiple sets will be bound (set slot)
-	void init(const VKW_Device& device, const VKW_DescriptorPool& descriptor_pool, std::array<VKW_DescriptorSetLayout, N> layouts, VkPipelineLayout pipeline_layout, VKW_PushConstant<T>* push_constant, std::string name);
+	void init(const VKW_Device& device, const VKW_DescriptorPool& descriptor_pool, RenderPass<T,N>& render_pass);
 
 	void del() override;
 private:
@@ -30,16 +30,16 @@ public:
 };
 
 template<typename T, size_t N>
-inline void MaterialInstance<T, N>::init(const VKW_Device& device, const VKW_DescriptorPool& descriptor_pool, std::array<VKW_DescriptorSetLayout, N> layouts, VkPipelineLayout pipeline_layout, VKW_PushConstant<T>* push_constant, std::string name)
+inline void MaterialInstance<T, N>::init(const VKW_Device& device, const VKW_DescriptorPool& descriptor_pool, RenderPass<T, N>& render_pass)
 {
 	for (auto& per_frame_sets : m_descriptor_sets) {
 		for (int i = 0; i < N; i++) {
-			per_frame_sets[i].init(&device, &descriptor_pool, layouts[i], name + " Desc Set");
+			per_frame_sets[i].init(&device, &descriptor_pool, render_pass.m_layouts[i], std::format("{} [{}]  Desc Set", render_pass.m_name, render_pass.nr_instances));
 		}
 	}
 
-	m_push_constant = push_constant;
-	m_pipeline_layout = pipeline_layout;
+	m_push_constant = &render_pass.m_push_constant;
+	m_pipeline_layout = render_pass.m_pipeline.get_layout();
 }
 
 template<typename T, size_t N>

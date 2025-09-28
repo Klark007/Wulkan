@@ -7,8 +7,8 @@ void Line::init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, 
 }
 
 void Line::init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, RenderPass<PushConstants, 1>& render_pass, const std::vector<glm::vec3>& points, const std::vector<uint32_t>& indices, const std::vector<glm::vec4>& colors) {
-	material = render_pass.create_material_instance(device, descriptor_pool);
-	
+	material.init(device, descriptor_pool, render_pass);
+
 	vertices.resize(points.size());
 
 	for (int i = 0; i < points.size(); i++) {

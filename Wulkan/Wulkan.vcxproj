@@ -59,6 +59,7 @@
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
+    <EnableASAN>true</EnableASAN>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -201,6 +202,7 @@
   <ItemGroup>
     <ClCompile Include="external\tracy\public\TracyClient.cpp" />
     <ClCompile Include="src\engine\ObjMesh.cpp" />
+    <ClCompile Include="src\engine\PBRMaterial.cpp" />
     <ClCompile Include="src\engine\PoissonSampling.cpp" />
     <ClCompile Include="src\engine\Frustum.cpp" />
     <ClCompile Include="src\engine\common.cpp" />
@@ -262,6 +264,7 @@
     <ClInclude Include="external\include\tph_poisson.h" />
     <ClInclude Include="src\engine\Material.h" />
     <ClInclude Include="src\engine\ObjMesh.h" />
+    <ClInclude Include="src\engine\PBRMaterial.h" />
     <ClInclude Include="src\engine\PoissonSampling.h" />
     <ClInclude Include="src\engine\Frustum.h" />
     <ClInclude Include="src\engine\Line.h" />

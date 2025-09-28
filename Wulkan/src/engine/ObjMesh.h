@@ -2,8 +2,7 @@
 
 #include "Mesh.h"
 #include "Renderpass.h"
-
-constexpr size_t OBJ_MESH_DESC_SET_COUNT = 3;
+#include "PBRMaterial.h"
 
 struct PBRUniform {
 	alignas(16) glm::vec3 diffuse;
@@ -21,13 +20,13 @@ class ObjMesh : public Shape
 {
 public:
 	ObjMesh() = default;
-	void init(const VKW_Device& device, const VKW_CommandPool& graphics_pool, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, RenderPass<PushConstants, OBJ_MESH_DESC_SET_COUNT>& render_pass, const std::string& obj_path, const std::string& mtl_path="./models/");
+	void init(const VKW_Device& device, const VKW_CommandPool& graphics_pool, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, RenderPass<PushConstants, PBR_MAT_DESC_SET_COUNT>& render_pass, const std::string& obj_path, const std::string& mtl_path="./models/");
 	void set_descriptor_bindings(const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& general_ubo, const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& shadow_map_ubo, Texture& shadow_map, const VKW_Sampler& shadow_map_sampler, const VKW_Sampler& shadow_map_gather_sampler, Texture& texture_fallback, const VKW_Sampler& general_sampler);
 	void del() override;
 
-	// TODO: could be kept seperate
-	// depth_bias only works in depth_only mode
-	static RenderPass<PushConstants, OBJ_MESH_DESC_SET_COUNT> create_render_pass(const VKW_Device* device, const std::array<VKW_DescriptorSetLayout, OBJ_MESH_DESC_SET_COUNT>& layouts, Texture& color_rt, Texture& depth_rt, bool depth_only = false, bool bias_depth = false);
+	// TODO: could be kept seperate (Other file formats should use same render_pass types (different from eg terrain)
+	// bias_depth only works in depth_only mode
+	static RenderPass<PushConstants, PBR_MAT_DESC_SET_COUNT> create_render_pass(const VKW_Device* device, const std::array<VKW_DescriptorSetLayout, PBR_MAT_DESC_SET_COUNT>& layouts, Texture& color_rt, Texture& depth_rt, bool depth_only = false, bool bias_depth = false);
 	static VKW_DescriptorSetLayout create_descriptor_set_layout(const VKW_Device& device);
 
 	// goes over all materials in obj and renders them, expects to be in active command buffer
@@ -35,7 +34,7 @@ public:
 	inline void draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame) override;
 private:
 	std::vector<Mesh> m_meshes; // one mesh per material
-	std::vector<MaterialInstance<PushConstants, OBJ_MESH_DESC_SET_COUNT>> m_materials;
+	std::vector<PBRMaterial> m_materials;
 	VKW_Buffer m_vertex_buffer;
 	VkDeviceAddress m_vertex_buffer_address;
 

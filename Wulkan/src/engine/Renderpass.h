@@ -6,6 +6,7 @@ class RenderPass : public VKW_Object
 {
 public:
 	RenderPass() = default;
+	friend MaterialInstance;
 
 	// init with initalized pipeline
 	// Pipeline is owned by RenderPass, layouts not
@@ -16,17 +17,14 @@ public:
 	// pass in VK_NULL_HANDLE in color_rt or depth_rt to not set them in the pipeline
 	void begin(const VKW_CommandBuffer& cmd, VkExtent2D extent, VkImageView color_rt, VkImageView depth_rt, bool do_clear_color = false, VkClearColorValue clear_color_value = { {1,0,1,1} }, bool do_clear_depth = false, float clear_depth_value = 0, float const_depth_bias = 0, float slope_depth_bias = 0);
 	void end(const VKW_CommandBuffer& cmd);
+	
 private:
 	VKW_GraphicsPipeline m_pipeline;
 	std::array<VKW_DescriptorSetLayout, N> m_layouts;
 	VKW_PushConstant<T> m_push_constant;
 
 	std::string m_name;
-	mutable uint64_t num_instances;
-public:
-	MaterialInstance<T, N> create_material_instance(const VKW_Device& device, const VKW_DescriptorPool& descriptor_pool);
-	VKW_PushConstant<T>& get_push_constant() { return m_push_constant; };
-	VkPipelineLayout get_pipeline_layout() const { return m_pipeline.get_layout(); };
+	uint32_t nr_instances;
 };
 
 
@@ -37,8 +35,6 @@ void RenderPass<T, N>::init(const VKW_GraphicsPipeline& pipeline, const std::arr
 	m_layouts = layouts;
 	m_push_constant = push_constant;
 	m_name = mat_name;
-
-	num_instances = 0;
 }
 
 template<typename T, size_t N>
@@ -82,16 +78,4 @@ template<typename T, size_t N>
 inline void RenderPass<T, N>::end(const VKW_CommandBuffer& cmd)
 {
 	m_pipeline.end_rendering(cmd);
-}
-
-template<typename T, size_t N>
-inline MaterialInstance<T, N> RenderPass<T, N>::create_material_instance(const VKW_Device& device, const VKW_DescriptorPool& descriptor_pool)
-{
-	MaterialInstance<T, N> instance{};
-	instance.init(
-		device, descriptor_pool, m_layouts, m_pipeline.get_layout(), &m_push_constant, std::format("{} [{}]", m_name, num_instances)
-	);
-	num_instances++;
-
-	return instance;
 }

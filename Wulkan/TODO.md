@@ -8,8 +8,8 @@
 
 * Update glfw due to https://github.com/glfw/glfw/issues/2684 or switch to SDL [ ]
 * Separate sets for things bound at different freq (also allocate only if we need a unique one per object, otherwise just give a copy (and only bind if not copy is already bound (at position))) [ ]
-* m_ convention[ ] 
 * Descriptor Pool improvements [ ] 
+* m_ convention[ ] 
 * First frame analysis [ ] 
 
 * Make warnings only be compiled in debug mode [ ]
@@ -27,8 +27,8 @@
 * Refactor the idea of Pipeline + Shared Data to smt closer to materials [X]
 * Shadows [X] 
 * PBR Shader [~]
+* Move textures (and maybe uniform buffers) into Material class instances [] 
 * Draw Indirect [ ] 
-* Move textures (and maybe uniform buffers) into m_materials_[] 
 * Support more parameters [ ]
 * Fix assumption that per model only one pipeline [ ]
 * Mesh shaders [ ] 

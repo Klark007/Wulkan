@@ -48,7 +48,6 @@ void VKW_DescriptorSet::init(const VKW_Device* vkw_device, const VKW_DescriptorP
 
 	VK_CHECK_ET(vkAllocateDescriptorSets(*device, &set_info, &descriptor_set), RuntimeException, std::format("Failed to allocate descriptor set", name));
 
-
 	for (const VkDescriptorSetLayoutBinding& binding : layout.get_bindings()) {
 		binding_types[binding.binding] = binding.descriptorType;
 	}

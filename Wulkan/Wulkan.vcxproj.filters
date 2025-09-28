@@ -141,6 +141,9 @@
     <ClCompile Include="src\engine\ObjMesh.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\engine\PBRMaterial.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\compile.bat">
@@ -316,6 +319,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\engine\Renderpass.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\engine\PBRMaterial.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
