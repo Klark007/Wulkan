@@ -24,7 +24,6 @@ private:
 	VKW_PushConstant<T> m_push_constant;
 
 	std::string m_name;
-	uint32_t nr_instances;
 };
 
 

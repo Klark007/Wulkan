@@ -111,75 +111,43 @@ void ObjMesh::init(const VKW_Device& device, const VKW_CommandPool& graphics_poo
 		m_meshes[i].init(device, transfer_pool, m_vertex_buffer_address, indices[i]);
 	}
 
-	// create material instances 
+	// create material instances (with uniform buffers and textures)
 	m_materials.reserve(materials.size());
-	for (size_t i = 0; i < materials.size(); i++) {
-		m_materials.push_back({});
-		m_materials[i].init(device, descriptor_pool, render_pass);
-	}
-
-	// create and set uniform buffers
-	for (size_t frame_idx = 0; frame_idx < MAX_FRAMES_IN_FLIGHT; frame_idx++) {
-		m_uniform_buffers[frame_idx].resize(materials.size());
-		for (size_t mat_idx = 0; mat_idx < materials.size(); mat_idx++) {
-			VKW_Buffer& uniform_buffer = m_uniform_buffers[frame_idx][mat_idx];
-
-			// TODO: different memory as we don't plan to change those on the fly
-			uniform_buffer.init(
-				&device,
-				sizeof(PBRUniform),
-				VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-				sharing_exlusive(),
-				true,
-				std::format("PBR Uniform {} ({})", materials[mat_idx].name, frame_idx)
-			);
-			uniform_buffer.map();
-
-			// gamma correction for colors
-			tinyobj::material_t mat = materials[mat_idx];			
-			uint32_t config = 0;
-			if (mat.diffuse_texname != "") {
-				config |= 1 << 0;
-			}
-
-			assert(mat.specular_texname == "", "Cant support specular textures yet");
-			assert(mat.metallic_texname == "", "Cant support metallic textures yet");
-			assert(mat.ambient_texname == "", "Cant support ambient textures yet");
-			assert(mat.emissive_texname == "", "Cant support emission textures yet");
-
-			PBRUniform uniform{
-				glm::pow(glm::vec3{ mat.diffuse[0], mat.diffuse[1], mat.diffuse[2] }, glm::vec3{2.2f}), // gamma correction
-				mat.metallic,
-
-				glm::vec3{ mat.specular[0], mat.specular[1], mat.specular[2] },
-				mat.roughness,
-
-				glm::vec3{ mat.emission[0], mat.emission[1], mat.emission[2]},
-				1.000277f / mat.ior, // exterior IOR / interior IOR
-				config
-			};
-
-			memcpy(uniform_buffer.get_mapped_address(), &uniform, sizeof(PBRUniform));
-		}
-	}
-
-	m_diffuse_textures.reserve(materials.size());
 	for (size_t mat_idx = 0; mat_idx < materials.size(); mat_idx++) {
 		tinyobj::material_t mat = materials[mat_idx];
+
+		uint32_t config = 0;
 		if (mat.diffuse_texname != "") {
-			m_diffuse_textures.push_back({
-				create_texture_from_path(
-					&device,
-					&graphics_pool,
-					mat.diffuse_texname,
-					Texture_Type::Tex_RGB,
-					std::format("{} diffuse texture", materials[mat_idx].name)
-				)
-			});
+			config |= 1 << 0;
 		}
-		else {
-			m_diffuse_textures.push_back({});
-		}
+
+		assert(mat.specular_texname == "", "Cant support specular textures yet");
+		assert(mat.metallic_texname == "", "Cant support metallic textures yet");
+		assert(mat.ambient_texname == "", "Cant support ambient textures yet");
+		assert(mat.emissive_texname == "", "Cant support emission textures yet");
+
+		PBRUniform uniform{
+			glm::pow(glm::vec3{ mat.diffuse[0], mat.diffuse[1], mat.diffuse[2] }, glm::vec3{2.2f}), // gamma correction
+			mat.metallic,
+
+			glm::vec3{ mat.specular[0], mat.specular[1], mat.specular[2] },
+			mat.roughness,
+
+			glm::vec3{ mat.emission[0], mat.emission[1], mat.emission[2]},
+			1.000277f / mat.ior, // exterior IOR / interior IOR
+			config
+		};
+
+		m_materials.push_back({});
+		m_materials[mat_idx].init(
+			device, 
+			descriptor_pool, 
+			render_pass, 
+			mat.name, 
+			graphics_pool, 
+			uniform,
+			mat.diffuse_texname
+		);
 	}
 }
 
@@ -199,13 +167,8 @@ void ObjMesh::set_descriptor_bindings(const std::array<VKW_Buffer, MAX_FRAMES_IN
 			set1.update(2, shadow_map_sampler);
 			set1.update(3, shadow_map_gather_sampler);
 
-			set2.update(0, m_uniform_buffers[frame_idx][mat_idx]);
-			if (m_diffuse_textures[mat_idx].has_value()) {
-				set2.update(1, m_diffuse_textures[mat_idx].value().get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), general_sampler);
-			}
-			else {
-				set2.update(1, texture_fallback.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), general_sampler);
-			}
+			set2.update(0, m_materials[mat_idx].get_uniform_buffer(frame_idx));
+			set2.update(1, m_materials[mat_idx].get_diffuse_texture(texture_fallback).get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), general_sampler);
 		}
 	}
 }
@@ -308,16 +271,4 @@ void ObjMesh::del()
 	}
 	
 	m_vertex_buffer.del();
-
-	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-		for (VKW_Buffer& uniform_buffer : m_uniform_buffers[i]) {
-			uniform_buffer.del();
-		}
-	}
-
-	for (std::optional<Texture> opt_text : m_diffuse_textures) {
-		if (opt_text.has_value()) {
-			opt_text.value().del();
-		}
-	}
 }

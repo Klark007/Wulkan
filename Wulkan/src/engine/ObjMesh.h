@@ -4,18 +4,6 @@
 #include "Renderpass.h"
 #include "PBRMaterial.h"
 
-struct PBRUniform {
-	alignas(16) glm::vec3 diffuse;
-	alignas(4) float metallic;
-
-	alignas(16) glm::vec3 specular;
-	alignas(4) float roughness;
-
-	alignas(16) glm::vec3 emission;
-	alignas(4) float eta;
-	alignas(4) uint32_t configuration; // 0 bit: if true read from albedo texture
-};
-
 class ObjMesh : public Shape
 {
 public:
@@ -37,10 +25,6 @@ private:
 	std::vector<PBRMaterial> m_materials;
 	VKW_Buffer m_vertex_buffer;
 	VkDeviceAddress m_vertex_buffer_address;
-
-	// TODO: into materials class instead?
-	std::vector<std::optional<Texture>> m_diffuse_textures;
-	std::array<std::vector<VKW_Buffer>, MAX_FRAMES_IN_FLIGHT> m_uniform_buffers; // per frame, per material uniform buffer's
 };
 
 

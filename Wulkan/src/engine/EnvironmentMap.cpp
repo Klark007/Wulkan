@@ -2,7 +2,7 @@
 
 void EnvironmentMap::init(const VKW_Device& device, const VKW_CommandPool& graphics_pool, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, RenderPass<EnvironmentMapPushConstants, 2>& render_pass, const std::string& path)
 {
-	material.init(device, descriptor_pool, render_pass);
+	material.init(device, descriptor_pool, render_pass, "Environment map Material");
 
 	cube_map = create_cube_map_from_path(&device, &graphics_pool, path, Tex_HDR_RGBA, "Environment map");
 
