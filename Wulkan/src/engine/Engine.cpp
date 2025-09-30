@@ -155,7 +155,7 @@ void Engine::update()
 		);
 
 		meshes[3].set_model_matrix(
-			glm::translate(glm::mat4(1), glm::vec3(0, 0, 25))
+			glm::translate(glm::scale(glm::mat4(1), glm::vec3(0.2)), glm::vec3(0, 0, 25))
 		);
 	}
 
@@ -570,11 +570,11 @@ void Engine::init_data()
 	meshes[1].set_descriptor_bindings(uniform_buffers, directional_light.get_uniform_buffers(), directional_light.get_texture(), linear_texture_sampler, shadow_map_gather_sampler, texture_not_found, linear_texture_sampler);
 	cleanup_queue.add(&meshes[1]);
 
-	meshes[2].init(device, get_current_graphics_pool(), get_current_transfer_pool(), descriptor_pool, pbr_render_pass, "models/mitsuba_specular_only.obj");
+	meshes[2].init(device, get_current_graphics_pool(), get_current_transfer_pool(), descriptor_pool, pbr_render_pass, "models/mitsuba_texture.obj");
 	meshes[2].set_descriptor_bindings(uniform_buffers, directional_light.get_uniform_buffers(), directional_light.get_texture(), linear_texture_sampler, shadow_map_gather_sampler, texture_not_found, linear_texture_sampler);
 	cleanup_queue.add(&meshes[2]);
 
-	meshes[3].init(device, get_current_graphics_pool(), get_current_transfer_pool(), descriptor_pool, pbr_render_pass, "models/mitsuba_texture.obj");
+	meshes[3].init(device, get_current_graphics_pool(), get_current_transfer_pool(), descriptor_pool, pbr_render_pass, "models/sponza/sponza.obj");
 	meshes[3].set_descriptor_bindings(uniform_buffers, directional_light.get_uniform_buffers(), directional_light.get_texture(), linear_texture_sampler, shadow_map_gather_sampler, texture_not_found, linear_texture_sampler);
 	cleanup_queue.add(&meshes[3]);
 }
@@ -798,9 +798,9 @@ void Engine::create_sync_structs()
 		VK_CHECK_E(vkCreateSemaphore(device, &semaphore_create_info, nullptr, &sync_structs.at(i).render_semaphore), SetupException);
 		VK_CHECK_E(vkCreateFence(device, &fence_create_info, nullptr, &sync_structs.at(i).render_fence), SetupException);
 
-		device.name_object((uint64_t)sync_structs.at(i).swapchain_semaphore, VK_OBJECT_TYPE_SEMAPHORE, std::format("Swapchain semaphore {}", i) );
-		device.name_object((uint64_t)sync_structs.at(i).render_semaphore, VK_OBJECT_TYPE_SEMAPHORE, std::format("Render semaphore {}", i));
-		device.name_object((uint64_t)sync_structs.at(i).render_fence, VK_OBJECT_TYPE_FENCE, std::format("Render fence{}", i));
+		device.name_object((uint64_t)sync_structs.at(i).swapchain_semaphore, VK_OBJECT_TYPE_SEMAPHORE, fmt::format("Swapchain semaphore {}", i) );
+		device.name_object((uint64_t)sync_structs.at(i).render_semaphore, VK_OBJECT_TYPE_SEMAPHORE, fmt::format("Render semaphore {}", i));
+		device.name_object((uint64_t)sync_structs.at(i).render_fence, VK_OBJECT_TYPE_FENCE, fmt::format("Render fence{}", i));
 	}
 }
 

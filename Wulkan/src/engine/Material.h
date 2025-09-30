@@ -1,6 +1,5 @@
 #pragma once
 
-#include <format>
 #include "vk_wrap/VKW_GraphicsPipeline.h"
 
 // forward decleration
@@ -34,7 +33,12 @@ inline void MaterialInstance<T, N>::init(const VKW_Device& device, const VKW_Des
 {
 	for (auto& per_frame_sets : m_descriptor_sets) {
 		for (int i = 0; i < N; i++) {
-			per_frame_sets[i].init(&device, &descriptor_pool, render_pass.m_layouts[i], std::format("{} Desc Set", material_name));
+			per_frame_sets[i].init(
+				&device, 
+				&descriptor_pool, 
+				render_pass.m_layouts[i], 
+				"" //fmt::format("{} Desc Set", material_name)
+			);
 		}
 	}
 

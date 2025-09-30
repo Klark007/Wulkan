@@ -24,14 +24,14 @@ void VKW_ComputePipeline::init(const VKW_Device* vkw_device, const std::string& 
 	layout_info.pSetLayouts = descriptor_set_layouts.data();
 	layout_info.setLayoutCount = static_cast<uint32_t>(descriptor_set_layouts.size());
 
-	VK_CHECK_ET(vkCreatePipelineLayout(*device, &layout_info, nullptr, &layout), RuntimeException, std::format("Failed to create compute pipeline layout ({})", name + " layout"));
+	VK_CHECK_ET(vkCreatePipelineLayout(*device, &layout_info, nullptr, &layout), RuntimeException, fmt::format("Failed to create compute pipeline layout ({})", name + " layout"));
 	pipeline_info.layout = layout;
 	
 
 	VK_CHECK_ET(
 		vkCreateComputePipelines(*device, VK_NULL_HANDLE, 1, &pipeline_info, VK_NULL_HANDLE, &compute_pipeline),
 		RuntimeException,
-		std::format("Failed to create compute pipeline ({})", name)
+		fmt::format("Failed to create compute pipeline ({})", name)
 	);
 
 	compute_shader.del();

@@ -67,7 +67,7 @@ void VKW_Device::select_and_build()
 	auto build_result = builder.build();
 
 	if (!build_result) {
-		throw SetupException(std::format("Failed to create device ({}): {}", name, build_result.error().message()), __FILE__, __LINE__);
+		throw SetupException(fmt::format("Failed to create device ({}): {}", name, build_result.error().message()), __FILE__, __LINE__);
 	}
 
 	device = build_result.value();

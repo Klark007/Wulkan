@@ -19,7 +19,7 @@ void PoissonSampling::init(float bound, int min_nr_samples, float starting_radiu
 
 		if (const int ret = tph_poisson_create(&args, nullptr, &sampling);
 			ret != TPH_POISSON_SUCCESS) {
-			throw RuntimeException(std::format("Failed to create poisson sampling ({})", ret), __FILE__, __LINE__);
+			throw RuntimeException(fmt::format("Failed to create poisson sampling ({})", ret), __FILE__, __LINE__);
 		};
 
 		// retry until we reach min nr samples

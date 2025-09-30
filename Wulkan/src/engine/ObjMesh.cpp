@@ -5,7 +5,6 @@
 
 #include "DirectionalLight.h"
 
-#include <format>
 #include <iostream>
 
 void ObjMesh::init(const VKW_Device& device, const VKW_CommandPool& graphics_pool, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, RenderPass<PushConstants, PBR_MAT_DESC_SET_COUNT>& render_pass,const std::string& obj_path, const std::string& mtl_path)
@@ -14,7 +13,7 @@ void ObjMesh::init(const VKW_Device& device, const VKW_CommandPool& graphics_poo
 	size_t file_ext_idx = obj_path.rfind(".") + 1;
 	if (obj_path.substr(file_ext_idx, obj_path.size()) != "obj") {
 		throw IOException(
-			std::format("Tried to open file {} which is not an obj using ObjMesh", obj_path),
+			"", //fmt::format("Tried to open file {} which is not an obj using ObjMesh", obj_path),
 			__FILE__, __LINE__
 		);
 	}
@@ -26,7 +25,7 @@ void ObjMesh::init(const VKW_Device& device, const VKW_CommandPool& graphics_poo
 
 	if (!reader.ParseFromFile(obj_path, reader_config)) {
 		throw IOException(
-			std::format("Tried to open file {}, Error: {} ", obj_path, reader.Error()),
+			"", //fmt::format("Tried to open file {}, Error: {} ", obj_path, reader.Error()),
 			__FILE__, __LINE__
 		);
 	}
@@ -57,7 +56,7 @@ void ObjMesh::init(const VKW_Device& device, const VKW_CommandPool& graphics_poo
 
 			if (size_t(shape.mesh.num_face_vertices[f]) != 3) {
 				throw RuntimeException(
-					std::format("Mesh {} failed to be triangulated. Contains faces with {} vertices", obj_path, fv),
+					"", //fmt::format("Mesh {} failed to be triangulated. Contains faces with {} vertices", obj_path, fv),
 					__FILE__, __LINE__
 				);
 			}
@@ -123,7 +122,7 @@ void ObjMesh::init(const VKW_Device& device, const VKW_CommandPool& graphics_poo
 
 		assert(mat.specular_texname == "", "Cant support specular textures yet");
 		assert(mat.metallic_texname == "", "Cant support metallic textures yet");
-		assert(mat.ambient_texname == "", "Cant support ambient textures yet");
+		//assert(mat.ambient_texname == "", "Cant support ambient textures yet");
 		assert(mat.emissive_texname == "", "Cant support emission textures yet");
 
 		PBRUniform uniform{

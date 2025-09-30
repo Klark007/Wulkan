@@ -120,7 +120,7 @@ void CameraController::import_active_camera(const std::string& path)
 	std::vector<float> row = file.GetRow<float>(0);
 	
 	if (row.size() != 5) {
-		throw IOException(std::format("Failed to import camera from {} expected 5 values in row 0 but got {}", path, row.size()), __FILE__, __LINE__);
+		throw IOException(fmt::format("Failed to import camera from {} expected 5 values in row 0 but got {}", path, row.size()), __FILE__, __LINE__);
 	}
 
 	glm::vec3 pos{

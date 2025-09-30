@@ -20,10 +20,10 @@ void VKW_Queue::init(const VKW_Device& device, vkb::QueueType type, const std::s
 	}
 	
 	if (!queue_result) {
-		throw SetupException(std::format("Failed to select a queue ({}): {}", name, queue_result.error().message()), __FILE__, __LINE__);
+		throw SetupException(fmt::format("Failed to select a queue ({}): {}", name, queue_result.error().message()), __FILE__, __LINE__);
 	}
 	if (!idx_result) {
-		throw SetupException(std::format("Failed to select a queue family ({}): {}", name, idx_result.error().message()), __FILE__, __LINE__);
+		throw SetupException(fmt::format("Failed to select a queue family ({}): {}", name, idx_result.error().message()), __FILE__, __LINE__);
 	}
 
 	queue = queue_result.value();

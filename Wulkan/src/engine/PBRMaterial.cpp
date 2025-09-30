@@ -20,7 +20,7 @@ void PBRMaterial::init(const VKW_Device& device, const VKW_DescriptorPool& descr
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			sharing_exlusive(),
 			true,
-			std::format("PBR Uniform {} ({})", material_name, frame_idx)
+			fmt::format("PBR Uniform {} ({})", material_name, frame_idx)
 		);
 		uniform_buffer.map();
 
@@ -33,7 +33,7 @@ void PBRMaterial::init(const VKW_Device& device, const VKW_DescriptorPool& descr
 				&graphics_pool,
 				diffuse_path,
 				Texture_Type::Tex_RGB,
-				std::format("{} diffuse texture", material_name)
+				fmt::format("{} diffuse texture", material_name)
 			)
 		};
 	}

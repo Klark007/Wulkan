@@ -25,7 +25,7 @@ void VKW_Shader::init(const VKW_Device* vkw_device, const std::string& path, VkS
 	
 
 	if (!file.is_open()) {
-		throw IOException(std::format("Failed to open shader file at {}", path), __FILE__, __LINE__);
+		throw IOException(fmt::format("Failed to open shader file at {}", path), __FILE__, __LINE__);
 	}
 
 	// look location of cursor in file
@@ -45,7 +45,7 @@ void VKW_Shader::init(const VKW_Device* vkw_device, const std::string& path, VkS
 	create_info.pCode = buffer.data();
 	create_info.codeSize = file_size; // filesize is in bytes
 
-	VK_CHECK_ET(vkCreateShaderModule(*device, &create_info, VK_NULL_HANDLE, &module), RuntimeException, std::format("Failed to create shader module ({})", name));
+	VK_CHECK_ET(vkCreateShaderModule(*device, &create_info, VK_NULL_HANDLE, &module), RuntimeException, fmt::format("Failed to create shader module ({})", name));
 	device->name_object((uint64_t)module, VK_OBJECT_TYPE_SHADER_MODULE, name);
 
 	// set up shader stage info

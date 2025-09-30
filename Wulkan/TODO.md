@@ -27,11 +27,13 @@
 * Refactor the idea of Pipeline + Shared Data to smt closer to materials [X]
 * Shadows [X] 
 * PBR Shader [~]
-* Move textures (and maybe uniform buffers) into Material class instances [] 
+* Move textures (and maybe uniform buffers) into Material class instances [X] 
+
+* Normal mapping [ ] 
 * Draw Indirect [ ] 
 * Support more parameters [ ]
 * Fix assumption that per model only one pipeline [ ]
-* Mesh shaders [ ] 
+* Mesh shaders [ ]
 
 # Tracy 
 * CPU side basics [X]

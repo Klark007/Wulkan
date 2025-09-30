@@ -57,7 +57,7 @@ void Line::init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, 
 void Line::update_vertices(const std::vector<glm::vec3>& points)
 {
 	if (points.size() != vertices.size()) {
-		throw SetupException(std::format("Tried to set line vertices wth original size {} to vertices with size {}", vertices.size(), points.size()), __FILE__, __LINE__);
+		throw SetupException(fmt::format("Tried to set line vertices wth original size {} to vertices with size {}", vertices.size(), points.size()), __FILE__, __LINE__);
 	}
 
 	for (int i = 0; i < points.size(); i++) {

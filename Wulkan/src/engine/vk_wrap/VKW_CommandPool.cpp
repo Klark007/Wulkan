@@ -11,7 +11,7 @@ void VKW_CommandPool::init(const VKW_Device* vkw_device, const VKW_Queue* vkw_qu
 	create_info.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT; // short lived command buffers (as we don't pre record, this is the case); Could use this to enable per command buffer resets but these are inefficient compared to reseting command pools
 	create_info.queueFamilyIndex = queue->get_queue_family();
 
-	VK_CHECK_ET(vkCreateCommandPool(*device, &create_info, nullptr, &command_pool), SetupException, std::format("Failed to create command pool ({})", name));
+	VK_CHECK_ET(vkCreateCommandPool(*device, &create_info, nullptr, &command_pool), SetupException, fmt::format("Failed to create command pool ({})", name));
 	device->name_object((uint64_t) command_pool, VK_OBJECT_TYPE_COMMAND_POOL, name);
 }
 

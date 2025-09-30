@@ -31,7 +31,7 @@ void VKW_Buffer::init(const VKW_Device* vkw_device, VkDeviceSize size, VkBufferU
 	VK_CHECK_ET(
 		vmaCreateBuffer(allocator, &buffer_info, &alloc_create_info, &buffer, &allocation, &alloc_info), 
 		RuntimeException, 
-		std::format("Failed to allocate buffer ({})", name)
+		fmt::format("Failed to allocate buffer ({})", name)
 	);
 	memory = alloc_info.deviceMemory;
 
@@ -57,7 +57,7 @@ void VKW_Buffer::copy(const void* data, size_t data_size, size_t offset)
 {
 	if (offset + data_size > size()) {
 		throw RuntimeException(
-			std::format("Tried copy that would write outside of bounds of buffer ({})", name), __FILE__, __LINE__
+			fmt::format("Tried copy that would write outside of bounds of buffer ({})", name), __FILE__, __LINE__
 		);
 	}
 	memcpy_s((char*) mapped_address+offset, size(), data, data_size);
@@ -67,7 +67,7 @@ void VKW_Buffer::copy(const VKW_CommandPool* command_pool, const VKW_Buffer& oth
 {
 	if (size() != other_buffer.size()) {
 		throw RuntimeException(
-			std::format("Tried to copy from a buffer ({}) with different size as dst buffer ({})", other_buffer.name, name),
+			fmt::format("Tried to copy from a buffer ({}) with different size as dst buffer ({})", other_buffer.name, name),
 			__FILE__, __LINE__
 		);
 	}
@@ -97,17 +97,17 @@ void VKW_Buffer::copy(const VKW_CommandPool* command_pool, const VKW_Buffer& oth
 void VKW_Buffer::map()
 {
 	if (!mappable) {
-		throw SetupException(std::format("Tried to map a buffer ({}) that was not created as mappable", name), __FILE__, __LINE__);
+		throw SetupException(fmt::format("Tried to map a buffer ({}) that was not created as mappable", name), __FILE__, __LINE__);
 	}
 
-	VK_CHECK_ET(vmaMapMemory(allocator, allocation, &mapped_address), RuntimeException, std::format("Failed to map buffer ({}) to memory", name));
+	VK_CHECK_ET(vmaMapMemory(allocator, allocation, &mapped_address), RuntimeException, fmt::format("Failed to map buffer ({}) to memory", name));
 	is_mapped = true;
 }
 
 void VKW_Buffer::unmap()
 {
 	if (!mappable) {
-		throw SetupException(std::format("Tried to unmap a buffer ({}) that was not created as mappable", name), __FILE__, __LINE__);
+		throw SetupException(fmt::format("Tried to unmap a buffer ({}) that was not created as mappable", name), __FILE__, __LINE__);
 	}
 
 	mapped_address = nullptr;

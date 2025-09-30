@@ -3,8 +3,6 @@
 
 #include "DirectionalLight.h"
 
-#include <format>
-
 void Terrain::init(const VKW_Device& device, const VKW_CommandPool& graphics_pool, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, const VKW_Sampler* sampler, RenderPass<TerrainPushConstants, 3>& render_pass, const std::string& height_path, const std::string& albedo_path, const std::string& normal_path, uint32_t mesh_res)
 {
 	material.init(device, descriptor_pool, render_pass, "Terrain material");
@@ -240,7 +238,7 @@ RenderPass<TerrainPushConstants, 3> Terrain::create_render_pass(const VKW_Device
 		graphics_pipeline,
 		layouts,
 		push_constant,
-		depth_only ? std::format("Terrain Depth Renderpass ({})", nr_shadow_cascades) : std::format("Terrain Renderpass ({})", nr_shadow_cascades)
+		depth_only ? fmt::format("Terrain Depth Renderpass ({})", nr_shadow_cascades) : fmt::format("Terrain Renderpass ({})", nr_shadow_cascades)
 	);
 
 	return render_pass;

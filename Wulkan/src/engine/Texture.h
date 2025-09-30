@@ -106,7 +106,7 @@ inline VkFormat Texture::find_format(const VKW_Device& device, Texture_Type type
 			return format;
 		}
 	}
-	throw RuntimeException(std::format("No format found for type {}", (unsigned int) type), __FILE__, __LINE__);
+	throw RuntimeException(fmt::format("No format found for type {}", (unsigned int) type), __FILE__, __LINE__);
 }
 
 inline int Texture::get_stbi_channels(VkFormat format)
@@ -126,7 +126,7 @@ inline int Texture::get_stbi_channels(VkFormat format)
 	case VK_FORMAT_D32_SFLOAT_S8_UINT:
 	case VK_FORMAT_D24_UNORM_S8_UINT:
 	default:
-		throw NotImplementedException(std::format("Unknown type {:x}", static_cast<int>(format)), __FILE__, __LINE__);
+		throw NotImplementedException(fmt::format("Unknown type {:x}", static_cast<int>(format)), __FILE__, __LINE__);
 	}
 }
 
@@ -157,7 +157,7 @@ inline std::vector<VkFormat> Texture::potential_formats(Texture_Type type)
 	case Tex_Float:
 		return { VK_FORMAT_R16_SFLOAT };
 	default:
-		throw NotImplementedException(std::format("Unknown type {}", (unsigned int) type), __FILE__, __LINE__);
+		throw NotImplementedException(fmt::format("Unknown type {}", (unsigned int) type), __FILE__, __LINE__);
 	}
 }
 
@@ -183,6 +183,6 @@ inline VkFormatFeatureFlags Texture::required_format_features(Texture_Type type)
 			VK_FORMAT_FEATURE_TRANSFER_SRC_BIT
 			;
 	default:
-		throw NotImplementedException(std::format("Unknown type {}", (unsigned int) type), __FILE__, __LINE__);
+		throw NotImplementedException(fmt::format("Unknown type {}", (unsigned int) type), __FILE__, __LINE__);
 	}
 }

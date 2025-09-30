@@ -1,7 +1,7 @@
 #pragma once
 
 #include <string>
-#include <format>
+#include <fmt/core.h>
 #include <exception>
 
 // Custom exception for error handling
@@ -20,7 +20,7 @@ protected:
 
 // outputs the line and file the exception was thrown at
 inline EngineException::EngineException(const std::string& msg, const std::string& file, int line)
-	: msg{ msg }, file{ file }, line{ line }, format_msg{ std::format("Exception in [{}] at line {}:\n {}", file, line, msg) }
+	: msg{ msg }, file{ file }, line{ line }, format_msg{ fmt::format("Exception in [{}] at line {}:\n {}", file, line, msg) }
 {
 }
 

@@ -16,7 +16,7 @@ void VKW_DescriptorPool::init(const VKW_Device* vkw_device, uint32_t max_sets, c
 
 	pool_info.maxSets = max_sets;
 
-	VK_CHECK_ET(vkCreateDescriptorPool(*device, &pool_info, VK_NULL_HANDLE, &descriptor_pool), RuntimeException, std::format("Failed to create descriptor pool ({})", name));
+	VK_CHECK_ET(vkCreateDescriptorPool(*device, &pool_info, VK_NULL_HANDLE, &descriptor_pool), RuntimeException, fmt::format("Failed to create descriptor pool ({})", name));
 	device->name_object((uint64_t) descriptor_pool, VK_OBJECT_TYPE_DESCRIPTOR_POOL, name);
 }
 

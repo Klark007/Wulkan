@@ -5,9 +5,6 @@
 #define TINYEXR_IMPLEMENTATION
 #include <tinyexr.h>
 
-#include <format>
-
-
 void Texture::init(const VKW_Device* vkw_device, unsigned int w, unsigned int h, VkFormat f, VkImageUsageFlags usage, SharingInfo sharing_info, const std::string& obj_name, VkImageCreateFlags flags, uint32_t array_layers)
 {
 	device = vkw_device;
@@ -48,7 +45,7 @@ void Texture::init(const VKW_Device* vkw_device, unsigned int w, unsigned int h,
 
 	VmaAllocationInfo alloc_info;
 
-	VK_CHECK_ET(vmaCreateImage(allocator, &image_info, &alloc_create_info, &image, &allocation, &alloc_info), RuntimeException, std::format("Failed to allocate image ({})", name));
+	VK_CHECK_ET(vmaCreateImage(allocator, &image_info, &alloc_create_info, &image, &allocation, &alloc_info), RuntimeException, fmt::format("Failed to allocate image ({})", name));
 	memory = alloc_info.deviceMemory;
 
 	device->name_object((uint64_t)image, VK_OBJECT_TYPE_IMAGE, name);
@@ -89,7 +86,7 @@ view_info.subresourceRange.baseArrayLayer = base_layer;
 view_info.subresourceRange.layerCount = array_layers;
 
 VkImageView image_view;
-VK_CHECK_ET(vkCreateImageView(*device, &view_info, nullptr, &image_view), RuntimeException, std::format("Failed to create image ({}) view for aspect {}", name, aspect_flag));
+VK_CHECK_ET(vkCreateImageView(*device, &view_info, nullptr, &image_view), RuntimeException, fmt::format("Failed to create image ({}) view for aspect {}", name, aspect_flag));
 device->name_object((uint64_t)image_view, VK_OBJECT_TYPE_IMAGE_VIEW, name + " view");
 
 image_views[tuple] = image_view;
@@ -308,7 +305,7 @@ float* load_exr_image(const std::string& path, int& width, int& height, int& cha
 	int res = LoadEXRWithLayer(&rgba, &width, &height, path.c_str(), nullptr, &err);
 
 	if (res) {
-		std::string msg = std::format("Failed to koad EXR file ({}) at {}", res, path);
+		std::string msg = fmt::format("Failed to koad EXR file ({}) at {}", res, path);
 		if (err) {
 			msg += std::string(": ") + err;
 			FreeEXRErrorMessage(err);
@@ -328,7 +325,7 @@ stbi_uc* load_image(const std::string& path, int& width, int& height, int& chann
 
 	if (!pixels) {
 		std::string reason = std::string(stbi_failure_reason());
-		throw IOException(std::format("Failed to load image ({}) at {}", reason, path), __FILE__, __LINE__);
+		throw IOException(fmt::format("Failed to load image ({}) at {}", reason, path), __FILE__, __LINE__);
 	}
 
 	return pixels;
@@ -435,7 +432,7 @@ Texture create_cube_map_from_path(const VKW_Device* device, const VKW_CommandPoo
 	size_t special_symbol_idx = path.find("%");
 	if (special_symbol_idx == std::string::npos) {
 		throw IOException(
-			std::format("Cube map path does not contain % to be replaced with sides (+X,-X,...): {}", path), __FILE__, __LINE__
+			fmt::format("Cube map path does not contain % to be replaced with sides (+X,-X,...): {}", path), __FILE__, __LINE__
 		);
 	}
 
