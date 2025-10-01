@@ -1,5 +1,7 @@
 #pragma once
 
+#define SPDLOG_FMT_EXTERNAL // Use already existing fmt implementation
+
 #include "volk.h"
 #include "vma/vk_mem_alloc.h"
 #include "VkBootstrap.h"

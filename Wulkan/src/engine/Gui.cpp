@@ -7,7 +7,7 @@
 #include "backends/imgui_impl_vulkan.h"
 #include "glm/gtc/type_ptr.hpp"
 
-#include <iostream>
+#include "spdlog/spdlog.h"
 
 static void check_imgui_result(VkResult result) {
 	VK_CHECK_ET(result, RuntimeException, "IMGUI Vulkan error");
@@ -103,12 +103,12 @@ void GUI::draw_gui(const VKW_CommandBuffer& cmd)
 			static char path[256] = "out/pose.csv";
 			ImGui::InputText("Camera pose path:", path, IM_ARRAYSIZE(path));
 			if (ImGui::Button("Store position")) {
-				std::cout << "Storing camera pose into " << path << std::endl;
+				spdlog::info("Storing camera pose into {}", path);
 				m_camera_controller->export_active_camera(path);
 			}
 
 			if (ImGui::Button("Load position")) {
-				std::cout << "Loading camera pose from " << path << std::endl;
+				spdlog::info("Storing camera pose into {}", path);
 				m_camera_controller->import_active_camera(path);
 			}
 			m_camera_recursive_mutex->unlock();

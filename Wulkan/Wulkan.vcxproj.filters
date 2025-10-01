@@ -160,6 +160,7 @@
     <None Include="shaders\pbr\pbr.frag" />
     <None Include="shaders\pbr\pbr.vert" />
     <None Include="shaders\pbr\pbr_depth.vert" />
+    <None Include="external\lib\Notes.md" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\engine\CameraController.h">
@@ -274,9 +275,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\engine\vk_wrap\VKW_ComputePipeline.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\engine\Profiler.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="external\include\tinyexr.h">

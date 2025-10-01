@@ -5,22 +5,20 @@
 
 #include <GLFW/glfw3.h>
 
-#include <iostream>
-
-#ifdef NDEBUG
-#else
-#define PROFILING
-#endif
-
-#include "Profiler.h"
+#include "spdlog/spdlog.h"
+#include "spdlog/sinks/stdout_color_sinks.h"
+#include "spdlog/sinks/basic_file_sink.h"
+#include <cstdio>
 
 void Engine::init(unsigned int w, unsigned int h)
 {
-#ifndef NDEBUG
-	std::cout << "DEBUGGING" << std::endl;
-#endif
 	res_x = w;
 	res_y = h;
+
+	init_logger();
+#ifndef NDEBUG
+		spdlog::info("Debugging");
+#endif
 
 	init_glfw();
 	init_vulkan();
@@ -72,7 +70,7 @@ void Engine::run()
 		glfw_input_mutex.unlock();
 	}
 	
-	std::cout << "Close window" << std::endl;
+	spdlog::info("Close window");
 	should_window_close.store(true);
 }
 	
@@ -81,7 +79,7 @@ void Engine::render_thread_func()
 {
 	tracy::SetThreadName("Render thread");
 
-	std::cout << "Start rendering" << std::endl;
+	spdlog::info("Start rendering");
 
 	while (!should_window_close.load()) {
 		update();
@@ -370,7 +368,7 @@ void Engine::present()
 	ZoneScoped;
 
 	if (!swapchain.present({ get_current_render_semaphore() }, current_swapchain_image_idx)) {
-		std::cout << "Recreate swapchain (Present)" << std::endl;
+		spdlog::warn("Recreate swapchain (Present)");
 		resize_window = true;
 	}
 }
@@ -381,6 +379,20 @@ void Engine::late_update()
 
 	current_frame = (current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
 
+}
+
+void Engine::init_logger()
+{
+	auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+	std::string log_path = "logs/log.txt";
+	std::remove(log_path.c_str());
+	auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(log_path);
+
+#ifdef NDEBUG
+	console_sink->set_level(spdlog::level::err);
+#endif
+
+	spdlog::set_default_logger(std::make_shared<spdlog::logger>("Logger", spdlog::sinks_init_list({ console_sink, file_sink })));
 }
 
 void Engine::init_glfw()
@@ -457,8 +469,8 @@ void Engine::create_device()
 
 	VkPhysicalDeviceProperties deviceProperties;
 	vkGetPhysicalDeviceProperties(device.get_physical_device(), &deviceProperties);
-	std::cout << "Selected GPU:" << deviceProperties.deviceName << std::endl;
-	std::cout << "Tesselation limit:" << deviceProperties.limits.maxTessellationGenerationLevel << std::endl;
+	spdlog::info("Selected GPU: {}", deviceProperties.deviceName);
+	spdlog::info("Tesselation limit: {}", deviceProperties.limits.maxTessellationGenerationLevel);
 }
 
 void Engine::create_queues()
@@ -466,7 +478,7 @@ void Engine::create_queues()
 	graphics_queue.init(device, vkb::QueueType::graphics, "Graphics queue");
 	present_queue.init(device, vkb::QueueType::present, "Present queue");
 	transfer_queue.init(device, vkb::QueueType::transfer, "Transfer queue");
-	std::cout << "Chosen queues:" << graphics_queue.get_queue_family() << "," << present_queue.get_queue_family() << "," << transfer_queue.get_queue_family() << std::endl;
+	spdlog::info("Chosen queues; Graphics: {}, Present: {}, Transfer: {}", graphics_queue.get_queue_family(), present_queue.get_queue_family(), transfer_queue.get_queue_family());
 }
 
 void Engine::init_descriptor_set_layouts()
@@ -821,7 +833,7 @@ bool Engine::aquire_image()
 		&current_swapchain_image_idx
 	);
 	if (aquire_image_result == VK_ERROR_OUT_OF_DATE_KHR) {
-		std::cout << "Recreate swapchain (Aquire)" << std::endl;
+		spdlog::warn("Recreate swapchain (Aquire)");
 		resize_window = true;
 
 		return false;

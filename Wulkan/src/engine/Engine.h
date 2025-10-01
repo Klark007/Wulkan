@@ -92,6 +92,7 @@ private:
 
 	bool resize_window = false; // set to true by resize_callback(), will execute resize to avoid issues with resources 
 
+	void init_logger();
 	void init_glfw();
 	void init_vulkan();
 

@@ -248,6 +248,7 @@
     <ClCompile Include="src\engine\vk_wrap\VKW_ComputePipeline.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="external\lib\Notes.md" />
     <None Include="shaders\common.shader" />
     <None Include="shaders\compile.bat" />
     <None Include="shaders\line\line.frag" />
@@ -293,7 +294,6 @@
     <ClInclude Include="external\imgui\imstb_truetype.h" />
     <ClInclude Include="external\imgui\misc\cpp\imgui_stdlib.h" />
     <ClInclude Include="src\engine\Camera.h" />
-    <ClInclude Include="src\engine\Profiler.h" />
     <ClInclude Include="src\engine\Renderpass.h" />
     <ClInclude Include="src\engine\Shape.h" />
     <ClInclude Include="src\engine\common.h" />

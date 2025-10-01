@@ -37,7 +37,7 @@ inline void MaterialInstance<T, N>::init(const VKW_Device& device, const VKW_Des
 				&device, 
 				&descriptor_pool, 
 				render_pass.m_layouts[i], 
-				"" //fmt::format("{} Desc Set", material_name)
+				fmt::format("{} Desc Set", material_name)
 			);
 		}
 	}

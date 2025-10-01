@@ -1,5 +1,9 @@
-#include <iostream>
 #include "engine/Engine.h"
+
+#include <iostream>
+
+#define SPDLOG_FMT_EXTERNAL // Use already existing fmt implementation (should already be definied in common.h)
+#include "spdlog/spdlog.h"
 
 // initial screen resolution
 const uint32_t WIDTH = 800;
@@ -13,9 +17,11 @@ int main() {
         app.run();
     }
     catch (const std::exception& e) {
-        std::cerr << e.what() << std::endl;
-
-        std::cout << "Press anything to close:";
+        spdlog::error(e.what());
+        
+        spdlog::info("Press anything to close:");
+        spdlog::shutdown();
+        
         char c;
         std::cin >> c;
         
