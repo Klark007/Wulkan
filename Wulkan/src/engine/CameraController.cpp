@@ -99,7 +99,7 @@ void CameraController::update_time()
 	prev_time = current_time;
 }
 
-void CameraController::export_active_camera(const std::string& path)
+void CameraController::export_active_camera(const VKW_Path& path)
 {
 	rapidcsv::Document file("", rapidcsv::LabelParams(-1, -1));
 
@@ -110,12 +110,12 @@ void CameraController::export_active_camera(const std::string& path)
 
 	file.InsertRow(0, std::vector<float>{ pos.x, pos.y, pos.z, yaw, pitch });
 
-	file.Save(path);
+	file.Save(path.string());
 }
 
-void CameraController::import_active_camera(const std::string& path)
+void CameraController::import_active_camera(const VKW_Path& path)
 {
-	rapidcsv::Document file(path, rapidcsv::LabelParams(-1, -1));
+	rapidcsv::Document file(path.string(), rapidcsv::LabelParams(-1, -1));
 
 	std::vector<float> row = file.GetRow<float>(0);
 	

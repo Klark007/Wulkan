@@ -12,8 +12,8 @@ Camera::Camera(glm::vec3 pos, glm::vec3 des, unsigned int res_x, unsigned int re
 	res_x{ res_x },
 	res_y{ res_y },
 	fov{ fov },
-	z_near{ near_plane },
-	z_far{ far_plane }
+	m_z_near{ near_plane },
+	m_z_far{ far_plane }
 {
 	set_dir(des - pos);
 }

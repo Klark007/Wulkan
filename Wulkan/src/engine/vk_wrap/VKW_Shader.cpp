@@ -3,7 +3,7 @@
 #include <fstream>
 
 #include <iostream>
-void VKW_Shader::init(const VKW_Device* vkw_device, const std::string& path, VkShaderStageFlagBits stage, const std::string& obj_name, const std::string& entry_func, const VkSpecializationInfo* spezialisation_const)
+void VKW_Shader::init(const VKW_Device* vkw_device, const VKW_Path& path, VkShaderStageFlagBits stage, const std::string& obj_name, const std::string& entry_func, const VkSpecializationInfo* spezialisation_const)
 {
 	device = vkw_device;
 	name = obj_name;
@@ -14,15 +14,12 @@ void VKW_Shader::init(const VKW_Device* vkw_device, const std::string& path, VkS
 	std::ifstream file(path, std::ios::ate | std::ios::binary);
 #else
 	// replace *_{Type}.spv with *_d{Type}.spv
-	size_t last_underscore = path.rfind("_");
-	std::string actual_path = path.substr(0, last_underscore+1) + "d" + path.substr(last_underscore + 1);
+	std::string path_str = path.string();
+	size_t last_underscore = path_str.rfind("_");
+	VKW_Path actual_path = path_str.substr(0, last_underscore+1) + "d" + path_str.substr(last_underscore + 1);
 
 	std::ifstream file(actual_path, std::ios::ate | std::ios::binary);
-
 #endif
-
-
-	
 
 	if (!file.is_open()) {
 		throw IOException(fmt::format("Failed to open shader file at {}", path), __FILE__, __LINE__);

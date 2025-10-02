@@ -7,11 +7,10 @@
 
 #include "spdlog/spdlog.h"
 
-void ObjMesh::init(const VKW_Device& device, const VKW_CommandPool& graphics_pool, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, RenderPass<PushConstants, PBR_MAT_DESC_SET_COUNT>& render_pass,const std::string& obj_path, const std::string& mtl_path)
+void ObjMesh::init(const VKW_Device& device, const VKW_CommandPool& graphics_pool, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, RenderPass<PushConstants, PBR_MAT_DESC_SET_COUNT>& render_pass,const VKW_Path& obj_path, const VKW_Path& mtl_path)
 {
 	// open file
-	size_t file_ext_idx = obj_path.rfind(".") + 1;
-	if (obj_path.substr(file_ext_idx, obj_path.size()) != "obj") {
+	if (obj_path.extension() != ".obj") {
 		throw IOException(
 			fmt::format("Tried to open file {} which is not an obj using ObjMesh", obj_path),
 			__FILE__, __LINE__
@@ -19,11 +18,11 @@ void ObjMesh::init(const VKW_Device& device, const VKW_CommandPool& graphics_poo
 	}
 
 	tinyobj::ObjReaderConfig reader_config;
-	reader_config.mtl_search_path = mtl_path; // Path to material files
+	reader_config.mtl_search_path = mtl_path.string(); // Path to material files
 
 	tinyobj::ObjReader reader;
 
-	if (!reader.ParseFromFile(obj_path, reader_config)) {
+	if (!reader.ParseFromFile(obj_path.string(), reader_config)) {
 		throw IOException(
 			fmt::format("Tried to open file {}, Error: {} ", obj_path, reader.Error()),
 			__FILE__, __LINE__

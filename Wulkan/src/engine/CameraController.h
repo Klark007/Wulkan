@@ -5,7 +5,7 @@
 
 #include "Camera.h"
 
-#include <memory>
+#include "Path.h"
 
 class CameraController
 {
@@ -21,8 +21,8 @@ public:
 	void update_time();
 
 	// Warning Only exports position and orientation but not intrinsics such as aspect ratio, fov, near and far planes
-	void export_active_camera(const std::string& path);
-	void import_active_camera(const std::string& path);
+	void export_active_camera(const VKW_Path& path);
+	void import_active_camera(const VKW_Path& path);
 
 	inline double get_dt() const { return delta_time; };
 private:

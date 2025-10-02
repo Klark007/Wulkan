@@ -297,12 +297,12 @@ void Texture::copy(const VKW_CommandBuffer& command_buffer, VkImage src_texture,
 	vkCmdBlitImage2(command_buffer, &blit_info);
 }
 
-float* load_exr_image(const std::string& path, int& width, int& height, int& channels) {
+float* load_exr_image(const VKW_Path& path, int& width, int& height, int& channels) {
 	channels = 4;
 	
 	float* rgba;
 	const char* err = nullptr;
-	int res = LoadEXRWithLayer(&rgba, &width, &height, path.c_str(), nullptr, &err);
+	int res = LoadEXRWithLayer(&rgba, &width, &height, path.string().c_str(), nullptr, &err);
 
 	if (res) {
 		std::string msg = fmt::format("Failed to koad EXR file ({}) at {}", res, path);
@@ -317,11 +317,11 @@ float* load_exr_image(const std::string& path, int& width, int& height, int& cha
 	return rgba;
 }
 
-stbi_uc* load_image(const std::string& path, int& width, int& height, int& channels, VkFormat format) {
+stbi_uc* load_image(const VKW_Path& path, int& width, int& height, int& channels, VkFormat format) {
 	channels = Texture::get_stbi_channels(format);
 
 	int ch;
-	stbi_uc* pixels = stbi_load(path.c_str(), &width, &height, &ch, channels);
+	stbi_uc* pixels = stbi_load(path.string().c_str(), &width, &height, &ch, channels);
 
 	if (!pixels) {
 		std::string reason = std::string(stbi_failure_reason());
@@ -332,12 +332,10 @@ stbi_uc* load_image(const std::string& path, int& width, int& height, int& chann
 }
 
 
-Texture create_texture_from_path(const VKW_Device* device, const VKW_CommandPool* command_pool, const std::string& path, Texture_Type type, const std::string& name) {
+Texture create_texture_from_path(const VKW_Device* device, const VKW_CommandPool* command_pool, const VKW_Path& path, Texture_Type type, const std::string& name) {
 	VkFormat format = Texture::find_format(*device, type);
 
-	size_t type_start = path.rfind(".")+1;
-	std::string file_type = path.substr(type_start, path.size() - type_start);
-	bool is_exr = file_type == "exr";
+	bool is_exr = path.extension().string() == ".exr";
 
 	VKW_Buffer staging_buffer;
 	int width, height;
@@ -420,25 +418,24 @@ Texture create_texture_from_path(const VKW_Device* device, const VKW_CommandPool
 	return texture;
 }
 
-Texture create_cube_map_from_path(const VKW_Device* device, const VKW_CommandPool* command_pool, const std::string& path, Texture_Type type, const std::string& name)
+Texture create_cube_map_from_path(const VKW_Device* device, const VKW_CommandPool* command_pool, const VKW_Path& path, Texture_Type type, const std::string& name)
 {
 	VkFormat format = Texture::find_format(*device, type);
 
-	size_t type_start = path.rfind(".") + 1;
-	std::string file_type = path.substr(type_start, path.size() - type_start);
-	bool is_exr = file_type == "exr";
+	bool is_exr = path.extension().string() == ".exr";
 
 	// get all paths
-	size_t special_symbol_idx = path.find("%");
+	std::string path_str = path.string();
+	size_t special_symbol_idx = path_str.find("%");
 	if (special_symbol_idx == std::string::npos) {
 		throw IOException(
 			fmt::format("Cube map path does not contain % to be replaced with sides (+X,-X,...): {}", path), __FILE__, __LINE__
 		);
 	}
 
-	std::string pre_string = path.substr(0, special_symbol_idx);
-	std::string post_string = path.substr(special_symbol_idx+1, path.size() - (special_symbol_idx+1));
-	std::array<std::string, 6> paths = {
+	std::string pre_string = path_str.substr(0, special_symbol_idx);
+	std::string post_string = path_str.substr(special_symbol_idx+1, path_str.size() - (special_symbol_idx + 1));
+	std::array<VKW_Path, 6> paths = {
 		pre_string + "+X" + post_string,
 		pre_string + "-X" + post_string,		
 

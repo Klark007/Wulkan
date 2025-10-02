@@ -9,11 +9,11 @@
 * Update glfw due to https://github.com/glfw/glfw/issues/2684 or switch to SDL [ ]
 * Separate sets for things bound at different freq (also allocate only if we need a unique one per object, otherwise just give a copy (and only bind if not copy is already bound (at position))) [ ]
 * Descriptor Pool improvements [ ] 
+* std::path instead of std::strings for path's [X] 
 * m_ convention[ ] 
 * First frame analysis [ ] 
 
-* Make warnings only be compiled in debug mode [ ]
-* Improve descriptor pool [ ] 
+* Maybe Make warnings only be compiled in debug mode [ ]
 * Maybe combine buffer + layout for uniforms [ ] 
 * Maybe cut down on parameters in favor of accessing via engine [ ] 
 * Maybe Begin / End etc replacing with std::function to be called in that "context" [ ] 

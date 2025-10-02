@@ -1,6 +1,6 @@
 #include "VKW_ComputePipeline.h"
 
-void VKW_ComputePipeline::init(const VKW_Device* vkw_device, const std::string& shader_path, const std::string& obj_name)
+void VKW_ComputePipeline::init(const VKW_Device* vkw_device, const VKW_Path& shader_path, const std::string& obj_name)
 {
 	device = vkw_device;
 	name = obj_name;

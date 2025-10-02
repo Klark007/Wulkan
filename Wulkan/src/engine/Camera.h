@@ -27,8 +27,8 @@ public:
 	inline void add_pitch(float d_pitch) { set_pitch(pitch + d_pitch); };
 	inline void set_yaw(float yaw) { this->yaw = yaw; };
 	inline void set_pitch(float pitch);
-	inline void set_near_plane(float near) { z_near = near; };
-	inline void set_far_plane(float far) { z_far = far; };
+	inline void set_near_plane(float m_near) { m_z_near = m_near; };
+	inline void set_far_plane(float m_far) { m_z_far = m_far; };
 	inline void set_orthographic_projection_height(float h) { ortho_height = h; };
 private:
 	glm::vec3 position;
@@ -42,8 +42,8 @@ private:
 	float foc_y = -1;
 	float fov;
 	float ortho_height;
-	float z_near;
-	float z_far;
+	float m_z_near;
+	float m_z_far;
 
 	bool freeze_virtual_camera = false;
 	glm::mat4 virtual_view_mat;
@@ -67,8 +67,8 @@ public:
 	inline unsigned int get_resolution_x() const { return res_x; };
 	inline unsigned int get_resolution_y() const { return res_y; };
 
-	inline float get_near_plane() const { return z_near; };
-	inline float get_far_plane() const { return z_far; };
+	inline float get_near_plane() const { return m_z_near; };
+	inline float get_far_plane() const { return m_z_far; };
 
 	inline bool points_up() const { return get_up().z > 0; };
 	inline float linearize_depth(float d) const;
@@ -125,13 +125,13 @@ inline glm::mat4 Camera::generate_virtual_view_mat() const
 }
 
 inline glm::mat4 Camera::generate_projection_mat() const {
-	return glm::perspective(fov, get_aspect_ratio(), z_near, z_far);
+	return glm::perspective(fov, get_aspect_ratio(), m_z_near, m_z_far);
 }
 
 inline glm::mat4 Camera::generate_ortho_mat() const
 {
 	float aspect = get_aspect_ratio();
-	return glm::ortho(-ortho_height * aspect, ortho_height * aspect, -ortho_height, ortho_height, z_near, z_far);
+	return glm::ortho(-ortho_height * aspect, ortho_height * aspect, -ortho_height, ortho_height, m_z_near, m_z_far);
 }
 
 // calculate dir given yaw and pitch
@@ -179,5 +179,5 @@ inline float Camera::get_focal_len_y() const
 // compute linear depth
 inline float Camera::linearize_depth(float d) const
 {
-	return z_near * z_far / (z_far + d * (z_near - z_far));
+	return m_z_near * m_z_far / (m_z_far + d * (m_z_near - m_z_far));
 }
