@@ -148,6 +148,7 @@ void ObjMesh::init(const VKW_Device& device, const VKW_CommandPool& graphics_poo
 			mat.name, 
 			graphics_pool, 
 			uniform,
+			obj_path.parent_path(),
 			mat.diffuse_texname
 		);
 	}

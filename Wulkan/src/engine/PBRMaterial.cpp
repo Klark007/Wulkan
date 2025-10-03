@@ -1,7 +1,7 @@
 #include "PBRMaterial.h"
 #include "Path.h"
 
-void PBRMaterial::init(const VKW_Device& device, const VKW_DescriptorPool& descriptor_pool, RenderPass<PushConstants, PBR_MAT_DESC_SET_COUNT>& render_pass, const std::string& material_name, const VKW_CommandPool& graphics_pool, const PBRUniform& uniform, const std::string& diffuse_path)
+void PBRMaterial::init(const VKW_Device& device, const VKW_DescriptorPool& descriptor_pool, RenderPass<PushConstants, PBR_MAT_DESC_SET_COUNT>& render_pass, const std::string& material_name, const VKW_CommandPool& graphics_pool, const PBRUniform& uniform, const VKW_Path& parent_path, const VKW_Path& diffuse_path)
 {
 	MaterialInstance< PushConstants, PBR_MAT_DESC_SET_COUNT>::init(
 		device,
@@ -29,10 +29,11 @@ void PBRMaterial::init(const VKW_Device& device, const VKW_DescriptorPool& descr
 	}
 
 	if (diffuse_path != "") {
-		VKW_Path diffuse_p { diffuse_path };
+		VKW_Path diffuse_p = diffuse_path;
 		if (!diffuse_p.is_absolute()) {
 			// first check relative to material file
 			diffuse_p = find_first_existing({
+				parent_path / diffuse_p,
 				"textures" / diffuse_p
 			});
 		}
