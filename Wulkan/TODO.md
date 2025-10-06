@@ -5,12 +5,13 @@
 * Shader includes with a shared file for common helper functions [X] 
 * Remove Pipeline from draw[X]
 * Shader printf suppport [X] 
+* Separate sets for things bound at different freq (also allocate only if we need a unique one per object) [X]
+* std::path instead of std::strings for path's [X] 
 
 * Update glfw due to https://github.com/glfw/glfw/issues/2684 or switch to SDL [ ]
-* Separate sets for things bound at different freq (also allocate only if we need a unique one per object) [X]
 * Descriptor Pool improvements [ ] 
-* std::path instead of std::strings for path's [X] 
 * m_ convention[ ] 
+* static_cast and not c style casts [ ] 
 * First frame analysis [ ] 
 
 * Maybe Make warnings only be compiled in debug mode [ ]

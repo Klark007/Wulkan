@@ -964,6 +964,7 @@ void glfm_mouse_move_callback(GLFWwindow* window, double pos_x, double pos_y) {
 		engine->get_glfw_input_recursive_mutex().unlock();
 	}
 	else {
+		// TODO THIS MIGHT BE UNDEFINED BEHAVIOR
 		throw SetupException("GLFW Engine User pointer not set", __FILE__, __LINE__);
 	}
 }
