@@ -5,7 +5,7 @@
 
 void Terrain::init(const VKW_Device& device, const VKW_CommandPool& graphics_pool, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, const VKW_Sampler* sampler, RenderPass<TerrainPushConstants, 3>& render_pass, const VKW_Path& height_path, const VKW_Path& albedo_path, const VKW_Path& normal_path, uint32_t mesh_res)
 {
-	material.init(device, descriptor_pool, render_pass, "Terrain material");
+	material.init(device, descriptor_pool, render_pass, { Terrain::descriptor_set_layout }, { 2 }, "Terrain material");
 	texture_sampler = sampler;
 
 	// textures to be used
@@ -76,25 +76,16 @@ void Terrain::init(const VKW_Device& device, const VKW_CommandPool& graphics_poo
 	mesh.init(device, transfer_pool, terrain_vertices, terrain_indices);
 }
 
-void Terrain::set_descriptor_bindings(const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& general_ubo, const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& shadow_map_ubo, Texture& shadow_map, const VKW_Sampler& shadow_map_sampler, const VKW_Sampler& shadow_map_gather_sampler)
+void Terrain::set_descriptor_bindings()
 {
 	// set the bindings
 	for (unsigned int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-		const VKW_DescriptorSet& set0 = material.get_descriptor_set(i, 0);
-		const VKW_DescriptorSet& set1 = material.get_descriptor_set(i, 1);
-		const VKW_DescriptorSet& set2 = material.get_descriptor_set(i, 2);
+		const VKW_DescriptorSet& set = material.get_descriptor_set(i, 0);
 
-		set0.update(0, general_ubo.at(i));
-
-		set1.update(0, shadow_map_ubo.at(i));
-		set1.update(1, shadow_map.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D_ARRAY, 0, MAX_CASCADE_COUNT));
-		set1.update(2, shadow_map_sampler);
-		set1.update(3, shadow_map_gather_sampler);
-
-		set2.update(0, albedo.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), *texture_sampler);
-		set2.update(1, normal_map.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), *texture_sampler);
-		set2.update(2, height_map.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), *texture_sampler);
-		set2.update(3, curvatue.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), *texture_sampler);
+		set.update(0, albedo.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), *texture_sampler);
+		set.update(1, normal_map.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), *texture_sampler);
+		set.update(2, height_map.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), *texture_sampler);
+		set.update(3, curvatue.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), *texture_sampler);
 	}
 }
 
@@ -237,8 +228,7 @@ RenderPass<TerrainPushConstants, 3> Terrain::create_render_pass(const VKW_Device
 	render_pass.init(
 		graphics_pipeline,
 		layouts,
-		push_constant,
-		depth_only ? fmt::format("Terrain Depth Renderpass ({})", nr_shadow_cascades) : fmt::format("Terrain Renderpass ({})", nr_shadow_cascades)
+		push_constant
 	);
 
 	return render_pass;
@@ -246,40 +236,40 @@ RenderPass<TerrainPushConstants, 3> Terrain::create_render_pass(const VKW_Device
 
 VKW_DescriptorSetLayout Terrain::create_descriptor_set_layout(const VKW_Device& device)
 {
-	VKW_DescriptorSetLayout layout{};
+	descriptor_set_layout = VKW_DescriptorSetLayout{};
 
 	// terrain texture and sampler
 	// albedo
-	layout.add_binding(
+	descriptor_set_layout.add_binding(
 		0,
 		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 		VK_SHADER_STAGE_FRAGMENT_BIT
 	);
 
 	// normal map
-	layout.add_binding(
+	descriptor_set_layout.add_binding(
 		1,
 		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 		VK_SHADER_STAGE_FRAGMENT_BIT
 	);
 
 	// height map
-	layout.add_binding(
+	descriptor_set_layout.add_binding(
 		2,
 		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 		VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT | VK_SHADER_STAGE_FRAGMENT_BIT
 	);
 
 	// curvature map
-	layout.add_binding(
+	descriptor_set_layout.add_binding(
 		3,
 		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 		VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_FRAGMENT_BIT
 	);
 
-	layout.init(&device, "Terrain Desc Layout");
+	descriptor_set_layout.init(&device, "Terrain Desc Layout");
 
-	return layout;
+	return descriptor_set_layout;
 }
 
 void Terrain::del()

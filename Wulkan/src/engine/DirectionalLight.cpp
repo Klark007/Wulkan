@@ -57,7 +57,7 @@ void DirectionalLight::init(const VKW_Device* vkw_device, const std::array<VKW_C
 	}
 }
 
-void DirectionalLight::init_debug_lines(const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, RenderPass<PushConstants, 1>& render_pass, const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& uniform_buffers)
+void DirectionalLight::init_debug_lines(const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, RenderPass<PushConstants, 1>& render_pass)
 {
 	if (!cast_shadows) {
 		throw SetupException("Tried to initialize debug lines of shadow casting for a directional light not casting shadows", __FILE__, __LINE__);
@@ -83,7 +83,6 @@ void DirectionalLight::init_debug_lines(const VKW_CommandPool& transfer_pool, co
 			},
 			(i < 4) ? line_colors.at(i) : glm::vec4(1, 0, 1, 1)
 		);
-		camera_frustums.set_descriptor_bindings(uniform_buffers);
 
 		Frustum& shadow_frustum = shadow_camera_frustums.at(i);
 		shadow_frustum.init(
@@ -94,7 +93,6 @@ void DirectionalLight::init_debug_lines(const VKW_CommandPool& transfer_pool, co
 			glm::mat4(1), // is overwritten anyways
 			(i < 4) ? line_colors.at(i) : glm::vec4(1, 0, 1, 1)
 		);
-		shadow_frustum.set_descriptor_bindings(uniform_buffers);
 	}
 }
 

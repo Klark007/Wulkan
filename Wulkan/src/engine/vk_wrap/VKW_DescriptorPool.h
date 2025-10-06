@@ -12,10 +12,10 @@ public:
 	void init(const VKW_Device* device, uint32_t max_sets, const std::string& obj_name);
 	void reset();
 	void del() override;
-private:
+protected:
 	const VKW_Device* device;
 	std::string name;
-
+private:
 	VkDescriptorPool descriptor_pool;
 	std::vector<VkDescriptorPoolSize> pool_size;
 public:
@@ -26,4 +26,3 @@ public:
 	inline VkDescriptorPool get_descriptor_pool() const { return descriptor_pool; };
 	inline operator VkDescriptorPool() const { return descriptor_pool; };
 };
-

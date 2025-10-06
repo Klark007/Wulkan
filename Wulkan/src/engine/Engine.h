@@ -103,10 +103,11 @@ private:
 
 	void create_texture_samplers();
 	void create_uniform_buffers();
-	void create_descriptor_sets();
+	void create_descriptor_set_pool();
 
 	void init_descriptor_set_layouts();
 	void init_data();
+	void init_descriptor_sets();
 
 	void init_render_targets();
 
@@ -173,6 +174,10 @@ private:
 	VKW_DescriptorSetLayout terrain_desc_set_layout;
 	VKW_DescriptorSetLayout environment_desc_set_layout;
 	VKW_DescriptorSetLayout pbr_desc_set_layout;
+
+	// shared descriptor sets
+	std::array<VKW_DescriptorSet, MAX_FRAMES_IN_FLIGHT> view_descriptor_sets;
+	std::array<VKW_DescriptorSet, MAX_FRAMES_IN_FLIGHT> shadow_descriptor_sets;
 
 	// Terrain data
 	Terrain terrain;

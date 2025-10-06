@@ -12,13 +12,13 @@ class MaterialInstance : public VKW_Object {
 public:
 	MaterialInstance() = default;
 
-	// Important layouts array order matters
-	// It corresponds to the order in which the multiple sets will be bound (set slot)
-	void init(const VKW_Device& device, const VKW_DescriptorPool& descriptor_pool, RenderPass<T,N>& render_pass, const std::string& material_name);
+	template<size_t M>
+	void init(const VKW_Device& device, const VKW_DescriptorPool& descriptor_pool, RenderPass<T,M>& render_pass, const std::array<VKW_DescriptorSetLayout, N>& descriptor_layouts, const std::array<uint32_t, N>& set_slots, const std::string& material_name);
 
 	void del() override;
 private:
 	std::array<std::array<VKW_DescriptorSet, N>, MAX_FRAMES_IN_FLIGHT> m_descriptor_sets;
+	std::array<uint32_t, N> m_set_slots;
 	VKW_PushConstant<T>* m_push_constant;
 	VkPipelineLayout m_pipeline_layout;
 public:
@@ -29,14 +29,17 @@ public:
 };
 
 template<typename T, size_t N>
-inline void MaterialInstance<T, N>::init(const VKW_Device& device, const VKW_DescriptorPool& descriptor_pool, RenderPass<T, N>& render_pass, const std::string& material_name)
+template<size_t M>
+inline void MaterialInstance<T, N>::init(const VKW_Device& device, const VKW_DescriptorPool& descriptor_pool, RenderPass<T, M>& render_pass, const std::array<VKW_DescriptorSetLayout, N>& descriptor_layouts, const std::array<uint32_t, N>& set_slots, const std::string& material_name)
 {
+	m_set_slots = set_slots;
+
 	for (auto& per_frame_sets : m_descriptor_sets) {
 		for (int i = 0; i < N; i++) {
 			per_frame_sets[i].init(
-				&device, 
-				&descriptor_pool, 
-				render_pass.m_layouts[i], 
+				&device,
+				&descriptor_pool,
+				descriptor_layouts[i],
 				fmt::format("{} Desc Set", material_name)
 			);
 		}
@@ -50,8 +53,8 @@ template<typename T, size_t N>
 inline void MaterialInstance<T, N>::bind(const VKW_CommandBuffer& cmd, uint32_t current_frame, T push_val)
 {
 	// TODO make into one bind call
-	for (int i = 0; i < N; i++) {
-		m_descriptor_sets[current_frame][i].bind(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline_layout, i);
+	for (size_t i = 0; i < N; i++) {
+		m_descriptor_sets[current_frame][i].bind(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline_layout, m_set_slots[i]);
 	}
 	m_push_constant->update(push_val);
 	m_push_constant->push(cmd, m_pipeline_layout);
@@ -66,5 +69,3 @@ inline void MaterialInstance<T, N>::del()
 		}
 	}
 }
-
-

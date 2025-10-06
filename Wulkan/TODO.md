@@ -7,7 +7,7 @@
 * Shader printf suppport [X] 
 
 * Update glfw due to https://github.com/glfw/glfw/issues/2684 or switch to SDL [ ]
-* Separate sets for things bound at different freq (also allocate only if we need a unique one per object, otherwise just give a copy (and only bind if not copy is already bound (at position))) [ ]
+* Separate sets for things bound at different freq (also allocate only if we need a unique one per object) [X]
 * Descriptor Pool improvements [ ] 
 * std::path instead of std::strings for path's [X] 
 * m_ convention[ ] 
@@ -29,6 +29,8 @@
 * PBR Shader [~]
 * Move textures (and maybe uniform buffers) into Material class instances [X] 
 
+* Emission / Ambient [ ] 
+* Support more textures [ ] 
 * Normal mapping [ ] 
 * Draw Indirect [ ] 
 * Support more parameters [ ]

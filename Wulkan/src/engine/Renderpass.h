@@ -10,7 +10,7 @@ public:
 
 	// init with initalized pipeline
 	// Pipeline is owned by RenderPass, layouts not
-	void init(const VKW_GraphicsPipeline& pipeline, const std::array<VKW_DescriptorSetLayout, N>& layouts, const VKW_PushConstant<T>& push_constant, const std::string& mat_name);
+	void init(const VKW_GraphicsPipeline& pipeline, const std::array<VKW_DescriptorSetLayout, N>& layouts, const VKW_PushConstant<T>& push_constant);
 	void del() override;
 
 	// binds current render pass, expects to be in active command buffer cmd
@@ -22,18 +22,17 @@ private:
 	VKW_GraphicsPipeline m_pipeline;
 	std::array<VKW_DescriptorSetLayout, N> m_layouts;
 	VKW_PushConstant<T> m_push_constant;
-
-	std::string m_name;
+public:
+	VkPipelineLayout get_pipeline_layout() const { return m_pipeline.get_layout(); };
 };
 
 
 template<typename T, size_t N>
-void RenderPass<T, N>::init(const VKW_GraphicsPipeline& pipeline, const std::array<VKW_DescriptorSetLayout, N>& layouts, const VKW_PushConstant<T>& push_constant, const std::string& mat_name)
+void RenderPass<T, N>::init(const VKW_GraphicsPipeline& pipeline, const std::array<VKW_DescriptorSetLayout, N>& layouts, const VKW_PushConstant<T>& push_constant)
 {
 	m_pipeline = pipeline;
 	m_layouts = layouts;
 	m_push_constant = push_constant;
-	m_name = mat_name;
 }
 
 template<typename T, size_t N>

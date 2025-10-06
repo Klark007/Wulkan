@@ -153,7 +153,7 @@ void Engine::update()
 		);
 
 		meshes[3].set_model_matrix(
-			glm::translate(glm::scale(glm::mat4(1), glm::vec3(0.2)), glm::vec3(0, 0, 25))
+			glm::scale(glm::translate(glm::mat4(1), glm::vec3(0, 0, 25)), glm::vec3(0.2))
 		);
 	}
 
@@ -196,6 +196,9 @@ void Engine::draw()
 						gui_input.slope_depth_bias  // slope depth bias
 					);
 
+					view_descriptor_sets[current_frame].bind(shadow_cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, terrain_depth_render_pass.get_pipeline_layout(), 0);
+					shadow_descriptor_sets[current_frame].bind(shadow_cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, terrain_depth_render_pass.get_pipeline_layout(), 1);
+
 					terrain.set_cascade_idx(i);
 					terrain.draw(shadow_cmd, current_frame);
 					
@@ -213,6 +216,8 @@ void Engine::draw()
 						gui_input.depth_bias,       // const depth bias
 						gui_input.slope_depth_bias  // slope depth bias
 					);
+					view_descriptor_sets[current_frame].bind(shadow_cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pbr_depth_pass.get_pipeline_layout(), 0);
+					shadow_descriptor_sets[current_frame].bind(shadow_cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pbr_depth_pass.get_pipeline_layout(), 1);
 
 					for (size_t j = 0; j < 4; j++) {
 						meshes[j].set_cascade_idx(i);
@@ -257,6 +262,8 @@ void Engine::draw()
 					1.0f                          // depth value
 				);
 
+				view_descriptor_sets[current_frame].bind(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, environment_render_pass.get_pipeline_layout(), 0);
+
 				environment_map.draw(cmd, current_frame);
 
 				environment_render_pass.end(cmd);
@@ -277,6 +284,9 @@ void Engine::draw()
 					depth_render_target.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT)
 				);
 
+				view_descriptor_sets[current_frame].bind(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, render_pass.get_pipeline_layout(), 0);
+				shadow_descriptor_sets[current_frame].bind(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, render_pass.get_pipeline_layout(), 1);
+
 				terrain.draw(cmd, current_frame);
 
 				render_pass.end(cmd);
@@ -295,6 +305,8 @@ void Engine::draw()
 					color_render_target.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT),
 					depth_render_target.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT)
 				);
+				view_descriptor_sets[current_frame].bind(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pbr_render_pass.get_pipeline_layout(), 0);
+				shadow_descriptor_sets[current_frame].bind(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pbr_render_pass.get_pipeline_layout(), 1);
 
 				for (size_t i = 0; i < 4; i++)
 					meshes[i].draw(cmd, current_frame);
@@ -308,14 +320,14 @@ void Engine::draw()
 			{
 				TracyVkZone(get_current_tracy_context(), cmd, "Debug Lines");
 				cmd.begin_debug_zone("Line pass");
-
+				
 				line_render_pass.begin(
 					cmd,
 					swapchain.get_extent(),
 					color_render_target.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT),
 					depth_render_target.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT)
 				);
-
+				view_descriptor_sets[current_frame].bind(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, line_render_pass.get_pipeline_layout(), 0);
 				
 				if (gui_input.shadow_draw_debug_frustums)
 					directional_light.draw_debug_lines(cmd, current_frame, gui_input.nr_shadow_cascades);
@@ -440,12 +452,12 @@ void Engine::init_vulkan()
 	create_uniform_buffers();
 
 	init_descriptor_set_layouts();
-	create_descriptor_sets();
+	create_descriptor_set_pool();
 
 	create_render_passes();
 
 	init_data();
-
+	init_descriptor_sets();
 }
 
 void Engine::init_instance()
@@ -529,8 +541,7 @@ void Engine::init_data()
 	directional_light.init_debug_lines(
 		get_current_transfer_pool(),
 		descriptor_pool,
-		line_render_pass,
-		uniform_buffers
+		line_render_pass
 	);
 
 	cleanup_queue.add(&directional_light);
@@ -550,7 +561,7 @@ void Engine::init_data()
 		"textures/terrain/normal.png",	  // normals TODO: support normal computation directly from heightmap
 		256							      // resolution of base mesh
 	);
-	terrain.set_descriptor_bindings(uniform_buffers, directional_light.get_uniform_buffers(), directional_light.get_texture(), linear_texture_sampler, shadow_map_gather_sampler);
+	terrain.set_descriptor_bindings();
 	cleanup_queue.add(&terrain);
 
 	environment_map.init(
@@ -562,7 +573,7 @@ void Engine::init_data()
 
 		"textures/environment_maps/day_cube_map_%.exr"
 	);
-	environment_map.set_descriptor_bindings(uniform_buffers, linear_texture_sampler);
+	environment_map.set_descriptor_bindings(linear_texture_sampler);
 	cleanup_queue.add(&environment_map);
 
 	texture_not_found = create_texture_from_path(
@@ -575,21 +586,50 @@ void Engine::init_data()
 	cleanup_queue.add(&texture_not_found);
 
 	meshes[0].init(device, get_current_graphics_pool(), get_current_transfer_pool(), descriptor_pool, pbr_render_pass, "models/smooth_normals.obj");
-	meshes[0].set_descriptor_bindings(uniform_buffers, directional_light.get_uniform_buffers(), directional_light.get_texture(), linear_texture_sampler, shadow_map_gather_sampler, texture_not_found, linear_texture_sampler);
+	meshes[0].set_descriptor_bindings(texture_not_found, linear_texture_sampler);
 	cleanup_queue.add(&meshes[0]);
 
 	meshes[1].init(device, get_current_graphics_pool(), get_current_transfer_pool(), descriptor_pool, pbr_render_pass, "models/mitsuba_diffuse_only.obj");
-	meshes[1].set_descriptor_bindings(uniform_buffers, directional_light.get_uniform_buffers(), directional_light.get_texture(), linear_texture_sampler, shadow_map_gather_sampler, texture_not_found, linear_texture_sampler);
+	meshes[1].set_descriptor_bindings(texture_not_found, linear_texture_sampler);
 	cleanup_queue.add(&meshes[1]);
 
 	meshes[2].init(device, get_current_graphics_pool(), get_current_transfer_pool(), descriptor_pool, pbr_render_pass, "models/mitsuba_texture.obj");
-	meshes[2].set_descriptor_bindings(uniform_buffers, directional_light.get_uniform_buffers(), directional_light.get_texture(), linear_texture_sampler, shadow_map_gather_sampler, texture_not_found, linear_texture_sampler);
+	meshes[2].set_descriptor_bindings(texture_not_found, linear_texture_sampler);
 	cleanup_queue.add(&meshes[2]);
 
 	meshes[3].init(device, get_current_graphics_pool(), get_current_transfer_pool(), descriptor_pool, pbr_render_pass, "models/mitsuba_texture.obj");
 	//meshes[3].init(device, get_current_graphics_pool(), get_current_transfer_pool(), descriptor_pool, pbr_render_pass, "models/sponza/sponza.obj");
-	meshes[3].set_descriptor_bindings(uniform_buffers, directional_light.get_uniform_buffers(), directional_light.get_texture(), linear_texture_sampler, shadow_map_gather_sampler, texture_not_found, linear_texture_sampler);
+	meshes[3].set_descriptor_bindings(texture_not_found, linear_texture_sampler);
 	cleanup_queue.add(&meshes[3]);
+}
+
+void Engine::init_descriptor_sets()
+{
+	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+		VKW_DescriptorSet& view_desc_set = view_descriptor_sets[i];
+		view_desc_set.init(
+			&device,
+			&descriptor_pool,
+			view_desc_set_layout,
+			fmt::format("View Desc Set ({})", i)
+		);
+		view_desc_set.update(0, uniform_buffers.at(i));
+		cleanup_queue.add(&view_desc_set);
+
+		VKW_DescriptorSet& shadow_desc_set = shadow_descriptor_sets[i];
+		shadow_desc_set.init(
+			&device,
+			&descriptor_pool,
+			shadow_desc_set_layout,
+			fmt::format("Shadow Desc Set ({})", i)
+		);
+
+		shadow_desc_set.update(0, directional_light.get_uniform_buffers().at(i));
+		shadow_desc_set.update(1, directional_light.get_texture().get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D_ARRAY, 0, MAX_CASCADE_COUNT));
+		shadow_desc_set.update(2, linear_texture_sampler);
+		shadow_desc_set.update(3, shadow_map_gather_sampler);
+		cleanup_queue.add(&shadow_desc_set);
+	}
 }
 
 void Engine::create_texture_samplers()
@@ -611,7 +651,7 @@ void Engine::create_texture_samplers()
 	cleanup_queue.add(&shadow_map_gather_sampler);
 }
 
-void Engine::create_descriptor_sets()
+void Engine::create_descriptor_set_pool()
 {
 	imgui_descriptor_pool.add_type(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1);
 	imgui_descriptor_pool.init(&device, 1, "Imgui descriptor pool");

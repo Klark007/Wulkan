@@ -10,7 +10,6 @@ public:
 	Line() = default;
 	void init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, RenderPass<PushConstants, 1>& render_pass, const std::vector<glm::vec3>& points, const std::vector<uint32_t>& indices, const glm::vec4 color);
 	void init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, RenderPass<PushConstants, 1>& render_pass, const std::vector<glm::vec3>& points, const std::vector<uint32_t>& indices, const std::vector<glm::vec4>& colors);
-	void set_descriptor_bindings(const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& uniform_buffers);
 	
 	// creates singleton render pass, needs to be deleted by caller of function
 	static RenderPass<PushConstants, 1> create_render_pass(const VKW_Device* device, const std::array<VKW_DescriptorSetLayout, 1>& layouts, Texture& color_rt, Texture& depth_rt);
@@ -23,7 +22,7 @@ protected:
 	VKW_Buffer vertex_buffer;
 	VkDeviceAddress vertex_address;
 
-	MaterialInstance<PushConstants, 1> material;
+	MaterialInstance<PushConstants, 0> material;
 
 	VKW_Buffer index_buffer;
 	uint32_t nr_indices;

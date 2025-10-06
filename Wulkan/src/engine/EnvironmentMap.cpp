@@ -2,7 +2,7 @@
 
 void EnvironmentMap::init(const VKW_Device& device, const VKW_CommandPool& graphics_pool, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, RenderPass<EnvironmentMapPushConstants, 2>& render_pass, const VKW_Path& path)
 {
-	material.init(device, descriptor_pool, render_pass, "Environment map Material");
+	material.init(device, descriptor_pool, render_pass, { EnvironmentMap::descriptor_set_layout }, {1}, "Environment map Material");
 
 	cube_map = create_cube_map_from_path(&device, &graphics_pool, path, Tex_HDR_RGBA, "Environment map");
 
@@ -43,14 +43,10 @@ void EnvironmentMap::init(const VKW_Device& device, const VKW_CommandPool& graph
 	mesh.init(device, transfer_pool, cube_vertices, cube_indices);
 }
 
-void EnvironmentMap::set_descriptor_bindings(const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& uniform_buffers, const VKW_Sampler& texture_sampler)
+void EnvironmentMap::set_descriptor_bindings(const VKW_Sampler& texture_sampler)
 {
 	for (unsigned int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-		const VKW_DescriptorSet& set0 = material.get_descriptor_set(i, 0);
-		const VKW_DescriptorSet& set1 = material.get_descriptor_set(i, 1);
-
-		set0.update(0, uniform_buffers.at(i));
-
+		const VKW_DescriptorSet& set1 = material.get_descriptor_set(i, 0);
 		// need all 6 faces of the array/cubemap
 		set1.update(0, cube_map.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_VIEW_TYPE_CUBE, 0, 6), texture_sampler);
 	}
@@ -93,8 +89,7 @@ RenderPass<EnvironmentMapPushConstants, 2> EnvironmentMap::create_render_pass(co
 	render_pass.init(
 		graphics_pipeline,
 		layouts,
-		push_constant,
-		"Environment Renderpass"
+		push_constant
 	);
 
 	return render_pass;
@@ -102,7 +97,7 @@ RenderPass<EnvironmentMapPushConstants, 2> EnvironmentMap::create_render_pass(co
 
 VKW_DescriptorSetLayout EnvironmentMap::create_descriptor_set_layout(const VKW_Device& device)
 {
-	VKW_DescriptorSetLayout descriptor_set_layout{};
+	descriptor_set_layout = VKW_DescriptorSetLayout{};
 
 	// cube map
 	descriptor_set_layout.add_binding(
