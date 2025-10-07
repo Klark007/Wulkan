@@ -52,7 +52,7 @@ void Line::init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, 
 
 	vertex_address = vkGetBufferDeviceAddress(device, &address_info);
 
-	nr_indices = indices.size();
+	nr_indices = static_cast<uint32_t>(indices.size());
 }
 
 void Line::update_vertices(const std::vector<glm::vec3>& points)
