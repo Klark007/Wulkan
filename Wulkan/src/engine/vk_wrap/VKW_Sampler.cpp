@@ -1,20 +1,15 @@
 #include "VKW_Sampler.h"
 
 VKW_Sampler::VKW_Sampler()
-{
-	device = nullptr;
-	sampler = VK_NULL_HANDLE;
-
-	min_filter = VK_FILTER_LINEAR;
-	mag_filter = VK_FILTER_LINEAR;
-
-	address_mode = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-
-	max_anisotropy = 2.0f;
-	anisotropic_sampling = VK_TRUE;
-
-	compare_enable = VK_FALSE;
-}
+	: device {nullptr}, 
+	sampler {VK_NULL_HANDLE}, 
+	min_filter {VK_FILTER_LINEAR}, 
+	mag_filter {VK_FILTER_LINEAR}, 
+	address_mode { VK_SAMPLER_ADDRESS_MODE_REPEAT }, 
+	max_anisotropy {2.0f},
+	anisotropic_sampling {VK_TRUE},
+	compare_enable {VK_FALSE}
+{ }
 
 void VKW_Sampler::init(const VKW_Device* vkw_device, const std::string& obj_name)
 {

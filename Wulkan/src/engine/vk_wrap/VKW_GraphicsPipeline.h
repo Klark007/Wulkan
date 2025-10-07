@@ -201,7 +201,7 @@ inline void VKW_GraphicsPipeline::set_depth_attachment_format(VkFormat format)
 template<size_t N>
 inline void VKW_GraphicsPipeline::add_descriptor_sets(const std::array<VKW_DescriptorSetLayout, N>& layouts)
 {
-	for (const VKW_DescriptorSetLayout layout : layouts) {
+	for (const VKW_DescriptorSetLayout& layout : layouts) {
 		descriptor_set_layouts.push_back(layout);
 	}
 }

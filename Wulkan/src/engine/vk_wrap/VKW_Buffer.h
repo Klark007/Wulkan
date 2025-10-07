@@ -41,4 +41,4 @@ public:
 	inline void* get_mapped_address() const { return mapped_address; }; // returns mapped address or null if not mapped
 };
 
-VKW_Buffer create_staging_buffer(const VKW_Device* device, VkDeviceSize buffer_size, const void* data, size_t data_size, const std::string name="Staging buffer");
+VKW_Buffer create_staging_buffer(const VKW_Device* device, VkDeviceSize buffer_size, const void* data, size_t data_size, const std::string& name="Staging buffer");

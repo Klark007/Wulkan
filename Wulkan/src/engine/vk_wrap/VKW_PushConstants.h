@@ -17,7 +17,7 @@ private:
 	VkPushConstantRange range;
 	T data;
 public:
-	inline void update(T t) { data = t; };
+	inline void update(const T& t) { data = t; };
 	// pushes the set data, assumes to be recording commands into the above command buffer
 	inline void push(const VKW_CommandBuffer& command_buffer, VkPipelineLayout layout) const;
 

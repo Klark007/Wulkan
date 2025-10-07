@@ -100,7 +100,7 @@ public:
 
 	void draw_debug_lines(const VKW_CommandBuffer& command_buffer, uint32_t current_frame, int nr_current_cascades);
 	Texture& get_texture() { return depth_rt; };
-	const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT> get_uniform_buffers() const { return uniform_buffers; };
+	const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& get_uniform_buffers() const { return uniform_buffers; };
 	VkSemaphore get_shadow_pass_semaphore(int current_frame) const { return shadow_semaphores.at(current_frame); };
 
 	inline void set_direction(glm::vec3 direction);

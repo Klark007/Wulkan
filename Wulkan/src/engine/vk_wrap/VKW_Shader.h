@@ -22,6 +22,6 @@ private:
 	VkShaderModule module = VK_NULL_HANDLE;
 	VkPipelineShaderStageCreateInfo shader_stage_info{};
 public:
-	VkPipelineShaderStageCreateInfo get_info() const { return shader_stage_info; };
+	const VkPipelineShaderStageCreateInfo& get_info() const { return shader_stage_info; };
 };
 

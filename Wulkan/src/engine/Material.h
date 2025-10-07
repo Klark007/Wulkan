@@ -24,7 +24,7 @@ private:
 public:
 	// can be bound also when using a different RenderPass is currently bound (i.e. use one Instance for both the normal shading of terrain as well as a depth only pass)
 	// as long as same Pipeline Layout ?
-	void bind(const VKW_CommandBuffer& cmd, uint32_t current_frame, T push_val);
+	void bind(const VKW_CommandBuffer& cmd, uint32_t current_frame, const T& push_val);
 	VKW_DescriptorSet& get_descriptor_set(size_t frame_idx, size_t set_idx) { return m_descriptor_sets[frame_idx][set_idx]; };
 };
 
@@ -50,7 +50,7 @@ inline void MaterialInstance<T, N>::init(const VKW_Device& device, const VKW_Des
 }
 
 template<typename T, size_t N>
-inline void MaterialInstance<T, N>::bind(const VKW_CommandBuffer& cmd, uint32_t current_frame, T push_val)
+inline void MaterialInstance<T, N>::bind(const VKW_CommandBuffer& cmd, uint32_t current_frame, const T& push_val)
 {
 	// TODO make into one bind call
 	for (size_t i = 0; i < N; i++) {

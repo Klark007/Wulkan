@@ -2,10 +2,8 @@
 #define STBI_FAILURE_USERMSG
 #include "Texture.h"
 
-#pragma warning(push, 0) // ignore warnings
 #define TINYEXR_IMPLEMENTATION
 #include <tinyexr.h>
-#pragma warning(pop) // stop ignoring warnings
 
 
 void Texture::init(const VKW_Device* vkw_device, unsigned int w, unsigned int h, VkFormat f, VkImageUsageFlags usage, SharingInfo sharing_info, const std::string& obj_name, VkImageCreateFlags flags, uint32_t array_layers)

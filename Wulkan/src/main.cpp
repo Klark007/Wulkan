@@ -3,9 +3,7 @@
 #include <iostream>
 
 #define SPDLOG_FMT_EXTERNAL // Use already existing fmt implementation (should already be definied in common.h)
-#pragma warning(push, 0) // ignore warnings
 #include "spdlog/spdlog.h"
-#pragma warning(pop) // stop ignoring warnings
 
 // initial screen resolution
 const uint32_t WIDTH = 800;

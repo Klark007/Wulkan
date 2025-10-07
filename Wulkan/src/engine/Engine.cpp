@@ -1,9 +1,7 @@
 #include "Engine.h"
 
-#pragma warning(push, 0) // ignore warnings
 #define VMA_IMPLEMENTATION
 #include "vma/vk_mem_alloc.h"
-#pragma warning(pop) // stop ignoring warnings
 
 #include <GLFW/glfw3.h>
 

@@ -36,7 +36,7 @@ class VKW_DescriptorSet : public VKW_Object
 public:
 	VKW_DescriptorSet() = default;
 
-	void init(const VKW_Device* device, const VKW_DescriptorPool* pool, VKW_DescriptorSetLayout layout, const std::string& obj_name);
+	void init(const VKW_Device* device, const VKW_DescriptorPool* pool, const VKW_DescriptorSetLayout& layout, const std::string& obj_name);
 	// bind descriptor set to bind point, assumes to be recording commands into the above command buffer
 	void bind(const VKW_CommandBuffer& command_buffer, VkPipelineBindPoint bind_point, VkPipelineLayout layout, uint32_t set_idx=0) const;
 	void del() override;

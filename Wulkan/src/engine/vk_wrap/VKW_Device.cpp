@@ -1,6 +1,6 @@
 #include "VKW_Device.h"
 
-void VKW_Device::init(VKW_Instance* vkw_instance, const VKW_Surface& surface, std::vector<const char*> device_extensions, Required_Device_Features required_features, const std::string& obj_name, bool build)
+void VKW_Device::init(VKW_Instance* vkw_instance, const VKW_Surface& surface, const std::vector<const char*>& device_extensions, const Required_Device_Features& required_features, const std::string& obj_name, bool build)
 {
 	instance = vkw_instance;
 	m_name = obj_name;

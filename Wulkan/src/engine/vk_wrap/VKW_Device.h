@@ -6,12 +6,10 @@
 #include "VKW_Instance.h"
 #include "VKW_Surface.h"
 
-#pragma warning(push, 0) // ignore warnings
 #define VMA_STATIC_VULKAN_FUNCTIONS 0
 #define VMA_DYNAMIC_VULKAN_FUNCTIONS 1
 #define VMA_DEBUG_LOG_FORMAT
 #include "vma/vk_mem_alloc.h"
-#pragma warning(pop) // stop ignoring warnings
 
 struct Required_Device_Features {
 	VkPhysicalDeviceFeatures rf;
@@ -26,7 +24,7 @@ public:
 	VKW_Device() = default;
 	// if we want to require extension features, we need to set build to false and call build before using the VKW_Device
 	// get_dedicated_queue vs get_queue  if no dedicated one was found
-	void init(VKW_Instance* vkw_instance, const VKW_Surface& surface, std::vector<const char*> device_extensions, Required_Device_Features required_features, const std::string& obj_name, bool build=true);
+	void init(VKW_Instance* vkw_instance, const VKW_Surface& surface, const std::vector<const char*>& device_extensions, const Required_Device_Features& required_features, const std::string& obj_name, bool build=true);
 	void del() override;
 private:
 	VKW_Instance* instance;
@@ -47,10 +45,9 @@ public:
 
 	inline void name_object(uint64_t object_handle, VkObjectType object_type, const std::string& name) const;
 
-	inline vkb::Device get_vkb_device() const { return device; };
+	inline const vkb::Device& get_vkb_device() const { return device; };
 	inline VkDevice get_device() const { return device.device; };
 	inline operator VkDevice() const { return device.device; };
-	inline vkb::PhysicalDevice get_vkb_physical_device() const { return physical_device; };
 	inline VkPhysicalDevice get_physical_device() const { return physical_device.physical_device; };
 
 	inline VmaAllocator get_allocator() const { return allocator; };

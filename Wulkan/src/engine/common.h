@@ -2,7 +2,6 @@
 
 #define SPDLOG_FMT_EXTERNAL // Use already existing fmt implementation
 
-#pragma warning(push, 0) // ignore warnings
 #include "volk.h"
 #include "vma/vk_mem_alloc.h"
 #include "VkBootstrap.h"
@@ -11,7 +10,6 @@
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE // force to vulkans 0,1 range for depth
 #include "glm/glm.hpp"
-#pragma warning(pop) // stop ignoring warnings
 
 #include "Exception.h"
 
