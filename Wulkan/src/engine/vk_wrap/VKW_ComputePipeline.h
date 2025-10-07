@@ -14,10 +14,10 @@ public:
 	void init(const VKW_Device* vkw_device, const VKW_Path& shader_path, const std::string& obj_name);
 	void del() override;
 private:
-	const VKW_Device* device;
+	const VKW_Device* device = nullptr;
 	std::string name;
-	VkPipeline compute_pipeline;
-	VkPipelineLayout layout;
+	VkPipeline compute_pipeline = VK_NULL_HANDLE;
+	VkPipelineLayout layout = VK_NULL_HANDLE;
 
 	std::vector<VkDescriptorSetLayout> descriptor_set_layouts;
 	std::vector<VkPushConstantRange> push_consts_range;

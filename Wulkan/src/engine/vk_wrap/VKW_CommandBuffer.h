@@ -21,12 +21,12 @@ public:
 	// ends and submits the command buffer (with given signal, wait semaphores and fence)
 	void submit(const std::vector<VkSemaphore>& wait_semaphores, const std::vector<VkPipelineStageFlags>& wait_stages, const std::vector<VkSemaphore>& signal_semaphores, VkFence fence) const;
 private:
-	const VKW_Device* device;
-	std::string name;
-	const VKW_CommandPool* command_pool;
-	const VKW_Queue* queue;
+	const VKW_Device* device = nullptr;
+	std::string m_name;
+	const VKW_CommandPool* command_pool = nullptr;
+	const VKW_Queue* queue = nullptr;
 
-	VkCommandBuffer command_buffer;
+	VkCommandBuffer command_buffer = VK_NULL_HANDLE;
 	bool single_use;
 public:
 	inline VkCommandBuffer get_command_buffer() const { return command_buffer; };

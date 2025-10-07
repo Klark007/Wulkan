@@ -15,12 +15,12 @@ public:
 	void init(const VKW_Device* device, const VKW_Path& path, VkShaderStageFlagBits stage, const std::string& obj_name, const std::string& entry_func = "main", const VkSpecializationInfo* spezialisation_const = NULL);
 	void del() override;
 private:
-	const VKW_Device* device;
+	const VKW_Device* device = nullptr;
 	std::string name;
 	std::string entry;
 
-	VkShaderModule module;
-	VkPipelineShaderStageCreateInfo shader_stage_info;
+	VkShaderModule module = VK_NULL_HANDLE;
+	VkPipelineShaderStageCreateInfo shader_stage_info{};
 public:
 	VkPipelineShaderStageCreateInfo get_info() const { return shader_stage_info; };
 };

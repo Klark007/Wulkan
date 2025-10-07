@@ -14,7 +14,7 @@ void VKW_Buffer::init(const VKW_Device* vkw_device, VkDeviceSize size, VkBufferU
 	buffer_info.sharingMode = sharing_info.mode;
 	if (buffer_info.sharingMode & VK_SHARING_MODE_CONCURRENT) {
 		buffer_info.pQueueFamilyIndices = sharing_info.queue_families.data();
-		buffer_info.queueFamilyIndexCount = sharing_info.queue_families.size();
+		buffer_info.queueFamilyIndexCount = static_cast<uint32_t>(sharing_info.queue_families.size());
 	}
 
 	VmaAllocationCreateInfo alloc_create_info{};

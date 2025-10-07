@@ -13,10 +13,10 @@ public:
 	void reset();
 	void del() override;
 protected:
-	const VKW_Device* device;
+	const VKW_Device* device = nullptr;
 	std::string name;
 private:
-	VkDescriptorPool descriptor_pool;
+	VkDescriptorPool descriptor_pool = VK_NULL_HANDLE;
 	std::vector<VkDescriptorPoolSize> pool_size;
 public:
 	void add_type(VkDescriptorType type, uint32_t count);

@@ -3,7 +3,7 @@
 void VKW_Device::init(VKW_Instance* vkw_instance, const VKW_Surface& surface, std::vector<const char*> device_extensions, Required_Device_Features required_features, const std::string& obj_name, bool build)
 {
 	instance = vkw_instance;
-	name = obj_name;
+	m_name = obj_name;
 	selector = std::make_unique<vkb::PhysicalDeviceSelector>(instance->get_vkb_instance());
 
 	(*selector).set_surface(surface)
@@ -67,7 +67,7 @@ void VKW_Device::select_and_build()
 	auto build_result = builder.build();
 
 	if (!build_result) {
-		throw SetupException(fmt::format("Failed to create device ({}): {}", name, build_result.error().message()), __FILE__, __LINE__);
+		throw SetupException(fmt::format("Failed to create device ({}): {}", m_name, build_result.error().message()), __FILE__, __LINE__);
 	}
 
 	device = build_result.value();
@@ -77,5 +77,5 @@ void VKW_Device::select_and_build()
 	// for faster device level calls; see: https://github.com/zeux/volk?tab=readme-ov-file#optimizing-device-calls
 	volkLoadDevice(device.device);
 
-	name_object((uint64_t)device.device, VK_OBJECT_TYPE_DEVICE, name);
+	name_object((uint64_t)device.device, VK_OBJECT_TYPE_DEVICE, m_name);
 }

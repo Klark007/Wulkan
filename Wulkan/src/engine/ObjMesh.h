@@ -28,7 +28,7 @@ private:
 	std::vector<PBRMaterial> m_materials;
 	
 	VKW_Buffer m_vertex_buffer;
-	VkDeviceAddress m_vertex_buffer_address;
+	VkDeviceAddress m_vertex_buffer_address = 0;
 };
 
 

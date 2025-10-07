@@ -45,13 +45,12 @@
 #include "CameraController.h"
 
 void glfm_mouse_move_callback(GLFWwindow* window, double pos_x, double pos_y);
-void glfw_window_resize_callback(GLFWwindow* window, int width, int height);
 
 struct CommandStructs {
 	VKW_CommandPool graphics_command_pool;
 	VKW_CommandPool transfer_command_pool;
 	VKW_CommandBuffer graphics_command_buffer;
-	TracyVkCtx graphics_queue_tracy_context;
+	TracyVkCtx graphics_queue_tracy_context = nullptr;
 };
 
 struct SyncStructs {
@@ -90,7 +89,7 @@ private:
 	void present();
 	void late_update(); // executed after draw
 
-	bool resize_window = false; // set to true by resize_callback(), will execute resize to avoid issues with resources 
+	bool resize_window = false; // will execute resize to avoid issues with resources 
 
 	void init_logger();
 	void init_glfw();
@@ -212,7 +211,6 @@ public:
 	std::recursive_mutex& get_glfw_input_recursive_mutex() { return glfw_input_mutex; };
 	CameraController& get_camera_controller() { return camera_controller; };
 
-	inline void resize_callback(unsigned int new_x, unsigned int new_y);
 	struct GLFWwindow* get_window() const { return window; };
 };
 

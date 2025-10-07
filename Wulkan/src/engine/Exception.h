@@ -1,7 +1,9 @@
 #pragma once
 
 #include <string>
+#pragma warning(push, 0) // ignore warnings
 #include <fmt/core.h>
+#pragma warning(pop) // stop ignoring warnings
 #include <exception>
 
 // Custom exception for error handling

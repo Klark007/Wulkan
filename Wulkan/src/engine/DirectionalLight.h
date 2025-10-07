@@ -52,7 +52,7 @@ public:
 
 	void del() override;
 private:
-	const VKW_Device* device;
+	const VKW_Device* device = nullptr;
 
 	glm::vec2 dir;
 	glm::vec3 col;

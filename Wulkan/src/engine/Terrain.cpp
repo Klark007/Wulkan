@@ -56,8 +56,8 @@ void Terrain::init(const VKW_Device& device, const VKW_CommandPool& graphics_poo
 		for (uint32_t ix = 0; ix < mesh_res; ix++) {
 			float u = ((float)ix) / mesh_res;
 			float v = ((float)iy) / mesh_res;
-			float pos_x = (u - 0.5) * 2;
-			float pos_y = (v - 0.5) * 2;
+			float pos_x = (u - 0.5f) * 2;
+			float pos_y = (v - 0.5f) * 2;
 
 			// normal is ignored and just computed from the normal map
 			terrain_vertices.push_back({ {pos_x,pos_y,0}, u, {0,0,1}, v, {1,0,0,1} });
@@ -139,7 +139,7 @@ void Terrain::precompute_curvature(const VKW_Device& device, const VKW_CommandPo
 		pipeline.bind(command_buffer);
 		compute_desc_set.bind(command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.get_layout());
 		
-		pipeline.dispatch(command_buffer, std::ceil(curvatue.get_width() / 16.0), std::ceil(curvatue.get_height() / 16.0), 1);
+		pipeline.dispatch(command_buffer, static_cast<uint32_t>(std::ceil(curvatue.get_width() / 16.0)), static_cast<uint32_t>(std::ceil(curvatue.get_height() / 16.0)), 1);
 		
 		Texture::transition_layout(command_buffer, curvatue, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	}

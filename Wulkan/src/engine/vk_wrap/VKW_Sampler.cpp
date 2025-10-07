@@ -42,7 +42,7 @@ void VKW_Sampler::init(const VKW_Device* vkw_device, const std::string& obj_name
 	sampler_info.maxLod = 0;
 
 	sampler_info.compareEnable = compare_enable;
-	sampler_info.compareOp = compare_op;
+	sampler_info.compareOp = m_compare_op;
 
 	VK_CHECK_ET(vkCreateSampler(*device, &sampler_info, VK_NULL_HANDLE, &sampler), RuntimeException, fmt::format("Failed to create texture sampler ({})", name));
 	device->name_object((uint64_t)sampler, VK_OBJECT_TYPE_SAMPLER, name);

@@ -33,14 +33,14 @@ public:
 private:
 	glm::vec3 position;
 
-	float m_yaw;
-	float m_pitch;
+	float m_yaw = 0;
+	float m_pitch = 0;
 
 	unsigned int res_x;
 	unsigned int res_y;
 	float foc_x = -1; // set to invalid values if camera is constructed using fov and not focal length x and y
 	float foc_y = -1;
-	float fov;
+	float fov = 0;
 	float ortho_height;
 	float m_z_near;
 	float m_z_far;

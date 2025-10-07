@@ -47,7 +47,7 @@ public:
 	inline void draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame) override;
 private:
 	Mesh mesh;
-	const VKW_Sampler* texture_sampler;
+	const VKW_Sampler* texture_sampler = nullptr;
 	Texture height_map;
 	Texture albedo;
 	Texture normal_map;

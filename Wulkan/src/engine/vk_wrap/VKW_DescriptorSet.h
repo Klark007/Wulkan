@@ -18,9 +18,9 @@ public:
 	void init(const VKW_Device* device, const std::string& obj_name);
 	void del() override;
 private:
-	const VKW_Device* device;
+	const VKW_Device* device = nullptr;
 	std::string name;
-	VkDescriptorSetLayout layout;
+	VkDescriptorSetLayout layout = VK_NULL_HANDLE;
 
 	std::vector<VkDescriptorSetLayoutBinding> bindings;
 public:
@@ -41,9 +41,9 @@ public:
 	void bind(const VKW_CommandBuffer& command_buffer, VkPipelineBindPoint bind_point, VkPipelineLayout layout, uint32_t set_idx=0) const;
 	void del() override;
 private:
-	const VKW_Device* device;
+	const VKW_Device* device = nullptr;
 	std::string name;
-	const VKW_DescriptorPool* pool;
+	const VKW_DescriptorPool* pool = nullptr;
 	VkDescriptorSet descriptor_set;
 
 	// stores mapping from binding (unique per set) to descriptor type

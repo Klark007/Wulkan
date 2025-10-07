@@ -1,9 +1,10 @@
 #pragma once
 
-#include "fmt/core.h"
-#include <fmt/ranges.h>
-
 #include "Exception.h"
+#pragma warning(push, 0) // ignore warnings
+#include <fmt/ranges.h>
+#pragma warning(pop) // stop ignoring warnings
+
 
 #include <filesystem>
 #include <vector>

@@ -6,10 +6,12 @@
 #include "VKW_Instance.h"
 #include "VKW_Surface.h"
 
+#pragma warning(push, 0) // ignore warnings
 #define VMA_STATIC_VULKAN_FUNCTIONS 0
 #define VMA_DYNAMIC_VULKAN_FUNCTIONS 1
 #define VMA_DEBUG_LOG_FORMAT
 #include "vma/vk_mem_alloc.h"
+#pragma warning(pop) // stop ignoring warnings
 
 struct Required_Device_Features {
 	VkPhysicalDeviceFeatures rf;
@@ -28,7 +30,7 @@ public:
 	void del() override;
 private:
 	VKW_Instance* instance;
-	std::string name;
+	std::string m_name;
 
 	vkb::PhysicalDevice physical_device;
 	vkb::Device device;

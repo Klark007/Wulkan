@@ -20,14 +20,14 @@ public:
 	void map(); // maps buffer into cpu accessible memory and returns pointer to it 
 	void unmap();
 private:
-	const VKW_Device* device;
+	const VKW_Device* device = nullptr;
 	std::string name;
 
-	VmaAllocator allocator;
+	VmaAllocator allocator = VK_NULL_HANDLE;
 
-	VkBuffer buffer;
+	VkBuffer buffer{};
 	size_t length;
-	VmaAllocation allocation; // dont peek inside, treat as opaque
+	VmaAllocation allocation = VK_NULL_HANDLE; // dont peek inside, treat as opaque
 	VkDeviceMemory memory;
 
 	bool mappable;

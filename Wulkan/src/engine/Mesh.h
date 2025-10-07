@@ -24,7 +24,7 @@ struct Vertex {
 class Mesh : public Shape
 {
 public:
-	Mesh();
+	Mesh() = default;
 	void init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices);
 	// can also be initialized without owning the vertex buffer (i.e. shared between multiple meshes)
 	void init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, VkDeviceAddress vert_addr, const std::vector<uint32_t>& indices);
@@ -34,10 +34,10 @@ public:
 	inline void draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame) override;
 protected:
 	std::optional<VKW_Buffer> vertex_buffer;
-	VkDeviceAddress vertex_address;
+	VkDeviceAddress vertex_address{};
 
 	VKW_Buffer index_buffer;
-	uint32_t nr_indices;
+	uint32_t nr_indices = 0;
 public:
 	void set_vertex_address(VkDeviceAddress address) { vertex_address = address; };
 	VkDeviceAddress get_vertex_address() const { return vertex_address; };

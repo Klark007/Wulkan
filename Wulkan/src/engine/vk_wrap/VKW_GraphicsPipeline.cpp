@@ -72,17 +72,17 @@ void VKW_GraphicsPipeline::init(const VKW_Device* vkw_device, const std::string&
 	pipeline_layout_info.pSetLayouts = descriptor_set_layouts.data();
 	pipeline_layout_info.setLayoutCount = static_cast<uint32_t>(descriptor_set_layouts.size());
 
-	VK_CHECK_ET(vkCreatePipelineLayout(*device, &pipeline_layout_info, nullptr, &layout), RuntimeException, fmt::format("Failed to create graphics pipeline layout ({})", name + " layout"));
-	pipeline_info.layout = layout;
+	VK_CHECK_ET(vkCreatePipelineLayout(*device, &pipeline_layout_info, nullptr, &m_layout), RuntimeException, fmt::format("Failed to create graphics pipeline layout ({})", name + " layout"));
+	pipeline_info.layout = m_layout;
 
 	VK_CHECK_ET(vkCreateGraphicsPipelines(*device, VK_NULL_HANDLE, 1, &pipeline_info, VK_NULL_HANDLE, &graphics_pipeline), RuntimeException, fmt::format("Failed to create graphics pipeline ({})", name));
 	device->name_object((uint64_t)graphics_pipeline, VK_OBJECT_TYPE_PIPELINE, name);
-	device->name_object((uint64_t)layout, VK_OBJECT_TYPE_PIPELINE_LAYOUT, name +" layout");
+	device->name_object((uint64_t)m_layout, VK_OBJECT_TYPE_PIPELINE_LAYOUT, name +" layout");
 }
 
 void VKW_GraphicsPipeline::del()
 {
-	VK_DESTROY(layout, vkDestroyPipelineLayout, *device, layout);
+	VK_DESTROY(m_layout, vkDestroyPipelineLayout, *device, m_layout);
 	VK_DESTROY(graphics_pipeline, vkDestroyPipeline, *device, graphics_pipeline);
 }
 
@@ -147,11 +147,11 @@ void VKW_GraphicsPipeline::clear()
 
 	render_extent = {};
 
-	viewport = {};
-	viewport.x = 0.0f;
-	viewport.y = 0.0f;
-	viewport.minDepth = 0.0f;
-	viewport.maxDepth = 1.0f;
+	m_viewport = {};
+	m_viewport.x = 0.0f;
+	m_viewport.y = 0.0f;
+	m_viewport.minDepth = 0.0f;
+	m_viewport.maxDepth = 1.0f;
 
 	scissor = {};
 	scissor.offset = { 0, 0 };
@@ -224,8 +224,8 @@ void VKW_GraphicsPipeline::set_render_size(VkExtent2D extend)
 
 	attachment_state.renderArea.extent = render_extent;
 
-	viewport.width = static_cast<float>(render_extent.width);
-	viewport.height = static_cast<float>(render_extent.height);
+	m_viewport.width = static_cast<float>(render_extent.width);
+	m_viewport.height = static_cast<float>(render_extent.height);
 
 	scissor.extent = render_extent;
 }

@@ -10,7 +10,7 @@ class RenderPass;
 template<typename T, size_t N>
 class MaterialInstance : public VKW_Object {
 public:
-	MaterialInstance();
+	MaterialInstance() = default;
 
 	template<size_t M>
 	void init(const VKW_Device& device, const VKW_DescriptorPool& descriptor_pool, RenderPass<T,M>& render_pass, const std::array<VKW_DescriptorSetLayout, N>& descriptor_layouts, const std::array<uint32_t, N>& set_slots, const std::string& material_name);
@@ -20,18 +20,13 @@ private:
 	std::array<std::array<VKW_DescriptorSet, N>, MAX_FRAMES_IN_FLIGHT> m_descriptor_sets;
 	std::array<uint32_t, N> m_set_slots;
 	VKW_PushConstant<T>* m_push_constant;
-	VkPipelineLayout m_pipeline_layout;
+	VkPipelineLayout m_pipeline_layout = VK_NULL_HANDLE;
 public:
 	// can be bound also when using a different RenderPass is currently bound (i.e. use one Instance for both the normal shading of terrain as well as a depth only pass)
 	// as long as same Pipeline Layout ?
 	void bind(const VKW_CommandBuffer& cmd, uint32_t current_frame, T push_val);
 	VKW_DescriptorSet& get_descriptor_set(size_t frame_idx, size_t set_idx) { return m_descriptor_sets[frame_idx][set_idx]; };
 };
-
-template<typename T, size_t N>
-inline MaterialInstance<T, N>::MaterialInstance()
-	: m_descriptor_sets{}, m_set_slots{}, m_push_constant{ nullptr }, m_pipeline_layout{ VK_NULL_HANDLE }
-{}
 
 template<typename T, size_t N>
 template<size_t M>

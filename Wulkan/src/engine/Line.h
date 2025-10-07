@@ -20,12 +20,12 @@ public:
 protected:
 	std::vector<Vertex> vertices;
 	VKW_Buffer vertex_buffer;
-	VkDeviceAddress vertex_address;
+	VkDeviceAddress vertex_address = 0;
 
 	MaterialInstance<PushConstants, 0> material;
 
 	VKW_Buffer index_buffer;
-	uint32_t nr_indices;
+	uint32_t nr_indices = 0;
 public:
 	// update vertex position. Needs to be the same length as original vertices
 	void update_vertices(const std::vector<glm::vec3>& points);

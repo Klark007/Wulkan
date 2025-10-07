@@ -2,8 +2,11 @@
 #define STBI_FAILURE_USERMSG
 #include "Texture.h"
 
+#pragma warning(push, 0) // ignore warnings
 #define TINYEXR_IMPLEMENTATION
 #include <tinyexr.h>
+#pragma warning(pop) // stop ignoring warnings
+
 
 void Texture::init(const VKW_Device* vkw_device, unsigned int w, unsigned int h, VkFormat f, VkImageUsageFlags usage, SharingInfo sharing_info, const std::string& obj_name, VkImageCreateFlags flags, uint32_t array_layers)
 {
@@ -37,7 +40,7 @@ void Texture::init(const VKW_Device* vkw_device, unsigned int w, unsigned int h,
 	image_info.sharingMode = sharing_info.mode;
 	if (image_info.sharingMode & VK_SHARING_MODE_CONCURRENT) {
 		image_info.pQueueFamilyIndices = sharing_info.queue_families.data();
-		image_info.queueFamilyIndexCount = sharing_info.queue_families.size();
+		image_info.queueFamilyIndexCount = static_cast<uint32_t>(sharing_info.queue_families.size());
 	}
 
 	VmaAllocationCreateInfo alloc_create_info{};
@@ -283,7 +286,7 @@ void Texture::copy(const VKW_CommandBuffer& command_buffer, VkImage src_texture,
 	blit_region.dstOffsets[1].y = dst_size.height;
 	blit_region.dstOffsets[1].z = 1;
 
-	blit_region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	blit_region.srcSubresource.aspectMask = aspect;
 	blit_region.srcSubresource.baseArrayLayer = 0;
 	blit_region.srcSubresource.layerCount = 1;
 	blit_region.srcSubresource.mipLevel = 0;
