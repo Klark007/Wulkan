@@ -5,7 +5,7 @@ template<typename T, size_t N>
 class RenderPass : public VKW_Object
 {
 public:
-	RenderPass() = default;
+	RenderPass();
 	friend MaterialInstance;
 
 	// init with initalized pipeline
@@ -26,6 +26,11 @@ public:
 	VkPipelineLayout get_pipeline_layout() const { return m_pipeline.get_layout(); };
 };
 
+
+template<typename T, size_t N>
+inline RenderPass<T, N>::RenderPass()
+	: m_pipeline{}, m_layouts{}, m_push_constant{}
+{}
 
 template<typename T, size_t N>
 void RenderPass<T, N>::init(const VKW_GraphicsPipeline& pipeline, const std::array<VKW_DescriptorSetLayout, N>& layouts, const VKW_PushConstant<T>& push_constant)

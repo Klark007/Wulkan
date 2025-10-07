@@ -1,5 +1,9 @@
 #include "Mesh.h"
 
+Mesh::Mesh()
+	: vertex_buffer{}, vertex_address{}, index_buffer{}, nr_indices{0}
+{ }
+
 void Mesh::init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices)
 {
 	

@@ -30,7 +30,7 @@ public:
 
 template<typename T, size_t N>
 inline MaterialInstance<T, N>::MaterialInstance()
-	: m_push_constant{ nullptr }, m_pipeline_layout{ VK_NULL_HANDLE }
+	: m_descriptor_sets{}, m_set_slots{}, m_push_constant{ nullptr }, m_pipeline_layout{ VK_NULL_HANDLE }
 {}
 
 template<typename T, size_t N>

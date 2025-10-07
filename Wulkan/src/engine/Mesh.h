@@ -24,7 +24,7 @@ struct Vertex {
 class Mesh : public Shape
 {
 public:
-	Mesh() = default;
+	Mesh();
 	void init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices);
 	// can also be initialized without owning the vertex buffer (i.e. shared between multiple meshes)
 	void init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, VkDeviceAddress vert_addr, const std::vector<uint32_t>& indices);

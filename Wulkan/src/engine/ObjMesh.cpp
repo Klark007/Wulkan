@@ -126,7 +126,7 @@ void ObjMesh::init(const VKW_Device& device, const VKW_CommandPool& graphics_poo
 		assert((mat.specular_texname == "") && "Cant support specular textures yet");
 		assert((mat.metallic_texname == "") && "Cant support metallic textures yet");
 		//assert(mat.ambient_texname == "" && "Cant support ambient textures yet");
-		assert(mat.emissive_texname == "b" && "Cant support emission textures yet");
+		assert(mat.emissive_texname == "" && "Cant support emission textures yet");
 
 		PBRUniform uniform{
 			glm::pow(glm::vec3{ mat.diffuse[0], mat.diffuse[1], mat.diffuse[2] }, glm::vec3{2.2f}), // gamma correction
