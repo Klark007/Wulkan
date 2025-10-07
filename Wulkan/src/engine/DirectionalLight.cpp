@@ -185,8 +185,8 @@ void DirectionalLight::set_uniforms(const Camera& camera, int nr_current_cascade
 		float S_y = 2 / (max_v_prime.y - min_v_prime.y);
 		C[0][0] = S_x;
 		C[1][1] = S_y;
-		C[3][0] = -0.5 * (max_v_prime.x + min_v_prime.x) * S_x;
-		C[3][1] = -0.5 * (max_v_prime.y + min_v_prime.y) * S_y;
+		C[3][0] = -0.5f * (max_v_prime.x + min_v_prime.x) * S_x;
+		C[3][1] = -0.5f * (max_v_prime.y + min_v_prime.y) * S_y;
 		
 
 		glm::mat4 ortho_proj = C * P_z;

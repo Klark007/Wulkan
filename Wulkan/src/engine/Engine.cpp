@@ -141,7 +141,7 @@ void Engine::update()
 		ZoneScopedN("Meshes updates");
 
 		meshes[0].set_model_matrix(
-			glm::translate(glm::scale(glm::mat4(1), glm::vec3(0.8)), glm::vec3(10, 0, 25 + cos(glfwGetTime() / 2) / 3))
+			glm::translate(glm::scale(glm::mat4(1), glm::vec3(0.8f)), glm::vec3(10, 0, 25 + cos(glfwGetTime() / 2) / 3))
 		);
 
 		meshes[1].set_model_matrix(
@@ -153,7 +153,7 @@ void Engine::update()
 		);
 
 		meshes[3].set_model_matrix(
-			glm::scale(glm::translate(glm::mat4(1), glm::vec3(0, 0, 25)), glm::vec3(0.2))
+			glm::scale(glm::translate(glm::mat4(1), glm::vec3(0, 0, 25)), glm::vec3(0.2f))
 		);
 	}
 
@@ -182,7 +182,7 @@ void Engine::draw()
 				TracyVkZone(get_current_tracy_context(), shadow_cmd, "Shadow [Depth Only]");
 				shadow_cmd.begin_debug_zone("Shadow [Depth Only]");
 				
-				for (uint32_t i = 0; i < nr_cascades; i++) {
+				for (int i = 0; i < nr_cascades; i++) {
 					terrain_depth_render_pass.begin(
 						shadow_cmd,
 						directional_light.get_texture().get_extent(),
@@ -533,8 +533,8 @@ void Engine::init_data()
 		1024*4,             // resolution
 		1024*4,
 		40,                 // height of orthographic projection
-		0.1,                // near
-		50.0                // far plane
+		0.1f,                // near
+		50.0f                // far plane
  	);
 	
 	// can toggle debug drawings of cascade frustums
