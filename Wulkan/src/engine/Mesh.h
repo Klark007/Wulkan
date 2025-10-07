@@ -43,7 +43,7 @@ public:
 	VkDeviceAddress get_vertex_address() const { return vertex_address; };
 };
 
-inline void Mesh::draw(const VKW_CommandBuffer& command_buffer, uint32_t _current_frame)
+inline void Mesh::draw(const VKW_CommandBuffer& command_buffer, uint32_t)
 {
 	// bind index buffer
 	vkCmdBindIndexBuffer(command_buffer, index_buffer, 0, VK_INDEX_TYPE_UINT32);

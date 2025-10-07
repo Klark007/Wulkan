@@ -10,7 +10,7 @@ class RenderPass;
 template<typename T, size_t N>
 class MaterialInstance : public VKW_Object {
 public:
-	MaterialInstance() = default;
+	MaterialInstance();
 
 	template<size_t M>
 	void init(const VKW_Device& device, const VKW_DescriptorPool& descriptor_pool, RenderPass<T,M>& render_pass, const std::array<VKW_DescriptorSetLayout, N>& descriptor_layouts, const std::array<uint32_t, N>& set_slots, const std::string& material_name);
@@ -27,6 +27,11 @@ public:
 	void bind(const VKW_CommandBuffer& cmd, uint32_t current_frame, T push_val);
 	VKW_DescriptorSet& get_descriptor_set(size_t frame_idx, size_t set_idx) { return m_descriptor_sets[frame_idx][set_idx]; };
 };
+
+template<typename T, size_t N>
+inline MaterialInstance<T, N>::MaterialInstance()
+	: m_push_constant{ nullptr }, m_pipeline_layout{ VK_NULL_HANDLE }
+{}
 
 template<typename T, size_t N>
 template<size_t M>

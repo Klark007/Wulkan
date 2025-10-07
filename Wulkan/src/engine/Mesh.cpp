@@ -31,7 +31,7 @@ void Mesh::init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, 
 	index_buffer.copy(&transfer_pool, index_staging_buffer);
 	index_staging_buffer.del();
 
-	nr_indices = indices.size();
+	nr_indices = static_cast<uint32_t>(indices.size());
 }
 
 void Mesh::del()
