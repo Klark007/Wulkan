@@ -30,6 +30,8 @@
 * PBR Shader [~]
 * Move textures (and maybe uniform buffers) into Material class instances [X] 
 
+* Automatically detect if texture requires alpha channel [ ] 
+* Completly transparent texture support (discard; also in depth) [~] 
 * Emission / Ambient [ ] 
 * Support more textures [ ] 
 * Normal mapping [ ] 

@@ -44,7 +44,7 @@ void PBRMaterial::init(const VKW_Device& device, const VKW_CommandPool& graphics
 				&device,
 				&graphics_pool,
 				diffuse_p,
-				Texture_Type::Tex_RGB,
+				Texture_Type::Tex_RGBA,
 				fmt::format("{} diffuse texture", material_name)
 			)
 		};

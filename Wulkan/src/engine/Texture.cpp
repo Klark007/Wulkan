@@ -5,6 +5,7 @@
 #define TINYEXR_IMPLEMENTATION
 #include <tinyexr.h>
 
+#include "spdlog/spdlog.h"
 
 void Texture::init(const VKW_Device* vkw_device, unsigned int w, unsigned int h, VkFormat f, VkImageUsageFlags usage, SharingInfo sharing_info, const std::string& obj_name, VkImageCreateFlags flags, uint32_t array_layers)
 {
@@ -334,6 +335,10 @@ stbi_uc* load_image(const VKW_Path& path, int& width, int& height, int& channels
 
 
 Texture create_texture_from_path(const VKW_Device* device, const VKW_CommandPool* command_pool, const VKW_Path& path, Texture_Type type, const std::string& name) {
+	if (path.string().find("sponza_thorn_diff") != std::string::npos) {
+		spdlog::info("FOUND");
+	}
+
 	VkFormat format = Texture::find_format(*device, type);
 
 	bool is_exr = path.extension().string() == ".exr";
