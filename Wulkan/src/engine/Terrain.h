@@ -35,7 +35,7 @@ class Terrain : public Shape
 {
 public:
 	Terrain() = default;
-	void init(const VKW_Device& device, const VKW_CommandPool& graphics_pool, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, const VKW_Sampler* sampler, RenderPass<TerrainPushConstants, 3>& render_pass, const VKW_Path& height_path, const VKW_Path& albedo_path, const VKW_Path& normal_path, uint32_t mesh_res);
+	void init(const VKW_Device& device, const VKW_CommandPool& graphics_pool, const VKW_CommandPool& transfer_pool, VKW_DescriptorPool& descriptor_pool, const VKW_Sampler* sampler, RenderPass<TerrainPushConstants, 3>& render_pass, const VKW_Path& height_path, const VKW_Path& albedo_path, const VKW_Path& normal_path, uint32_t mesh_res);
 	void set_descriptor_bindings();
 	void del() override;
 
@@ -54,7 +54,7 @@ private:
 
 	Texture curvatue;
 	// precomputes the curvature from the height map using a compute shader
-	void precompute_curvature(const VKW_Device& device, const VKW_CommandPool& graphics_pool, const VKW_DescriptorPool& descriptor_pool);
+	void precompute_curvature(const VKW_Device& device, const VKW_CommandPool& graphics_pool, VKW_DescriptorPool& descriptor_pool);
 
 	float tesselation_strength;
 	float max_tesselation;

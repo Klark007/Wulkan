@@ -18,7 +18,7 @@ class EnvironmentMap : public Shape
 {
 public:
 	EnvironmentMap() = default;
-	void init(const VKW_Device& device, const VKW_CommandPool& graphics_pool, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, RenderPass<EnvironmentMapPushConstants, 2>& render_pass, const VKW_Path& path);
+	void init(const VKW_Device& device, const VKW_CommandPool& graphics_pool, const VKW_CommandPool& transfer_pool, VKW_DescriptorPool& descriptor_pool, RenderPass<EnvironmentMapPushConstants, 2>& render_pass, const VKW_Path& path);
 	void set_descriptor_bindings(const VKW_Sampler& texture_sampler);
 	void del() override;
 

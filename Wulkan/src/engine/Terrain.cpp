@@ -3,7 +3,7 @@
 
 #include "DirectionalLight.h"
 
-void Terrain::init(const VKW_Device& device, const VKW_CommandPool& graphics_pool, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, const VKW_Sampler* sampler, RenderPass<TerrainPushConstants, 3>& render_pass, const VKW_Path& height_path, const VKW_Path& albedo_path, const VKW_Path& normal_path, uint32_t mesh_res)
+void Terrain::init(const VKW_Device& device, const VKW_CommandPool& graphics_pool, const VKW_CommandPool& transfer_pool, VKW_DescriptorPool& descriptor_pool, const VKW_Sampler* sampler, RenderPass<TerrainPushConstants, 3>& render_pass, const VKW_Path& height_path, const VKW_Path& albedo_path, const VKW_Path& normal_path, uint32_t mesh_res)
 {
 	material.init(device, descriptor_pool, render_pass, { Terrain::descriptor_set_layout }, { 2 }, "Terrain material");
 	texture_sampler = sampler;
@@ -89,7 +89,7 @@ void Terrain::set_descriptor_bindings()
 	}
 }
 
-void Terrain::precompute_curvature(const VKW_Device& device, const VKW_CommandPool& graphics_pool, const VKW_DescriptorPool& descriptor_pool)
+void Terrain::precompute_curvature(const VKW_Device& device, const VKW_CommandPool& graphics_pool, VKW_DescriptorPool& descriptor_pool)
 {	
 	VKW_DescriptorSetLayout curvature_descriptor_layout{};
 

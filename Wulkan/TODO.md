@@ -7,9 +7,9 @@
 * Shader printf suppport [X] 
 * Separate sets for things bound at different freq (also allocate only if we need a unique one per object) [X]
 * std::path instead of std::strings for path's [X] 
+* Descriptor Pool improvements [X] 
 
 * Update glfw due to https://github.com/glfw/glfw/issues/2684 or switch to SDL [ ]
-* Descriptor Pool improvements [ ] 
 * m_ convention[ ] 
 * static_cast and not c style casts [ ] 
 * First frame analysis [ ] 
@@ -33,6 +33,7 @@
 * Emission / Ambient [ ] 
 * Support more textures [ ] 
 * Normal mapping [ ] 
+* Texture mipmaps [ ] 
 * Draw Indirect [ ] 
 * Support more parameters [ ]
 * Fix assumption that per model only one pipeline [ ]

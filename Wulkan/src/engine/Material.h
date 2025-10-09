@@ -13,7 +13,7 @@ public:
 	MaterialInstance() = default;
 
 	template<size_t M>
-	void init(const VKW_Device& device, const VKW_DescriptorPool& descriptor_pool, RenderPass<T,M>& render_pass, const std::array<VKW_DescriptorSetLayout, N>& descriptor_layouts, const std::array<uint32_t, N>& set_slots, const std::string& material_name);
+	void init(const VKW_Device& device, VKW_DescriptorPool& descriptor_pool, RenderPass<T,M>& render_pass, const std::array<VKW_DescriptorSetLayout, N>& descriptor_layouts, const std::array<uint32_t, N>& set_slots, const std::string& material_name);
 
 	void del() override;
 private:
@@ -30,7 +30,7 @@ public:
 
 template<typename T, size_t N>
 template<size_t M>
-inline void MaterialInstance<T, N>::init(const VKW_Device& device, const VKW_DescriptorPool& descriptor_pool, RenderPass<T, M>& render_pass, const std::array<VKW_DescriptorSetLayout, N>& descriptor_layouts, const std::array<uint32_t, N>& set_slots, const std::string& material_name)
+inline void MaterialInstance<T, N>::init(const VKW_Device& device, VKW_DescriptorPool& descriptor_pool, RenderPass<T, M>& render_pass, const std::array<VKW_DescriptorSetLayout, N>& descriptor_layouts, const std::array<uint32_t, N>& set_slots, const std::string& material_name)
 {
 	m_set_slots = set_slots;
 

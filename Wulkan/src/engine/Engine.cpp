@@ -153,7 +153,12 @@ void Engine::update()
 		);
 
 		meshes[3].set_model_matrix(
-			glm::scale(glm::translate(glm::mat4(1), glm::vec3(0, 0, 25)), glm::vec3(0.2f))
+			glm::translate(
+				glm::scale(
+					glm::rotate(glm::mat4(1), static_cast<float>(M_PI/2), glm::vec3(1,0,0)),
+				glm::vec3(0.01f)),
+				glm::vec3(0, 20 * 100,0)
+			)
 		);
 	}
 
@@ -597,8 +602,8 @@ void Engine::init_data()
 	meshes[2].set_descriptor_bindings(texture_not_found, linear_texture_sampler);
 	cleanup_queue.add(&meshes[2]);
 
-	meshes[3].init(device, get_current_graphics_pool(), get_current_transfer_pool(), descriptor_pool, pbr_render_pass, "models/mitsuba_texture.obj");
-	//meshes[3].init(device, get_current_graphics_pool(), get_current_transfer_pool(), descriptor_pool, pbr_render_pass, "models/sponza/sponza.obj");
+	//meshes[3].init(device, get_current_graphics_pool(), get_current_transfer_pool(), dyn_descriptor_pool, pbr_render_pass, "models/mitsuba_texture.obj");
+	meshes[3].init(device, get_current_graphics_pool(), get_current_transfer_pool(), dyn_descriptor_pool, pbr_render_pass, "models/sponza/sponza.obj");
 	meshes[3].set_descriptor_bindings(texture_not_found, linear_texture_sampler);
 	cleanup_queue.add(&meshes[3]);
 }
@@ -668,6 +673,17 @@ void Engine::create_descriptor_set_pool()
 
 	descriptor_pool.init(&device, MAX_FRAMES_IN_FLIGHT*(5 + 12*4 + 2 * MAX_CASCADE_COUNT) + 1, "General descriptor pool");
 	cleanup_queue.add(&descriptor_pool);
+
+	dyn_descriptor_pool.add_layout(view_desc_set_layout, MAX_FRAMES_IN_FLIGHT );
+	dyn_descriptor_pool.add_layout(shadow_desc_set_layout, MAX_FRAMES_IN_FLIGHT);
+	dyn_descriptor_pool.add_layout(terrain_desc_set_layout, MAX_FRAMES_IN_FLIGHT);
+	dyn_descriptor_pool.add_layout(environment_desc_set_layout, MAX_FRAMES_IN_FLIGHT);
+	dyn_descriptor_pool.add_layout(pbr_desc_set_layout, 4 * 4 * MAX_FRAMES_IN_FLIGHT);
+	dyn_descriptor_pool.add_type(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1); // precompute curvature
+	dyn_descriptor_pool.add_type(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1); // precompute curvature
+
+	dyn_descriptor_pool.init(&device, MAX_FRAMES_IN_FLIGHT * (21), "General dynamic descriptor pool");
+	cleanup_queue.add(&dyn_descriptor_pool);
 }
 
 void Engine::create_uniform_buffers()

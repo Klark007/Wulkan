@@ -57,7 +57,7 @@ void DirectionalLight::init(const VKW_Device* vkw_device, const std::array<VKW_C
 	}
 }
 
-void DirectionalLight::init_debug_lines(const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, RenderPass<PushConstants, 1>& render_pass)
+void DirectionalLight::init_debug_lines(const VKW_CommandPool& transfer_pool, VKW_DescriptorPool& descriptor_pool, RenderPass<PushConstants, 1>& render_pass)
 {
 	if (!cast_shadows) {
 		throw SetupException("Tried to initialize debug lines of shadow casting for a directional light not casting shadows", __FILE__, __LINE__);

@@ -161,6 +161,7 @@ private:
 	VKW_DescriptorPool imgui_descriptor_pool;
 
 	VKW_DescriptorPool descriptor_pool;
+	VKW_DynamicDescriptorPool dyn_descriptor_pool;
 
 	std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT> uniform_buffers;
 
