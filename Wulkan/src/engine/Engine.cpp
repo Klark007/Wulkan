@@ -184,53 +184,61 @@ void Engine::draw()
 		{
 			// draw using depth only pipelines
 			{
+
 				TracyVkZone(get_current_tracy_context(), shadow_cmd, "Shadow [Depth Only]");
 				shadow_cmd.begin_debug_zone("Shadow [Depth Only]");
 				
 				for (int i = 0; i < nr_cascades; i++) {
-					terrain_depth_render_pass.begin(
-						shadow_cmd,
-						directional_light.get_texture().get_extent(),
-						VK_NULL_HANDLE, // don't attach a color image view
-						directional_light.get_texture().get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D, i, 1),
-						false,                      // don't clear color
-						{ 1,0,1,1 },                // ignore
-						true,                       // clear depth
-						1.0,		                // clear to far value
-						gui_input.depth_bias,       // const depth bias
-						gui_input.slope_depth_bias  // slope depth bias
-					);
+					{
+						TracyVkZone(get_current_tracy_context(), shadow_cmd, "Terrain Depth");
 
-					view_descriptor_sets[current_frame].bind(shadow_cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, terrain_depth_render_pass.get_pipeline_layout(), 0);
-					shadow_descriptor_sets[current_frame].bind(shadow_cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, terrain_depth_render_pass.get_pipeline_layout(), 1);
+						terrain_depth_render_pass.begin(
+							shadow_cmd,
+							directional_light.get_texture().get_extent(),
+							VK_NULL_HANDLE, // don't attach a color image view
+							directional_light.get_texture().get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D, i, 1),
+							false,                      // don't clear color
+							{ 1,0,1,1 },                // ignore
+							true,                       // clear depth
+							1.0,		                // clear to far value
+							gui_input.depth_bias,       // const depth bias
+							gui_input.slope_depth_bias  // slope depth bias
+						);
 
-					terrain.set_cascade_idx(i);
-					terrain.draw(shadow_cmd, current_frame);
+						view_descriptor_sets[current_frame].bind(shadow_cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, terrain_depth_render_pass.get_pipeline_layout(), 0);
+						shadow_descriptor_sets[current_frame].bind(shadow_cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, terrain_depth_render_pass.get_pipeline_layout(), 1);
+
+						terrain.set_cascade_idx(i);
+						terrain.draw(shadow_cmd, current_frame);
 					
-					terrain_depth_render_pass.end(shadow_cmd);
-
-					pbr_depth_pass.begin(
-						shadow_cmd,
-						directional_light.get_texture().get_extent(),
-						VK_NULL_HANDLE, // don't attach a color image view
-						directional_light.get_texture().get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D, i, 1),
-						false,                      // don't clear color
-						{ 1,0,1,1 },                // ignore
-						false,                      // clear depth
-						0.0,		                // ignore
-						gui_input.depth_bias,       // const depth bias
-						gui_input.slope_depth_bias  // slope depth bias
-					);
-					view_descriptor_sets[current_frame].bind(shadow_cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pbr_depth_pass.get_pipeline_layout(), 0);
-					shadow_descriptor_sets[current_frame].bind(shadow_cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pbr_depth_pass.get_pipeline_layout(), 1);
-
-					for (size_t j = 0; j < 4; j++) {
-						meshes[j].set_cascade_idx(i);
-						meshes[j].draw(shadow_cmd, current_frame);
+						terrain_depth_render_pass.end(shadow_cmd);
 					}
 
-					pbr_depth_pass.end(shadow_cmd);
+					{
+						TracyVkZone(get_current_tracy_context(), shadow_cmd, "PBR Depth");
 					
+						pbr_depth_pass.begin(
+							shadow_cmd,
+							directional_light.get_texture().get_extent(),
+							VK_NULL_HANDLE, // don't attach a color image view
+							directional_light.get_texture().get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D, i, 1),
+							false,                      // don't clear color
+							{ 1,0,1,1 },                // ignore
+							false,                      // clear depth
+							0.0,		                // ignore
+							gui_input.depth_bias,       // const depth bias
+							gui_input.slope_depth_bias  // slope depth bias
+						);
+						view_descriptor_sets[current_frame].bind(shadow_cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pbr_depth_pass.get_pipeline_layout(), 0);
+						shadow_descriptor_sets[current_frame].bind(shadow_cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pbr_depth_pass.get_pipeline_layout(), 1);
+
+						for (size_t j = 0; j < 4; j++) {
+							meshes[j].set_cascade_idx(i);
+							meshes[j].draw(shadow_cmd, current_frame);
+						}
+
+						pbr_depth_pass.end(shadow_cmd);
+					}
 				}
 
 				shadow_cmd.end_debug_zone();
