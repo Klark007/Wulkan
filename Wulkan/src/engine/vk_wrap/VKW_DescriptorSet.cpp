@@ -30,22 +30,20 @@ void VKW_DescriptorSetLayout::add_binding(uint32_t binding_slot, VkDescriptorTyp
 	bindings.push_back(binding);
 }
 
-void VKW_DescriptorSet::init(const VKW_Device* vkw_device, const VKW_DescriptorPool* vkw_pool, VKW_DescriptorSetLayout layout, const std::string& obj_name)
+void VKW_DescriptorSet::init(const VKW_Device* vkw_device, VKW_DescriptorPool* vkw_pool, const VKW_DescriptorSetLayout& layout, const std::string& obj_name)
 {
 	device = vkw_device;
 	name = obj_name;
-	pool = vkw_pool;
 
 	VkDescriptorSetAllocateInfo set_info{};
 	set_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-	set_info.descriptorPool = *pool;
 
 	VkDescriptorSetLayout desc_layout = layout;
 	set_info.pSetLayouts = &desc_layout;
 
 	set_info.descriptorSetCount = 1;
 
-	VK_CHECK_ET(vkAllocateDescriptorSets(*device, &set_info, &descriptor_set), RuntimeException, fmt::format("Failed to allocate descriptor set", name));
+	pool = vkw_pool->allocate_descriptor_set(descriptor_set, set_info, name);
 
 	for (const VkDescriptorSetLayoutBinding& binding : layout.get_bindings()) {
 		binding_types[binding.binding] = binding.descriptorType;
@@ -59,7 +57,7 @@ void VKW_DescriptorSet::bind(const VKW_CommandBuffer& command_buffer, VkPipeline
 
 void VKW_DescriptorSet::del()
 {
-	VK_DESTROY_FROM(descriptor_set, vkFreeDescriptorSets, *device, *pool, 1, &descriptor_set);
+	VK_DESTROY_FROM(descriptor_set, vkFreeDescriptorSets, *device, pool, 1, &descriptor_set);
 }
 
 void VKW_DescriptorSet::update(uint32_t binding, const VKW_Buffer& buffer) const

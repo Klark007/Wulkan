@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Material.h"
+#include "Path.h"
 #include "Renderpass.h"
 #include "Texture.h"
 
@@ -17,12 +18,11 @@ struct PBRUniform {
 };
 
 constexpr size_t PBR_MAT_DESC_SET_COUNT = 3;
-
-class PBRMaterial : public MaterialInstance< PushConstants, PBR_MAT_DESC_SET_COUNT>{
+class PBRMaterial : public MaterialInstance< PushConstants, 1>{
 public:
 	PBRMaterial() = default;
 
-	void init(const VKW_Device& device, const VKW_DescriptorPool& descriptor_pool, RenderPass<PushConstants, PBR_MAT_DESC_SET_COUNT>& render_pass, const std::string& material_name, const VKW_CommandPool& graphics_pool, const PBRUniform& uniform, const std::string& diffuse_path);
+	void init(const VKW_Device& device, const VKW_CommandPool& graphics_pool, VKW_DescriptorPool& descriptor_pool,  RenderPass<PushConstants, PBR_MAT_DESC_SET_COUNT>& render_pass, const std::array<VKW_DescriptorSetLayout, 1>& descriptor_layouts, const std::array<uint32_t, 1>& set_slots, const PBRUniform& uniform, const VKW_Path& parent_path, const VKW_Path& diffuse_path, const std::string& material_name);
 
 	void del() override;
 private:

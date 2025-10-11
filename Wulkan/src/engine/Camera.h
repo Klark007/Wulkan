@@ -23,9 +23,9 @@ public:
 
 	inline void set_aspect_ratio(unsigned int r_x, unsigned int r_y);
 	inline void set_virtual_camera_enabled(bool enabled);
-	inline void add_yaw(float d_yaw) { set_yaw(yaw + d_yaw); };
-	inline void add_pitch(float d_pitch) { set_pitch(pitch + d_pitch); };
-	inline void set_yaw(float yaw) { this->yaw = yaw; };
+	inline void add_yaw(float d_yaw) { set_yaw(m_yaw + d_yaw); };
+	inline void add_pitch(float d_pitch) { set_pitch(m_pitch + d_pitch); };
+	inline void set_yaw(float yaw) { this->m_yaw = yaw; };
 	inline void set_pitch(float pitch);
 	inline void set_near_plane(float m_near) { m_z_near = m_near; };
 	inline void set_far_plane(float m_far) { m_z_far = m_far; };
@@ -33,14 +33,14 @@ public:
 private:
 	glm::vec3 position;
 
-	float yaw;
-	float pitch;
+	float m_yaw = 0;
+	float m_pitch = 0;
 
 	unsigned int res_x;
 	unsigned int res_y;
 	float foc_x = -1; // set to invalid values if camera is constructed using fov and not focal length x and y
 	float foc_y = -1;
-	float fov;
+	float fov = 0;
 	float ortho_height;
 	float m_z_near;
 	float m_z_far;
@@ -53,6 +53,7 @@ public:
 	inline glm::mat4 generate_view_mat_LHS() const;
 	inline glm::mat4 generate_virtual_view_mat() const;
 	inline glm::mat4 generate_projection_mat() const;
+	// ortho_height (scale how big projection plane is) is default initialized to zero
 	inline glm::mat4 generate_ortho_mat() const;
 	inline glm::vec3 get_pos() const { return position; };
 	inline glm::vec3 get_des() const { return position + get_dir(); };
@@ -61,9 +62,9 @@ public:
 	inline float get_focal_len_x() const;
 	inline float get_focal_len_y() const;
 
-	inline float get_yaw() const { return yaw; };
-	inline float get_pitch() const { return pitch; };
-	inline float get_aspect_ratio() const { return (float)res_x / res_y; };
+	inline float get_yaw() const { return m_yaw; };
+	inline float get_pitch() const { return m_pitch; };
+	inline float get_aspect_ratio() const { return static_cast<float>(res_x) / static_cast<float>(res_y); };
 	inline unsigned int get_resolution_x() const { return res_x; };
 	inline unsigned int get_resolution_y() const { return res_y; };
 
@@ -74,12 +75,12 @@ public:
 	inline float linearize_depth(float d) const;
 };
 
-inline void Camera::set_dir(glm::vec3 dir)
+void Camera::set_dir(glm::vec3 dir)
 {
 	dir = glm::normalize(dir);
 
-	yaw = atan2(dir.y, dir.x);
-	pitch = asin(dir.z);
+	m_yaw = atan2(dir.y, dir.x);
+	m_pitch = asin(dir.z);
 }
 
 inline void Camera::set_aspect_ratio(unsigned int r_x, unsigned int r_y)
@@ -99,8 +100,8 @@ inline void Camera::set_virtual_camera_enabled(bool enabled)
 inline void Camera::set_pitch(float pitch)
 {
 	// limit pitch
-	this->pitch = std::fmaxf(pitch, (float)(-M_PI_2 + 1e-5));
-	this->pitch = std::fminf(this->pitch, (float)(M_PI_2 - 1e-5));
+	this->m_pitch = std::fmaxf(pitch, (float)(-M_PI_2 + 1e-5));
+	this->m_pitch = std::fminf(this->m_pitch, (float)(M_PI_2 - 1e-5));
 }
 
 inline glm::mat4 Camera::generate_view_mat() const
@@ -139,9 +140,9 @@ inline glm::vec3 Camera::get_dir() const
 {
 	glm::vec3 dir;
 
-	dir.x = (float)(cos(yaw) * cos(pitch));
-	dir.y = (float)(sin(yaw) * cos(pitch));
-	dir.z = (float)sin(pitch);
+	dir.x = (float)(cos(m_yaw) * cos(m_pitch));
+	dir.y = (float)(sin(m_yaw) * cos(m_pitch));
+	dir.z = (float)sin(m_pitch);
 
 	return dir;
 }
@@ -151,10 +152,10 @@ inline glm::vec3 Camera::get_up() const
 {
 	glm::vec3 up;
 
-	float up_pitch = pitch + (float)M_PI_2;
+	float up_pitch = m_pitch + (float)M_PI_2;
 
-	up.x = (float)(cos(yaw) * cos(up_pitch));
-	up.y = (float)(sin(yaw) * cos(up_pitch));
+	up.x = (float)(cos(m_yaw) * cos(up_pitch));
+	up.y = (float)(sin(m_yaw) * cos(up_pitch));
 	up.z = (float)sin(up_pitch);
 
 	return up;

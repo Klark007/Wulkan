@@ -35,8 +35,8 @@ class Terrain : public Shape
 {
 public:
 	Terrain() = default;
-	void init(const VKW_Device& device, const VKW_CommandPool& graphics_pool, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, const VKW_Sampler* sampler, RenderPass<TerrainPushConstants, 3>& render_pass, const VKW_Path& height_path, const VKW_Path& albedo_path, const VKW_Path& normal_path, uint32_t mesh_res);
-	void set_descriptor_bindings(const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& general_ubo, const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& shadow_map_ubo, Texture& shadow_map, const VKW_Sampler& shadow_map_sampler, const VKW_Sampler& shadow_map_gather_sampler);
+	void init(const VKW_Device& device, const VKW_CommandPool& graphics_pool, const VKW_CommandPool& transfer_pool, VKW_DescriptorPool& descriptor_pool, const VKW_Sampler* sampler, RenderPass<TerrainPushConstants, 3>& render_pass, const VKW_Path& height_path, const VKW_Path& albedo_path, const VKW_Path& normal_path, uint32_t mesh_res);
+	void set_descriptor_bindings();
 	void del() override;
 
 	// creates singleton render pass, needs to be deleted by caller of function
@@ -47,14 +47,14 @@ public:
 	inline void draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame) override;
 private:
 	Mesh mesh;
-	const VKW_Sampler* texture_sampler;
+	const VKW_Sampler* texture_sampler = nullptr;
 	Texture height_map;
 	Texture albedo;
 	Texture normal_map;
 
 	Texture curvatue;
 	// precomputes the curvature from the height map using a compute shader
-	void precompute_curvature(const VKW_Device& device, const VKW_CommandPool& graphics_pool, const VKW_DescriptorPool& descriptor_pool);
+	void precompute_curvature(const VKW_Device& device, const VKW_CommandPool& graphics_pool, VKW_DescriptorPool& descriptor_pool);
 
 	float tesselation_strength;
 	float max_tesselation;
@@ -62,7 +62,8 @@ private:
 
 	TerrainVisualizationMode visualization_mode;
 
-	MaterialInstance<TerrainPushConstants, 3> material;
+	inline static VKW_DescriptorSetLayout descriptor_set_layout;
+	MaterialInstance<TerrainPushConstants, 1> material;
 public:
 	inline void set_tesselation_strength(float strength) { tesselation_strength = strength; }; // multiplicative factor of the tesselation level computed
 	inline void set_max_tesselation(float max) { max_tesselation = max; }; // maximum tesselation level

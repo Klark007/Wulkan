@@ -3,7 +3,9 @@
 #include "common.h"
 
 #include "Path.h"
+
 #include <stb_image.h>
+
 #include "vk_wrap/VKW_Object.h"
 
 #include "vk_wrap/VKW_Device.h"
@@ -36,10 +38,10 @@ public:
 	void del() override;
 
 private:
-	const VKW_Device* device;
+	const VKW_Device* device = nullptr;
 	std::string name;
-	VmaAllocator allocator;
-	VmaAllocation allocation;
+	VmaAllocator allocator = VK_NULL_HANDLE;
+	VmaAllocation allocation = VK_NULL_HANDLE;
 	
 	VkImage image;
 	VkDeviceMemory memory;
@@ -47,7 +49,7 @@ private:
 	std::map<std::tuple<VkImageAspectFlags, VkImageViewType, int>, VkImageView> image_views;
 
 	unsigned int width, height;
-	VkFormat format;
+	VkFormat format = VK_FORMAT_UNDEFINED;
 
 	inline static std::vector<VkFormat> potential_formats(Texture_Type type);
 	inline static VkFormatFeatureFlags required_format_features(Texture_Type type);

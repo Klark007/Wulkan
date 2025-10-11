@@ -55,9 +55,9 @@ public:
 	// draws directly into current swap chain image (in format VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
 	void draw(const VKW_CommandBuffer& cmd, uint32_t image_idx);
 private:
-	const VKW_Swapchain* m_swapchain;
-	CameraController* m_camera_controller;
-	std::recursive_mutex* m_camera_recursive_mutex;
+	const VKW_Swapchain* m_swapchain = nullptr;
+	CameraController* m_camera_controller = nullptr;
+	std::recursive_mutex* m_camera_recursive_mutex = nullptr;
 
 	GUI_Input m_data;
 

@@ -11,7 +11,7 @@ public:
 protected:
 	glm::mat4 m_model = glm::mat4(1);
 	glm::mat4 m_inv_model = glm::mat4(1);
-	int m_cascade_idx;
+	int m_cascade_idx = 0;
 public:
 	inline void set_model_matrix(const glm::mat4& m);
 	void set_cascade_idx(int idx) { m_cascade_idx = idx; };

@@ -28,7 +28,7 @@ private:
 	bool anisotropic_sampling;
 
 	bool compare_enable;
-	VkCompareOp compare_op;
+	VkCompareOp m_compare_op;
 public:
 	// call before init to change default configuration
 	void set_min_filter(VkFilter filter) { min_filter = filter; };
@@ -51,5 +51,5 @@ public:
 inline void VKW_Sampler::set_comparison(VkCompareOp compare_op)
 {
 	compare_enable = VK_TRUE;
-	this->compare_op = compare_op;
+	this->m_compare_op = compare_op;
 }

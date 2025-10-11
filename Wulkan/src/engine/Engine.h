@@ -45,13 +45,12 @@
 #include "CameraController.h"
 
 void glfm_mouse_move_callback(GLFWwindow* window, double pos_x, double pos_y);
-void glfw_window_resize_callback(GLFWwindow* window, int width, int height);
 
 struct CommandStructs {
 	VKW_CommandPool graphics_command_pool;
 	VKW_CommandPool transfer_command_pool;
 	VKW_CommandBuffer graphics_command_buffer;
-	TracyVkCtx graphics_queue_tracy_context;
+	TracyVkCtx graphics_queue_tracy_context = nullptr;
 };
 
 struct SyncStructs {
@@ -90,7 +89,7 @@ private:
 	void present();
 	void late_update(); // executed after draw
 
-	bool resize_window = false; // set to true by resize_callback(), will execute resize to avoid issues with resources 
+	bool resize_window = false; // will execute resize to avoid issues with resources 
 
 	void init_logger();
 	void init_glfw();
@@ -103,10 +102,11 @@ private:
 
 	void create_texture_samplers();
 	void create_uniform_buffers();
-	void create_descriptor_sets();
+	void create_descriptor_set_pool();
 
 	void init_descriptor_set_layouts();
 	void init_data();
+	void init_descriptor_sets();
 
 	void init_render_targets();
 
@@ -161,6 +161,7 @@ private:
 	VKW_DescriptorPool imgui_descriptor_pool;
 
 	VKW_DescriptorPool descriptor_pool;
+	VKW_DynamicDescriptorPool dyn_descriptor_pool;
 
 	std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT> uniform_buffers;
 
@@ -173,6 +174,10 @@ private:
 	VKW_DescriptorSetLayout terrain_desc_set_layout;
 	VKW_DescriptorSetLayout environment_desc_set_layout;
 	VKW_DescriptorSetLayout pbr_desc_set_layout;
+
+	// shared descriptor sets
+	std::array<VKW_DescriptorSet, MAX_FRAMES_IN_FLIGHT> view_descriptor_sets;
+	std::array<VKW_DescriptorSet, MAX_FRAMES_IN_FLIGHT> shadow_descriptor_sets;
 
 	// Terrain data
 	Terrain terrain;
@@ -207,7 +212,6 @@ public:
 	std::recursive_mutex& get_glfw_input_recursive_mutex() { return glfw_input_mutex; };
 	CameraController& get_camera_controller() { return camera_controller; };
 
-	inline void resize_callback(unsigned int new_x, unsigned int new_y);
 	struct GLFWwindow* get_window() const { return window; };
 };
 

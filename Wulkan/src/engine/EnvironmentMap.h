@@ -18,8 +18,8 @@ class EnvironmentMap : public Shape
 {
 public:
 	EnvironmentMap() = default;
-	void init(const VKW_Device& device, const VKW_CommandPool& graphics_pool, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, RenderPass<EnvironmentMapPushConstants, 2>& render_pass, const VKW_Path& path);
-	void set_descriptor_bindings(const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& uniform_buffers, const VKW_Sampler& texture_sampler);
+	void init(const VKW_Device& device, const VKW_CommandPool& graphics_pool, const VKW_CommandPool& transfer_pool, VKW_DescriptorPool& descriptor_pool, RenderPass<EnvironmentMapPushConstants, 2>& render_pass, const VKW_Path& path);
+	void set_descriptor_bindings(const VKW_Sampler& texture_sampler);
 	void del() override;
 
 	static RenderPass<EnvironmentMapPushConstants, 2> create_render_pass(const VKW_Device* device, const std::array<VKW_DescriptorSetLayout, 2>& layouts, Texture& color_rt, Texture& depth_rt);
@@ -31,7 +31,8 @@ private:
 	Mesh mesh; // incorrect normals and uv
 	VKW_Sampler sampler;
 
-	MaterialInstance< EnvironmentMapPushConstants, 2> material;
+	inline static VKW_DescriptorSetLayout descriptor_set_layout;
+	MaterialInstance< EnvironmentMapPushConstants, 1> material;
 };
 
 inline void EnvironmentMap::draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame)

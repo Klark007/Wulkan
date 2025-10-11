@@ -46,13 +46,13 @@ public:
 	// sets camera's position to destination + direction * distance
 	void init(const VKW_Device* vkw_device, const std::array<VKW_CommandPool, MAX_FRAMES_IN_FLIGHT>& graphics_pools, glm::vec3 destination, glm::vec3 direction, float distance, uint32_t shadow_res_x, uint32_t shadow_res_y, float orthographic_height,float near_plane, float far_plane);
 	
-	void init_debug_lines(const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, RenderPass<PushConstants, 1>& render_pass, const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& uniform_buffers);
+	void init_debug_lines(const VKW_CommandPool& transfer_pool, VKW_DescriptorPool& descriptor_pool, RenderPass<PushConstants, 1>& render_pass);
 
 	static VKW_DescriptorSetLayout create_shadow_descriptor_layout(const VKW_Device& device);
 
 	void del() override;
 private:
-	const VKW_Device* device;
+	const VKW_Device* device = nullptr;
 
 	glm::vec2 dir;
 	glm::vec3 col;
@@ -100,7 +100,7 @@ public:
 
 	void draw_debug_lines(const VKW_CommandBuffer& command_buffer, uint32_t current_frame, int nr_current_cascades);
 	Texture& get_texture() { return depth_rt; };
-	const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT> get_uniform_buffers() const { return uniform_buffers; };
+	const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& get_uniform_buffers() const { return uniform_buffers; };
 	VkSemaphore get_shadow_pass_semaphore(int current_frame) const { return shadow_semaphores.at(current_frame); };
 
 	inline void set_direction(glm::vec3 direction);

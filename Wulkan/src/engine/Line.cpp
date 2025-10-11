@@ -1,13 +1,14 @@
 #include "Line.h"
+#include <iostream>
 
-void Line::init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, RenderPass<PushConstants, 1>& render_pass, const std::vector<glm::vec3>& points, const std::vector<uint32_t>& indices, const glm::vec4 color)
+void Line::init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, VKW_DescriptorPool& descriptor_pool, RenderPass<PushConstants, 1>& render_pass, const std::vector<glm::vec3>& points, const std::vector<uint32_t>& indices, const glm::vec4 color)
 {
 	std::vector<glm::vec4> colors{ points.size(), color };
 	init(device, transfer_pool, descriptor_pool, render_pass, points, indices, colors);
 }
 
-void Line::init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, RenderPass<PushConstants, 1>& render_pass, const std::vector<glm::vec3>& points, const std::vector<uint32_t>& indices, const std::vector<glm::vec4>& colors) {
-	material.init(device, descriptor_pool, render_pass, "Line material");
+void Line::init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, VKW_DescriptorPool& descriptor_pool, RenderPass<PushConstants, 1>& render_pass, const std::vector<glm::vec3>& points, const std::vector<uint32_t>& indices, const std::vector<glm::vec4>& colors) {
+	material.init(device, descriptor_pool, render_pass, {}, {}, "Line material");
 
 	vertices.resize(points.size());
 
@@ -51,7 +52,7 @@ void Line::init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, 
 
 	vertex_address = vkGetBufferDeviceAddress(device, &address_info);
 
-	nr_indices = indices.size();
+	nr_indices = static_cast<uint32_t>(indices.size());
 }
 
 void Line::update_vertices(const std::vector<glm::vec3>& points)
@@ -66,15 +67,6 @@ void Line::update_vertices(const std::vector<glm::vec3>& points)
 
 	VkDeviceSize vertex_buffer_size = sizeof(Vertex) * vertices.size();
 	vertex_buffer.copy(vertices.data(), vertex_buffer_size);
-}
-
-void Line::set_descriptor_bindings(const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& uniform_buffers)
-{
-	for (unsigned int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-		const VKW_DescriptorSet& set = material.get_descriptor_set(i, 0);
-
-		set.update(0, uniform_buffers.at(i));
-	}
 }
 
 RenderPass<PushConstants, 1> Line::create_render_pass(const VKW_Device* device, const std::array<VKW_DescriptorSetLayout, 1>& layouts, Texture& color_rt, Texture& depth_rt)
@@ -116,8 +108,7 @@ RenderPass<PushConstants, 1> Line::create_render_pass(const VKW_Device* device, 
 	render_pass.init(
 		graphics_pipeline,
 		layouts,
-		push_constant,
-		"Line Renderpass"
+		push_constant
 	);
 
 	return render_pass;

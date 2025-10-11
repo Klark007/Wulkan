@@ -14,7 +14,7 @@ void VKW_Buffer::init(const VKW_Device* vkw_device, VkDeviceSize size, VkBufferU
 	buffer_info.sharingMode = sharing_info.mode;
 	if (buffer_info.sharingMode & VK_SHARING_MODE_CONCURRENT) {
 		buffer_info.pQueueFamilyIndices = sharing_info.queue_families.data();
-		buffer_info.queueFamilyIndexCount = sharing_info.queue_families.size();
+		buffer_info.queueFamilyIndexCount = static_cast<uint32_t>(sharing_info.queue_families.size());
 	}
 
 	VmaAllocationCreateInfo alloc_create_info{};
@@ -115,7 +115,7 @@ void VKW_Buffer::unmap()
 	is_mapped = false;
 }
 
-VKW_Buffer create_staging_buffer(const VKW_Device* device, VkDeviceSize buffer_size, const void* data, size_t data_size, const std::string name)
+VKW_Buffer create_staging_buffer(const VKW_Device* device, VkDeviceSize buffer_size, const void* data, size_t data_size, const std::string& name)
 {
 	VKW_Buffer staging_buffer = {};
 	staging_buffer.init(

@@ -7,8 +7,9 @@
 
 #include "spdlog/spdlog.h"
 
-void ObjMesh::init(const VKW_Device& device, const VKW_CommandPool& graphics_pool, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, RenderPass<PushConstants, PBR_MAT_DESC_SET_COUNT>& render_pass,const VKW_Path& obj_path, const VKW_Path& mtl_path)
+void ObjMesh::init(const VKW_Device& device, const VKW_CommandPool& graphics_pool, const VKW_CommandPool& transfer_pool, VKW_DescriptorPool& descriptor_pool, RenderPass<PushConstants, PBR_MAT_DESC_SET_COUNT>& render_pass,const VKW_Path& obj_path, const VKW_Path& mtl_path)
 {
+	spdlog::info("Loading file {}", obj_path);
 	// open file
 	if (obj_path.extension() != ".obj") {
 		throw IOException(
@@ -94,7 +95,7 @@ void ObjMesh::init(const VKW_Device& device, const VKW_CommandPool& graphics_poo
 				};
 
 				// add to vector for buffer
-				uint32_t i = vertices.size();
+				uint32_t i = static_cast<uint32_t>(vertices.size());
 				vertices.push_back(vert);
 
 				// insert index
@@ -123,10 +124,10 @@ void ObjMesh::init(const VKW_Device& device, const VKW_CommandPool& graphics_poo
 			config |= 1 << 0;
 		}
 
-		assert(mat.specular_texname == "", "Cant support specular textures yet");
-		assert(mat.metallic_texname == "", "Cant support metallic textures yet");
-		//assert(mat.ambient_texname == "", "Cant support ambient textures yet");
-		assert(mat.emissive_texname == "", "Cant support emission textures yet");
+		assert((mat.specular_texname == "") && "Cant support specular textures yet");
+		assert((mat.metallic_texname == "") && "Cant support metallic textures yet");
+		//assert(mat.ambient_texname == "" && "Cant support ambient textures yet");
+		assert(mat.emissive_texname == "" && "Cant support emission textures yet");
 
 		PBRUniform uniform{
 			glm::pow(glm::vec3{ mat.diffuse[0], mat.diffuse[1], mat.diffuse[2] }, glm::vec3{2.2f}), // gamma correction
@@ -143,34 +144,28 @@ void ObjMesh::init(const VKW_Device& device, const VKW_CommandPool& graphics_poo
 		m_materials.push_back({});
 		m_materials[mat_idx].init(
 			device, 
+			graphics_pool, 
 			descriptor_pool, 
 			render_pass, 
-			mat.name, 
-			graphics_pool, 
+			{ ObjMesh::descriptor_set_layout },
+			{ 2 },
 			uniform,
-			mat.diffuse_texname
+			obj_path.parent_path(),
+			mat.diffuse_texname,
+			mat.name
 		);
 	}
 }
 
-void ObjMesh::set_descriptor_bindings(const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& general_ubo, const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& shadow_map_ubo, Texture& shadow_map, const VKW_Sampler& shadow_map_sampler, const VKW_Sampler& shadow_map_gather_sampler, Texture& texture_fallback, const VKW_Sampler& general_sampler)
+void ObjMesh::set_descriptor_bindings(Texture& texture_fallback, const VKW_Sampler& general_sampler)
 {
 	for (size_t mat_idx = 0; mat_idx < m_materials.size(); mat_idx++) {
 		auto& mat = m_materials[mat_idx];
 		for (unsigned int frame_idx = 0; frame_idx < MAX_FRAMES_IN_FLIGHT; frame_idx++) {
-			const VKW_DescriptorSet& set0 = mat.get_descriptor_set(frame_idx, 0);
-			const VKW_DescriptorSet& set1 = mat.get_descriptor_set(frame_idx, 1);
-			const VKW_DescriptorSet& set2 = mat.get_descriptor_set(frame_idx, 2);
+			const VKW_DescriptorSet& set = mat.get_descriptor_set(frame_idx, 0);
 
-			set0.update(0, general_ubo.at(frame_idx));
-
-			set1.update(0, shadow_map_ubo.at(frame_idx));
-			set1.update(1, shadow_map.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D_ARRAY, 0, MAX_CASCADE_COUNT));
-			set1.update(2, shadow_map_sampler);
-			set1.update(3, shadow_map_gather_sampler);
-
-			set2.update(0, m_materials[mat_idx].get_uniform_buffer(frame_idx));
-			set2.update(1, m_materials[mat_idx].get_diffuse_texture(texture_fallback).get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), general_sampler);
+			set.update(0, m_materials[mat_idx].get_uniform_buffer(frame_idx));
+			set.update(1, m_materials[mat_idx].get_diffuse_texture(texture_fallback).get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), general_sampler);
 		}
 	}
 }
@@ -195,8 +190,12 @@ RenderPass<PushConstants, PBR_MAT_DESC_SET_COUNT> ObjMesh::create_render_pass(co
 	}
 
 	VKW_Shader frag_shader{};
-	frag_shader.init(device, "shaders/pbr/pbr_frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT, "PBR fragment shader");
-
+	if (!depth_only) {
+		frag_shader.init(device, "shaders/pbr/pbr_frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT, "PBR fragment shader");
+	}
+	else {
+		frag_shader.init(device, "shaders/pbr/pbr_depth_frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT, "PBR fragment shader");
+	}
 	graphics_pipeline.set_topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
 	if (!depth_only) {
 		graphics_pipeline.set_culling_mode();
@@ -204,12 +203,7 @@ RenderPass<PushConstants, PBR_MAT_DESC_SET_COUNT> ObjMesh::create_render_pass(co
 	graphics_pipeline.enable_depth_test();
 	graphics_pipeline.enable_depth_write();
 
-	if (depth_only) {
-		graphics_pipeline.add_shader_stages({ vert_shader });
-	}
-	else {
-		graphics_pipeline.add_shader_stages({ vert_shader, frag_shader });
-	}
+	graphics_pipeline.add_shader_stages({ vert_shader, frag_shader });
 
 	graphics_pipeline.add_descriptor_sets(layouts);
 	graphics_pipeline.add_push_constants({ push_constant.get_range() });
@@ -223,7 +217,14 @@ RenderPass<PushConstants, PBR_MAT_DESC_SET_COUNT> ObjMesh::create_render_pass(co
 		graphics_pipeline.enable_dynamic_depth_bias();
 	}
 
-	graphics_pipeline.init(device, "PBR graphics pipeline");
+	std::string pipeline_name;
+	if (depth_only) {
+		pipeline_name = "PBR DEPTH graphics pipeline";
+	}
+	else {
+		pipeline_name = "PBR graphics pipeline";
+	}
+	graphics_pipeline.init(device, pipeline_name);
 
 	vert_shader.del();
 	frag_shader.del();
@@ -233,8 +234,7 @@ RenderPass<PushConstants, PBR_MAT_DESC_SET_COUNT> ObjMesh::create_render_pass(co
 	render_pass.init(
 		graphics_pipeline,
 		layouts,
-		push_constant,
-		"Obj Pbr Material"
+		push_constant
 	);
 
 	return render_pass;
@@ -242,24 +242,24 @@ RenderPass<PushConstants, PBR_MAT_DESC_SET_COUNT> ObjMesh::create_render_pass(co
 
 VKW_DescriptorSetLayout ObjMesh::create_descriptor_set_layout(const VKW_Device& device)
 {
-	VKW_DescriptorSetLayout layout{};
+	descriptor_set_layout = VKW_DescriptorSetLayout{};
 
-	layout.add_binding(
+	descriptor_set_layout.add_binding(
 		0,
 		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
 		VK_SHADER_STAGE_FRAGMENT_BIT
 	);
 
 	// diffuse texture
-	layout.add_binding(
+	descriptor_set_layout.add_binding(
 		1,
 		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 		VK_SHADER_STAGE_FRAGMENT_BIT
 	);
 
-	layout.init(&device, "PBR Descriptor Set Layout");
+	descriptor_set_layout.init(&device, "PBR Descriptor Set Layout");
 
-	return layout;
+	return descriptor_set_layout;
 }
 
 void ObjMesh::del()

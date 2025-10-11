@@ -43,8 +43,8 @@ void GUI::init(GLFWwindow* window, const VKW_Instance& instance, const VKW_Devic
 	init_info.PipelineRenderingCreateInfo.colorAttachmentCount = 1;
 	init_info.PipelineRenderingCreateInfo.pColorAttachmentFormats = &m_swapchain->get_format();
 
-	init_info.MinImageCount = m_swapchain->size();
-	init_info.ImageCount = m_swapchain->size();
+	init_info.MinImageCount = static_cast<uint32_t>(m_swapchain->size());
+	init_info.ImageCount = static_cast<uint32_t>(m_swapchain->size());
 	init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 	init_info.CheckVkResultFn = check_imgui_result;
 	ImGui_ImplVulkan_Init(&init_info);
@@ -144,7 +144,7 @@ void GUI::draw_gui(const VKW_CommandBuffer& cmd)
 			m_data.shadow_mode = static_cast<ShadowMode>(selected_shadow_mode);
 
 			ImGui::SliderFloat("Constant depth bias", &m_data.depth_bias, 1e4, 1e5);
-			ImGui::SliderFloat("Slope depth bias", &m_data.slope_depth_bias, 1e-2, 1e1);
+			ImGui::SliderFloat("Slope depth bias", &m_data.slope_depth_bias, 1e-2f, 1e1);
 			ImGui::SliderInt("Number of shadow cascades", &m_data.nr_shadow_cascades, 1, MAX_CASCADE_COUNT);
 
 			ImGui::SliderFloat("Receiver Occlusion Sample Region", &m_data.receiver_sample_region, 1.0f, 64.0f);

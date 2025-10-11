@@ -34,16 +34,16 @@ public:
 	inline void draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame) override;
 protected:
 	std::optional<VKW_Buffer> vertex_buffer;
-	VkDeviceAddress vertex_address;
+	VkDeviceAddress vertex_address{};
 
 	VKW_Buffer index_buffer;
-	uint32_t nr_indices;
+	uint32_t nr_indices = 0;
 public:
 	void set_vertex_address(VkDeviceAddress address) { vertex_address = address; };
 	VkDeviceAddress get_vertex_address() const { return vertex_address; };
 };
 
-inline void Mesh::draw(const VKW_CommandBuffer& command_buffer, uint32_t _current_frame)
+inline void Mesh::draw(const VKW_CommandBuffer& command_buffer, uint32_t)
 {
 	// bind index buffer
 	vkCmdBindIndexBuffer(command_buffer, index_buffer, 0, VK_INDEX_TYPE_UINT32);

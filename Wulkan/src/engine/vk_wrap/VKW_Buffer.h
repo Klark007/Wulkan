@@ -20,14 +20,14 @@ public:
 	void map(); // maps buffer into cpu accessible memory and returns pointer to it 
 	void unmap();
 private:
-	const VKW_Device* device;
+	const VKW_Device* device = nullptr;
 	std::string name;
 
-	VmaAllocator allocator;
+	VmaAllocator allocator = VK_NULL_HANDLE;
 
-	VkBuffer buffer;
+	VkBuffer buffer{};
 	size_t length;
-	VmaAllocation allocation; // dont peek inside, treat as opaque
+	VmaAllocation allocation = VK_NULL_HANDLE; // dont peek inside, treat as opaque
 	VkDeviceMemory memory;
 
 	bool mappable;
@@ -41,4 +41,4 @@ public:
 	inline void* get_mapped_address() const { return mapped_address; }; // returns mapped address or null if not mapped
 };
 
-VKW_Buffer create_staging_buffer(const VKW_Device* device, VkDeviceSize buffer_size, const void* data, size_t data_size, const std::string name="Staging buffer");
+VKW_Buffer create_staging_buffer(const VKW_Device* device, VkDeviceSize buffer_size, const void* data, size_t data_size, const std::string& name="Staging buffer");

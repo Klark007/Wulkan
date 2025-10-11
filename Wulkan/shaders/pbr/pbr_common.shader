@@ -87,7 +87,7 @@ vec3 specular(vec3 albedo, float cos_theta_i, float cos_theta_o, float cos_theta
 	return (D * F * G) / (4 * cos_theta_i * cos_theta_o);
 }
 
-vec3 pbr(vec3 w_i, vec3 w_o, vec3 n, vec3 light_color, vec2 uv, float in_shadow) {
+vec4 pbr(vec3 w_i, vec3 w_o, vec3 n, vec3 light_color, vec2 uv, float in_shadow) {
 	vec3 w_h = normalize(w_i + w_o);
 	
 	// angle between incoming/outcoming and normal
@@ -100,7 +100,11 @@ vec3 pbr(vec3 w_i, vec3 w_o, vec3 n, vec3 light_color, vec2 uv, float in_shadow)
 	float diffuse_weight = 1 - pbr_uniforms.metallic;
 
 	uint use_diffuse_texture = pbr_uniforms.configuration & 1<<0;
-	vec3 albedo = (1 - use_diffuse_texture) *  pbr_uniforms.diffuse + use_diffuse_texture * texture(diffuse_tex, uv).rgb;
+	vec4 diffuse_col = texture(diffuse_tex, uv).rgba;
+	
+	float alpha = (1 - use_diffuse_texture) + use_diffuse_texture * diffuse_col.a; // for transparency only the alpha of the diffuse texture counts
+
+	vec3 albedo = (1 - use_diffuse_texture) *  pbr_uniforms.diffuse + use_diffuse_texture * diffuse_col.rgb;
 	vec3 color = specular(albedo,  cos_theta_i, cos_theta_o, cos_theta_d, cos_theta_h);
 	
 	if (diffuse_weight > 0) {
@@ -108,7 +112,7 @@ vec3 pbr(vec3 w_i, vec3 w_o, vec3 n, vec3 light_color, vec2 uv, float in_shadow)
 	}
 	// + ambient * albedo
 	
-	return color * light_color * max(cos_theta_i * in_shadow, 0.05);
+	return vec4(color * light_color * max(cos_theta_i * in_shadow, 0.05), alpha);
 }
 
 #endif

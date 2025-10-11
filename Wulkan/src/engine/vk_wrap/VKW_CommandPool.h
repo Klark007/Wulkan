@@ -16,11 +16,11 @@ public:
 
 	void del() override;
 private:
-	const VKW_Device* device;
+	const VKW_Device* device = nullptr;
 	std::string name;
-	const VKW_Queue* queue;
+	const VKW_Queue* queue = nullptr;
 
-	VkCommandPool command_pool;
+	VkCommandPool command_pool = VK_NULL_HANDLE;
 public:
 	inline VkCommandPool get_command_pool() const { return command_pool; };
 	inline operator VkCommandPool() const { return command_pool; };

@@ -14,7 +14,7 @@ public:
 	VKW_Queue() = default;
 	void init(const VKW_Device& device, vkb::QueueType type, const std::string& obj_name);
 private:
-	VkQueue queue;
+	VkQueue queue = VK_NULL_HANDLE;
 	std::string name;
 	uint32_t family_idx;
 public:

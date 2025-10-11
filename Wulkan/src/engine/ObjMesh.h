@@ -9,8 +9,8 @@ class ObjMesh : public Shape
 {
 public:
 	ObjMesh() = default;
-	void init(const VKW_Device& device, const VKW_CommandPool& graphics_pool, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, RenderPass<PushConstants, PBR_MAT_DESC_SET_COUNT>& render_pass, const VKW_Path& obj_path, const VKW_Path& mtl_path="");
-	void set_descriptor_bindings(const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& general_ubo, const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& shadow_map_ubo, Texture& shadow_map, const VKW_Sampler& shadow_map_sampler, const VKW_Sampler& shadow_map_gather_sampler, Texture& texture_fallback, const VKW_Sampler& general_sampler);
+	void init(const VKW_Device& device, const VKW_CommandPool& graphics_pool, const VKW_CommandPool& transfer_pool, VKW_DescriptorPool& descriptor_pool, RenderPass<PushConstants, PBR_MAT_DESC_SET_COUNT>& render_pass, const VKW_Path& obj_path, const VKW_Path& mtl_path="");
+	void set_descriptor_bindings(Texture& texture_fallback, const VKW_Sampler& general_sampler);
 	void del() override;
 
 	// TODO: could be kept seperate (Other file formats should use same render_pass types (different from eg terrain)
@@ -23,9 +23,12 @@ public:
 	inline void draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame) override;
 private:
 	std::vector<Mesh> m_meshes; // one mesh per material
+	
+	inline static VKW_DescriptorSetLayout descriptor_set_layout;
 	std::vector<PBRMaterial> m_materials;
+	
 	VKW_Buffer m_vertex_buffer;
-	VkDeviceAddress m_vertex_buffer_address;
+	VkDeviceAddress m_vertex_buffer_address = 0;
 };
 
 

@@ -21,7 +21,7 @@ private:
 	const VKW_Device* device;
 	std::string name;
 	VkPipeline graphics_pipeline;
-	VkPipelineLayout layout;
+	VkPipelineLayout m_layout;
 
 	VkExtent2D render_extent;
 
@@ -49,7 +49,7 @@ private:
 	VkRenderingAttachmentInfo color_attachment_info; // defines load ops (happen before first access) and store op (after last) for color attachment
 	VkRenderingAttachmentInfo depth_attachment_info;  // defines load ops (happen before first access) and store op (after last) for depth attachment
 	
-	VkViewport viewport;
+	VkViewport m_viewport;
 	VkRect2D scissor;
 
 	// Todo functionality for stencil clear
@@ -118,7 +118,7 @@ public:
 
 	inline operator VkPipeline() const { return graphics_pipeline; };
 	inline VkPipeline get_pipeline() const { return graphics_pipeline; };
-	inline VkPipelineLayout get_layout() const { return layout; };
+	inline VkPipelineLayout get_layout() const { return m_layout; };
 };
 
 inline void VKW_GraphicsPipeline::set_topology(VkPrimitiveTopology topology)
@@ -178,7 +178,7 @@ inline void VKW_GraphicsPipeline::set_tesselation_patch_size(uint32_t patch_size
 	tesselation.patchControlPoints = patch_size;
 }
 
-inline inline void VKW_GraphicsPipeline::set_rasterization_samples(VkSampleCountFlagBits samples)
+inline void VKW_GraphicsPipeline::set_rasterization_samples(VkSampleCountFlagBits samples)
 {
 	multisampling.rasterizationSamples = samples;
 }
@@ -201,7 +201,7 @@ inline void VKW_GraphicsPipeline::set_depth_attachment_format(VkFormat format)
 template<size_t N>
 inline void VKW_GraphicsPipeline::add_descriptor_sets(const std::array<VKW_DescriptorSetLayout, N>& layouts)
 {
-	for (const VKW_DescriptorSetLayout layout : layouts) {
+	for (const VKW_DescriptorSetLayout& layout : layouts) {
 		descriptor_set_layouts.push_back(layout);
 	}
 }
@@ -214,6 +214,6 @@ inline void VKW_GraphicsPipeline::add_push_constant(VKW_PushConstant<T> push_con
 
 inline void VKW_GraphicsPipeline::set_dynamic_state(const VKW_CommandBuffer& cmd)
 {
-	vkCmdSetViewport(cmd, 0, 1, &viewport);
+	vkCmdSetViewport(cmd, 0, 1, &m_viewport);
 	vkCmdSetScissor(cmd, 0, 1, &scissor);
 }

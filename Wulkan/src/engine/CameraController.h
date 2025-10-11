@@ -26,8 +26,8 @@ public:
 
 	inline double get_dt() const { return delta_time; };
 private:
-	GLFWwindow* window;
-	Camera* active_camera;
+	GLFWwindow* window = nullptr;
+	Camera* active_camera = nullptr;
 
 	float rot_strength = 0.001f;
 	float move_strength = 5.0f;
@@ -41,8 +41,8 @@ private:
 	bool virtual_camera_freeze = false;
 
 	// previous mouse position
-	double mouse_pos_x;
-	double mouse_pos_y;
+	double mouse_pos_x = 0;
+	double mouse_pos_y = 0;
 
 	// for computing delta time
 	double current_time = 0;

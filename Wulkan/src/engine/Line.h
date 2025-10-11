@@ -8,9 +8,8 @@ class Line : public Shape
 {
 public:
 	Line() = default;
-	void init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, RenderPass<PushConstants, 1>& render_pass, const std::vector<glm::vec3>& points, const std::vector<uint32_t>& indices, const glm::vec4 color);
-	void init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, const VKW_DescriptorPool& descriptor_pool, RenderPass<PushConstants, 1>& render_pass, const std::vector<glm::vec3>& points, const std::vector<uint32_t>& indices, const std::vector<glm::vec4>& colors);
-	void set_descriptor_bindings(const std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT>& uniform_buffers);
+	void init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, VKW_DescriptorPool& descriptor_pool, RenderPass<PushConstants, 1>& render_pass, const std::vector<glm::vec3>& points, const std::vector<uint32_t>& indices, const glm::vec4 color);
+	void init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, VKW_DescriptorPool& descriptor_pool, RenderPass<PushConstants, 1>& render_pass, const std::vector<glm::vec3>& points, const std::vector<uint32_t>& indices, const std::vector<glm::vec4>& colors);
 	
 	// creates singleton render pass, needs to be deleted by caller of function
 	static RenderPass<PushConstants, 1> create_render_pass(const VKW_Device* device, const std::array<VKW_DescriptorSetLayout, 1>& layouts, Texture& color_rt, Texture& depth_rt);
@@ -21,12 +20,12 @@ public:
 protected:
 	std::vector<Vertex> vertices;
 	VKW_Buffer vertex_buffer;
-	VkDeviceAddress vertex_address;
+	VkDeviceAddress vertex_address = 0;
 
-	MaterialInstance<PushConstants, 1> material;
+	MaterialInstance<PushConstants, 0> material;
 
 	VKW_Buffer index_buffer;
-	uint32_t nr_indices;
+	uint32_t nr_indices = 0;
 public:
 	// update vertex position. Needs to be the same length as original vertices
 	void update_vertices(const std::vector<glm::vec3>& points);

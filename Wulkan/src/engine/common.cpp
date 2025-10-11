@@ -8,7 +8,7 @@ glm::vec2 dir_to_spherical(const glm::vec3& dir)
 	};
 
 	if (res.y < 0)
-		res.y += 2 * M_PI;
+		res.y += 2.0f * static_cast<float>(M_PI);
 
 	return res;
 }

@@ -1,5 +1,6 @@
 #version 450
 // PBR implementation
+#extension GL_EXT_demote_to_helper_invocation : require // to use discard
 
 #include "../common.shader"
 #include "shadow.shader"
@@ -21,5 +22,10 @@ void main()
 
     float in_shadow = shadow(inWorldPos);
 	
-	outColor = vec4(pbr(w_i, w_o, n, directional_light_ubo.light_color, inUV, in_shadow), 1);
+	vec4 pbr_res = pbr(w_i, w_o, n, directional_light_ubo.light_color, inUV, in_shadow);
+
+	if (pbr_res.a == 0) {
+		discard;
+	}
+	outColor = pbr_res;
 }

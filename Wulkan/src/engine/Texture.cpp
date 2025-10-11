@@ -5,6 +5,8 @@
 #define TINYEXR_IMPLEMENTATION
 #include <tinyexr.h>
 
+#include "spdlog/spdlog.h"
+
 void Texture::init(const VKW_Device* vkw_device, unsigned int w, unsigned int h, VkFormat f, VkImageUsageFlags usage, SharingInfo sharing_info, const std::string& obj_name, VkImageCreateFlags flags, uint32_t array_layers)
 {
 	device = vkw_device;
@@ -37,7 +39,7 @@ void Texture::init(const VKW_Device* vkw_device, unsigned int w, unsigned int h,
 	image_info.sharingMode = sharing_info.mode;
 	if (image_info.sharingMode & VK_SHARING_MODE_CONCURRENT) {
 		image_info.pQueueFamilyIndices = sharing_info.queue_families.data();
-		image_info.queueFamilyIndexCount = sharing_info.queue_families.size();
+		image_info.queueFamilyIndexCount = static_cast<uint32_t>(sharing_info.queue_families.size());
 	}
 
 	VmaAllocationCreateInfo alloc_create_info{};
@@ -283,7 +285,7 @@ void Texture::copy(const VKW_CommandBuffer& command_buffer, VkImage src_texture,
 	blit_region.dstOffsets[1].y = dst_size.height;
 	blit_region.dstOffsets[1].z = 1;
 
-	blit_region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	blit_region.srcSubresource.aspectMask = aspect;
 	blit_region.srcSubresource.baseArrayLayer = 0;
 	blit_region.srcSubresource.layerCount = 1;
 	blit_region.srcSubresource.mipLevel = 0;
@@ -333,6 +335,10 @@ stbi_uc* load_image(const VKW_Path& path, int& width, int& height, int& channels
 
 
 Texture create_texture_from_path(const VKW_Device* device, const VKW_CommandPool* command_pool, const VKW_Path& path, Texture_Type type, const std::string& name) {
+	if (path.string().find("sponza_thorn_diff") != std::string::npos) {
+		spdlog::info("FOUND");
+	}
+
 	VkFormat format = Texture::find_format(*device, type);
 
 	bool is_exr = path.extension().string() == ".exr";

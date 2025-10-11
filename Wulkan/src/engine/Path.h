@@ -1,9 +1,7 @@
 #pragma once
 
-#include "fmt/core.h"
-#include <fmt/ranges.h>
-
 #include "Exception.h"
+#include <fmt/ranges.h>
 
 #include <filesystem>
 #include <vector>
