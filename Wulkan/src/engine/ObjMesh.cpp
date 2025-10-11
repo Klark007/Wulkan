@@ -190,8 +190,12 @@ RenderPass<PushConstants, PBR_MAT_DESC_SET_COUNT> ObjMesh::create_render_pass(co
 	}
 
 	VKW_Shader frag_shader{};
-	frag_shader.init(device, "shaders/pbr/pbr_frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT, "PBR fragment shader");
-
+	if (!depth_only) {
+		frag_shader.init(device, "shaders/pbr/pbr_frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT, "PBR fragment shader");
+	}
+	else {
+		frag_shader.init(device, "shaders/pbr/pbr_depth_frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT, "PBR fragment shader");
+	}
 	graphics_pipeline.set_topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
 	if (!depth_only) {
 		graphics_pipeline.set_culling_mode();
@@ -199,12 +203,7 @@ RenderPass<PushConstants, PBR_MAT_DESC_SET_COUNT> ObjMesh::create_render_pass(co
 	graphics_pipeline.enable_depth_test();
 	graphics_pipeline.enable_depth_write();
 
-	if (depth_only) {
-		graphics_pipeline.add_shader_stages({ vert_shader });
-	}
-	else {
-		graphics_pipeline.add_shader_stages({ vert_shader, frag_shader });
-	}
+	graphics_pipeline.add_shader_stages({ vert_shader, frag_shader });
 
 	graphics_pipeline.add_descriptor_sets(layouts);
 	graphics_pipeline.add_push_constants({ push_constant.get_range() });

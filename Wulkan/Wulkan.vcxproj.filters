@@ -161,6 +161,7 @@
     <None Include="shaders\pbr\pbr.vert" />
     <None Include="shaders\pbr\pbr_depth.vert" />
     <None Include="external\lib\Notes.md" />
+    <None Include="shaders\pbr\pbr_depth.frag" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\engine\CameraController.h">

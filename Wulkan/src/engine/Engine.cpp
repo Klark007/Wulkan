@@ -145,7 +145,7 @@ void Engine::update()
 		);
 
 		meshes[1].set_model_matrix(
-			glm::translate(glm::mat4(1), glm::vec3(5,0,30))
+			glm::translate(glm::mat4(1), glm::vec3(0,0,40))
 		);
 
 		meshes[2].set_model_matrix(
@@ -594,7 +594,7 @@ void Engine::init_data()
 	meshes[0].set_descriptor_bindings(texture_not_found, linear_texture_sampler);
 	cleanup_queue.add(&meshes[0]);
 
-	meshes[1].init(device, get_current_graphics_pool(), get_current_transfer_pool(), descriptor_pool, pbr_render_pass, "models/mitsuba_diffuse_only.obj");
+	meshes[1].init(device, get_current_graphics_pool(), get_current_transfer_pool(), descriptor_pool, pbr_render_pass, "models/plane.obj");
 	meshes[1].set_descriptor_bindings(texture_not_found, linear_texture_sampler);
 	cleanup_queue.add(&meshes[1]);
 
@@ -602,8 +602,8 @@ void Engine::init_data()
 	meshes[2].set_descriptor_bindings(texture_not_found, linear_texture_sampler);
 	cleanup_queue.add(&meshes[2]);
 
-	//meshes[3].init(device, get_current_graphics_pool(), get_current_transfer_pool(), dyn_descriptor_pool, pbr_render_pass, "models/mitsuba_texture.obj");
-	meshes[3].init(device, get_current_graphics_pool(), get_current_transfer_pool(), dyn_descriptor_pool, pbr_render_pass, "models/sponza/sponza.obj");
+	meshes[3].init(device, get_current_graphics_pool(), get_current_transfer_pool(), dyn_descriptor_pool, pbr_render_pass, "models/mitsuba_texture.obj");
+	//meshes[3].init(device, get_current_graphics_pool(), get_current_transfer_pool(), dyn_descriptor_pool, pbr_render_pass, "models/sponza/sponza.obj");
 	meshes[3].set_descriptor_bindings(texture_not_found, linear_texture_sampler);
 	cleanup_queue.add(&meshes[3]);
 }

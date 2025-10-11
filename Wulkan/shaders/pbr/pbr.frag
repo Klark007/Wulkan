@@ -1,5 +1,6 @@
 #version 450
 // PBR implementation
+#extension GL_EXT_demote_to_helper_invocation : require // to use discard
 
 #include "../common.shader"
 #include "shadow.shader"
