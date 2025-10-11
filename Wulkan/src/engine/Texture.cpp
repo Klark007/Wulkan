@@ -48,6 +48,12 @@ void Texture::init(const VKW_Device* vkw_device, unsigned int w, unsigned int h,
 	VmaAllocationInfo alloc_info;
 
 	VK_CHECK_ET(vmaCreateImage(allocator, &image_info, &alloc_create_info, &image, &allocation, &alloc_info), RuntimeException, fmt::format("Failed to allocate image ({})", name));
+	
+#ifdef TRACY_ENABLE
+	tracy_mem_instance_id = buffer_instance_count++;
+	TracyAllocN(reinterpret_cast<void*>(tracy_mem_instance_id), alloc_info.size, "Textures");
+#endif
+	
 	memory = alloc_info.deviceMemory;
 
 	device->name_object((uint64_t)image, VK_OBJECT_TYPE_IMAGE, name);
@@ -61,6 +67,11 @@ void Texture::del()
 
 	if (image && allocation && memory) {
 		vmaDestroyImage(allocator, image, allocation);
+
+#ifdef TRACY_ENABLE
+		TracyFreeN(reinterpret_cast<void*>(tracy_mem_instance_id), "Textures");
+#endif
+
 		image = VK_NULL_HANDLE;
 		allocation = VK_NULL_HANDLE;
 		memory = VK_NULL_HANDLE;

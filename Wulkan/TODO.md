@@ -31,9 +31,9 @@
 * Completly transparent texture support (discard; also in depth) [X] 
 * PBR Shader [~]
 
+* Texture mipmaps [ ] 
 * Automatically detect if texture requires alpha channel [ ] 
 * Performance of discard [ ] 
-* Texture mipmaps [ ] 
 * Normal mapping [ ] 
 * Emission / Ambient [ ] 
 * Support more textures [ ] 

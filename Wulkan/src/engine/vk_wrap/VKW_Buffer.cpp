@@ -33,6 +33,12 @@ void VKW_Buffer::init(const VKW_Device* vkw_device, VkDeviceSize size, VkBufferU
 		RuntimeException, 
 		fmt::format("Failed to allocate buffer ({})", name)
 	);
+
+#ifdef TRACY_ENABLE
+	tracy_mem_instance_id = buffer_instance_count++;
+	TracyAllocN(reinterpret_cast<void*>(tracy_mem_instance_id), alloc_info.size, "Buffers");
+#endif
+
 	memory = alloc_info.deviceMemory;
 
 	// name device
@@ -47,6 +53,11 @@ void VKW_Buffer::del()
 			unmap();
 		}
 		vmaDestroyBuffer(allocator, buffer, allocation);
+
+#ifdef TRACY_ENABLE
+		TracyFreeN(reinterpret_cast<void*>(tracy_mem_instance_id), "Buffers");
+#endif
+
 		buffer = VK_NULL_HANDLE;
 		allocation = VK_NULL_HANDLE;
 		memory = VK_NULL_HANDLE;

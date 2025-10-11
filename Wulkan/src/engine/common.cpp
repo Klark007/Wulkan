@@ -12,3 +12,18 @@ glm::vec2 dir_to_spherical(const glm::vec3& dir)
 
 	return res;
 }
+
+#ifdef TRACY_ENABLE
+void* operator new(std::size_t count)
+{
+	auto ptr = malloc(count);
+	TracyAllocN(ptr, count, "CPU Allocator");
+	return ptr;
+}
+
+void operator delete(void* ptr) noexcept
+{
+	TracyFreeN(ptr, "CPU Allocator");
+	free(ptr);
+}
+#endif

@@ -33,6 +33,11 @@ private:
 	bool mappable;
 	bool is_mapped; // true if currently mapped to cpu memory
 	void* mapped_address; // stores the currently mapped address
+
+#ifdef TRACY_ENABLE
+	uint32_t tracy_mem_instance_id;
+	inline static uint32_t buffer_instance_count = 0;
+#endif
 public:
 	inline VkBuffer get_buffer() const { return buffer; };
 	inline operator VkBuffer() const { return buffer; };

@@ -51,6 +51,11 @@ private:
 	unsigned int width, height;
 	VkFormat format = VK_FORMAT_UNDEFINED;
 
+#ifdef TRACY_ENABLE
+	uint32_t tracy_mem_instance_id;
+	inline static uint32_t buffer_instance_count = 0;
+#endif
+
 	inline static std::vector<VkFormat> potential_formats(Texture_Type type);
 	inline static VkFormatFeatureFlags required_format_features(Texture_Type type);
 public:

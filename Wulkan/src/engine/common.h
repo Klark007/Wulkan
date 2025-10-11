@@ -65,6 +65,12 @@ inline constexpr SharingInfo sharing_exlusive() {
 // convert to phi, theta representation of an already normalized direction
 glm::vec2 dir_to_spherical(const glm::vec3& dir);
 
+#ifdef TRACY_ENABLE
+// Track cpu allocations
+void* operator new(std::size_t count);
+void operator delete(void* ptr) noexcept;
+#endif
+
 #define VK_CHECK(x)                                                     \
     do {                                                                \
         VkResult err = x;                                               \
