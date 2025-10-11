@@ -966,6 +966,7 @@ Required_Device_Features Engine::get_required_device_features()
 	// 1.3 features
 	features.rf13.dynamicRendering = true;
 	features.rf13.synchronization2 = true;
+	features.rf13.shaderDemoteToHelperInvocation = true; // for discard in some shaders
 
 	return features;
 }
