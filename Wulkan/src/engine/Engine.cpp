@@ -610,8 +610,8 @@ void Engine::init_data()
 	meshes[2].set_descriptor_bindings(texture_not_found, linear_texture_sampler);
 	cleanup_queue.add(&meshes[2]);
 
-	meshes[3].init(device, get_current_graphics_pool(), get_current_transfer_pool(), dyn_descriptor_pool, pbr_render_pass, "models/mitsuba_texture.obj");
-	//meshes[3].init(device, get_current_graphics_pool(), get_current_transfer_pool(), dyn_descriptor_pool, pbr_render_pass, "models/sponza/sponza.obj");
+	//meshes[3].init(device, get_current_graphics_pool(), get_current_transfer_pool(), dyn_descriptor_pool, pbr_render_pass, "models/mitsuba_texture.obj");
+	meshes[3].init(device, get_current_graphics_pool(), get_current_transfer_pool(), dyn_descriptor_pool, pbr_render_pass, "models/sponza/sponza.obj");
 	meshes[3].set_descriptor_bindings(texture_not_found, linear_texture_sampler);
 	cleanup_queue.add(&meshes[3]);
 }

@@ -40,24 +40,13 @@ void PBRMaterial::init(const VKW_Device& device, const VKW_CommandPool& graphics
 				});
 		}
 
-		if (diffuse_p == "textures/circle_transparent.png") {
-			m_diffuse_texture = std::optional<Texture>{ create_mipmapped_texture(
+		m_diffuse_texture = std::optional<Texture>{ create_mipmapped_texture(
 				&device,
 				&graphics_pool,
 				diffuse_p,
 				Texture_Type::Tex_RGBA,
 				fmt::format("{} diffuse texture", material_name)
-			) };
-		}
-		else {
-			m_diffuse_texture = std::optional<Texture>{ create_texture_from_path(
-				&device,
-				&graphics_pool,
-				diffuse_p,
-				Texture_Type::Tex_RGBA,
-				fmt::format("{} diffuse texture", material_name)
-			) };
-		}
+		) };
 	}
 }
 
