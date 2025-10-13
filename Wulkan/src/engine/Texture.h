@@ -61,9 +61,9 @@ private:
 	inline static VkFormatFeatureFlags required_format_features(Texture_Type type);
 public:
 	// transitions the layout. Can also be used to change ownership to a new queue
-	void transition_layout(const VKW_CommandPool* command_pool, VkImageLayout initial_layout, VkImageLayout new_layout, uint32_t old_ownership = VK_QUEUE_FAMILY_IGNORED, uint32_t new_ownership = VK_QUEUE_FAMILY_IGNORED);
+	void transition_layout(const VKW_CommandPool* command_pool, VkImageLayout initial_layout, VkImageLayout new_layout, uint32_t old_ownership = VK_QUEUE_FAMILY_IGNORED, uint32_t new_ownership = VK_QUEUE_FAMILY_IGNORED, uint32_t mip_level = 0, uint32_t level_count = VK_REMAINING_MIP_LEVELS);
 	// transitions layout. In contrast to the above function this is done in a currently active command buffer
-	static void transition_layout(const VKW_CommandBuffer& command_buffer, VkImage image, VkImageLayout initial_layout, VkImageLayout new_layout, uint32_t old_ownership = VK_QUEUE_FAMILY_IGNORED, uint32_t new_ownership = VK_QUEUE_FAMILY_IGNORED);
+	static void transition_layout(const VKW_CommandBuffer& command_buffer, VkImage image, VkImageLayout initial_layout, VkImageLayout new_layout, uint32_t old_ownership = VK_QUEUE_FAMILY_IGNORED, uint32_t new_ownership = VK_QUEUE_FAMILY_IGNORED, uint32_t mip_level = 0, uint32_t level_count = VK_REMAINING_MIP_LEVELS);
 
 	// copies from src texture into this texture,
 	// assumes to be in an active command buffer, and that 
@@ -74,7 +74,7 @@ public:
 	// assumes to be in an active command buffer, and that 
 	// src_texture has layout of VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, and that 
 	// this texture has layout of VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
-	static void copy(const VKW_CommandBuffer& command_buffer, VkImage src_texture, VkImage dst_texture, VkExtent2D src_size, VkExtent2D dst_size, VkImageAspectFlags aspect = VK_IMAGE_ASPECT_COLOR_BIT);
+	static void copy(const VKW_CommandBuffer& command_buffer, VkImage src_texture, VkImage dst_texture, VkExtent2D src_size, VkExtent2D dst_size, VkImageAspectFlags aspect = VK_IMAGE_ASPECT_COLOR_BIT, uint32_t src_mip_level=0, uint32_t dst_mip_level=0);
 
 	inline static VkFormat find_format(const VKW_Device& device, Texture_Type type);
 	inline static int get_stbi_channels(VkFormat format);

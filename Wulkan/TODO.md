@@ -35,6 +35,7 @@
 * PBR Shader [~]
 
 * Texture mipmaps [ ] 
+* Deduplicate texture code [ ] 
 
 * Performance of discard [ ] 
 * Automatically detect if texture requires alpha channel [ ] 

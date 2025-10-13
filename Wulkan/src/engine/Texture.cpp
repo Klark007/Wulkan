@@ -108,7 +108,7 @@ VkImageView Texture::get_image_view(VkImageAspectFlags aspect_flag, VkImageViewT
 	}
 }
 
-void Texture::transition_layout(const VKW_CommandPool* command_pool, VkImageLayout initial_layout, VkImageLayout new_layout, uint32_t old_ownership, uint32_t new_ownership)
+void Texture::transition_layout(const VKW_CommandPool* command_pool, VkImageLayout initial_layout, VkImageLayout new_layout, uint32_t old_ownership, uint32_t new_ownership, uint32_t mip_level, uint32_t level_count)
 {
 	VKW_CommandBuffer command_buffer{};
 	command_buffer.init(
@@ -119,17 +119,12 @@ void Texture::transition_layout(const VKW_CommandPool* command_pool, VkImageLayo
 	);
 	command_buffer.begin_single_use();
 
-	transition_layout(command_buffer, image, initial_layout, new_layout, old_ownership, new_ownership);
+	transition_layout(command_buffer, image, initial_layout, new_layout, old_ownership, new_ownership, mip_level, level_count);
 
 	command_buffer.submit_single_use();
 }
 
-void Texture::copy(const VKW_CommandBuffer& command_buffer, const Texture& src_texture, VkImageAspectFlags aspect)
-{
-	copy(command_buffer, src_texture.image, image, { src_texture.width, src_texture.height }, { width, height }, aspect);
-}
-
-void Texture::transition_layout(const VKW_CommandBuffer& command_buffer, VkImage image, VkImageLayout initial_layout, VkImageLayout new_layout, uint32_t old_ownership, uint32_t new_ownership)
+void Texture::transition_layout(const VKW_CommandBuffer& command_buffer, VkImage image, VkImageLayout initial_layout, VkImageLayout new_layout, uint32_t old_ownership, uint32_t new_ownership, uint32_t mip_level, uint32_t level_count)
 {
 	VkImageMemoryBarrier2 barrier{};
 	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
@@ -143,8 +138,8 @@ void Texture::transition_layout(const VKW_CommandBuffer& command_buffer, VkImage
 	barrier.dstQueueFamilyIndex = new_ownership;
 
 	// change for whole image
-	barrier.subresourceRange.baseMipLevel = 0;
-	barrier.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
+	barrier.subresourceRange.baseMipLevel = mip_level;
+	barrier.subresourceRange.levelCount = level_count;
 	barrier.subresourceRange.baseArrayLayer = 0;
 	barrier.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
 
@@ -272,7 +267,12 @@ void Texture::transition_layout(const VKW_CommandBuffer& command_buffer, VkImage
 	vkCmdPipelineBarrier2(command_buffer, &depency_info);
 }
 
-void Texture::copy(const VKW_CommandBuffer& command_buffer, VkImage src_texture, VkImage dst_texture, VkExtent2D src_size, VkExtent2D dst_size, VkImageAspectFlags aspect)
+void Texture::copy(const VKW_CommandBuffer& command_buffer, const Texture& src_texture, VkImageAspectFlags aspect)
+{
+	copy(command_buffer, src_texture.image, image, { src_texture.width, src_texture.height }, { width, height }, aspect);
+}
+
+void Texture::copy(const VKW_CommandBuffer& command_buffer, VkImage src_texture, VkImage dst_texture, VkExtent2D src_size, VkExtent2D dst_size, VkImageAspectFlags aspect, uint32_t src_mip_level, uint32_t dst_mip_level)
 {
 	// Blit is less restrictive than copy image
 	VkBlitImageInfo2 blit_info{};
@@ -300,10 +300,10 @@ void Texture::copy(const VKW_CommandBuffer& command_buffer, VkImage src_texture,
 	blit_region.srcSubresource.aspectMask = aspect;
 	blit_region.srcSubresource.baseArrayLayer = 0;
 	blit_region.srcSubresource.layerCount = 1;
-	blit_region.srcSubresource.mipLevel = 0;
+	blit_region.srcSubresource.mipLevel = src_mip_level;
 
 	blit_region.dstSubresource = blit_region.srcSubresource;
-
+	blit_region.dstSubresource.mipLevel = dst_mip_level;
 
 	blit_info.pRegions = &blit_region;
 	blit_info.regionCount = 1;
@@ -573,14 +573,18 @@ Texture create_mipmapped_texture(const VKW_Device* device, const VKW_CommandPool
 	VKW_Path path_mip_0{ path_str.substr(0, special_symbol_idx) + "_0" + path.extension().string()};
 
 	VKW_Buffer staging_buffer; // if already computed miplevels: all mip levels into said stating buffer, else only layer 0
+	std::vector<uint32_t> staging_offsets{}; // stores offsets into staging buffer (only used if loaded from existing images)
 	int width, height;
-	if (std::filesystem::exists(path_mip_0)) {
+	uint32_t mip_levels;
+
+	bool load_mip_maps = std::filesystem::exists(path_mip_0);
+
+	if (load_mip_maps) {
 		// load image 0
 		int channels;
 
-		std::vector<stbi_uc*> pixel_mips{};
-		std::vector<uint32_t> image_sizes{};
-		std::vector<uint32_t> staging_offsets{};
+		std::vector<stbi_uc*> pixel_mips{}; // stores pointers to images
+		std::vector<uint32_t> image_sizes{}; // stores the size of each mip level image
 		uint32_t current_size = 0;
 
 		pixel_mips.push_back(load_image(path_mip_0, width, height, channels, format));
@@ -589,17 +593,22 @@ Texture create_mipmapped_texture(const VKW_Device* device, const VKW_CommandPool
 		staging_offsets.push_back(current_size);
 		current_size += image_sizes[0];
 
-		uint32_t mip_levels = static_cast<uint32_t>(floor(log2(std::max(width, height))) + 1);
+		mip_levels = static_cast<uint32_t>(floor(log2(std::max(width, height))) + 1);
 
 		// load stored images
-		for (int i = 1; i < mip_levels; i++) {
-			VKW_Path path_mip_i{ fmt::format("{}_{}{}", path_str.substr(0, special_symbol_idx), i, path.extension().string())};
+		for (unsigned int i = 1; i < mip_levels; i++) {
+			VKW_Path path_mip_i{ fmt::format("{}_{}{}", path_str.substr(0, special_symbol_idx), i, path.extension().string()) };
 
 			int mip_width, mip_height, mip_channels;
 
-			assert(std::filesystem::exists(path_mip_i) && "File for mip map not found");
+			if (!std::filesystem::exists(path_mip_i)) {
+				throw IOException(
+					fmt::format("Mipmap image: {} does not exists even though level 0 does", path_mip_i), __FILE__, __LINE__
+				);
+			}
+
 			pixel_mips.push_back(load_image(path_mip_i, mip_width, mip_height, mip_channels, format));
-			
+
 			if (channels != mip_channels) {
 				throw IOException(
 					fmt::format("Mipmap images (level: {}) has {} channels, while mipmap level 0 has {}", i, mip_channels, channels), __FILE__, __LINE__
@@ -615,7 +624,7 @@ Texture create_mipmapped_texture(const VKW_Device* device, const VKW_CommandPool
 					fmt::format("Mipmap images (level: {}) has height {} and not expected height {}", i, mip_channels, mip_height, (height >> i)), __FILE__, __LINE__
 				);
 			}
-			
+
 			image_sizes.push_back(static_cast<uint32_t>(mip_width * mip_height * mip_channels * sizeof(stbi_uc)));
 			staging_offsets.push_back(current_size);
 			current_size += image_sizes[i];
@@ -626,47 +635,73 @@ Texture create_mipmapped_texture(const VKW_Device* device, const VKW_CommandPool
 
 		// copy images into staging buffer
 		staging_buffer.map();
-		for (int i = 1; i < mip_levels; i++) {
+		for (unsigned int i = 1; i < mip_levels; i++) {
 			staging_buffer.copy(pixel_mips[i], image_sizes[i], staging_offsets[i]);
 		}
 		staging_buffer.unmap();
 
-		for (int i = 0; i < mip_levels; i++) {
+		for (unsigned int i = 0; i < mip_levels; i++) {
 			stbi_image_free(pixel_mips[i]);
 		}
+	}
+	else {
+		// dynamic mip map generation
+		// create image with first level
+		if (is_exr) {
+			int channels;
 
+			float* rgba = load_exr_image(path, width, height, channels);
 
-		Texture texture{};
-		texture.init(
-			device,
-			width, height,
-			format,
-			VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-			sharing_exlusive(), // exclusively owned by graphics queue
-			name,
-			0, // no special flags
-			1, // not texture array
-			mip_levels
+			VkDeviceSize image_size = width * height * channels * sizeof(float);
+			staging_buffer = create_staging_buffer(device, image_size, rgba, image_size, "EXR staging buffer");
+
+			free(rgba);
+		}
+		else {
+			int channels;
+			stbi_uc* pixels = load_image(path, width, height, channels, format);
+
+			VkDeviceSize image_size = width * height * channels * sizeof(stbi_uc);
+			staging_buffer = create_staging_buffer(device, image_size, pixels, image_size, "Image staging buffer");
+
+			stbi_image_free(pixels);
+		}
+
+		mip_levels = static_cast<uint32_t>(floor(log2(std::max(width, height))) + 1);
+	}
+
+	Texture texture{};
+	texture.init(
+		device,
+		width, height,
+		format,
+		VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+		sharing_exlusive(), // exclusively owned by graphics queue
+		name,
+		0, // no special flags
+		1, // not texture array
+		mip_levels
+	);
+
+	VKW_CommandBuffer command_buffer{};
+	command_buffer.init(
+		device,
+		command_pool,
+		true,
+		"Mipmap creation CMD"
+	);
+
+	command_buffer.begin_single_use();
+	{
+		// transfer layout 1
+		Texture::transition_layout(
+			command_buffer,
+			texture,
+			VK_IMAGE_LAYOUT_UNDEFINED,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
 		);
 
-		VKW_CommandBuffer command_buffer{};
-		command_buffer.init(
-			device,
-			command_pool,
-			true,
-			"Mipmap creation CMD"
-		);
-
-		command_buffer.begin_single_use();
-		{
-			// transfer layout 1
-			Texture::transition_layout(
-				command_buffer,
-				texture,
-				VK_IMAGE_LAYOUT_UNDEFINED,
-				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
-			);
-
+		if (load_mip_maps) {
 			// copies
 			std::vector<VkBufferImageCopy> image_copies{};
 
@@ -688,23 +723,63 @@ Texture create_mipmapped_texture(const VKW_Device* device, const VKW_CommandPool
 			}
 
 			vkCmdCopyBufferToImage(command_buffer, staging_buffer, texture, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, static_cast<uint32_t>(image_copies.size()), image_copies.data());
+		}
+		else {
+			// copy staging buffer into mip level 0
+			VkBufferImageCopy image_copy{};
+			image_copy.bufferOffset = 0;
+			image_copy.bufferRowLength = 0; // tightly packed
+			image_copy.bufferImageHeight = 0;
 
-			// transfer layout 2
+			image_copy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			image_copy.imageSubresource.mipLevel = 0;
+			image_copy.imageSubresource.baseArrayLayer = 0;
+			image_copy.imageSubresource.layerCount = 1;
+
+			image_copy.imageOffset = { 0,0,0 };
+			image_copy.imageExtent = { (unsigned int)width, (unsigned int)height, 1 };
+
+			vkCmdCopyBufferToImage(command_buffer, staging_buffer, texture, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &image_copy);
+			
+			for (unsigned int i = 1; i < mip_levels; i++) {
+				Texture::transition_layout(
+					command_buffer,
+					texture,
+					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+					VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+					VK_QUEUE_FAMILY_IGNORED,
+					VK_QUEUE_FAMILY_IGNORED,
+					i-1,
+					1
+				);
+
+				Texture::copy(command_buffer, texture.get_image(), texture.get_image(), { ((unsigned int)width) >> (i - 1), ((unsigned int)height) >> (i - 1) }, { ((unsigned int)width) >> i, ((unsigned int)height) >> i }, VK_IMAGE_ASPECT_COLOR_BIT, i - 1, i);
+			}
+
 			Texture::transition_layout(
 				command_buffer,
 				texture,
 				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+				VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+				VK_QUEUE_FAMILY_IGNORED,
+				VK_QUEUE_FAMILY_IGNORED,
+				mip_levels - 1,
+				1
 			);
 		}
-		command_buffer.submit_single_use();
 
-
-		staging_buffer.del();
-
-		return texture;
+		// transfer layout 2
+		Texture::transition_layout(
+			command_buffer,
+			texture,
+			VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+		);
 	}
-	else {
-		throw NotImplementedException("Dynamic creation of mipmap not supported", __FILE__, __LINE__);
-	}
+
+	command_buffer.submit_single_use();
+
+	staging_buffer.del();
+
+	return texture;
 }
