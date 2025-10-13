@@ -34,7 +34,7 @@ class Texture : public VKW_Object
 public:
 	Texture() = default;
 	// create an image (and memory) but not load it (to be used as attachment), if we want to load an image, use create_texture_from_path
-	void init(const VKW_Device* vkw_device, unsigned int width, unsigned int height, VkFormat format, VkImageUsageFlags usage, SharingInfo sharing_info, const std::string& obj_name, VkImageCreateFlags flags = 0, uint32_t array_layers = 1);
+	void init(const VKW_Device* vkw_device, unsigned int width, unsigned int height, VkFormat format, VkImageUsageFlags usage, SharingInfo sharing_info, const std::string& obj_name, VkImageCreateFlags flags = 0, uint32_t array_layers = 1, uint32_t mip_levels = 1);
 	void del() override;
 
 private:
@@ -49,6 +49,7 @@ private:
 	std::map<std::tuple<VkImageAspectFlags, VkImageViewType, int>, VkImageView> image_views;
 
 	unsigned int width, height;
+	uint32_t m_mip_levels;
 	VkFormat format = VK_FORMAT_UNDEFINED;
 
 #ifdef TRACY_ENABLE
@@ -98,6 +99,11 @@ Texture create_texture_from_path(const VKW_Device* device, const VKW_CommandPool
 // create a cube map from a path containing a %. % sign will be replaced with (+|-) (X|Y|Z) to get the 6 faces
 // Currently only supports hdr images (exr files)
 Texture create_cube_map_from_path(const VKW_Device* device, const VKW_CommandPool* command_pool, const VKW_Path& path, Texture_Type type, const std::string& name);
+
+// creates a mipmapped texture
+// first time will be more expensive but results will be stored at path_* (with star being level from 0 to N)
+// if path_0 exists we assume all exists, if it doesn't we assume non exist
+Texture create_mipmapped_texture(const VKW_Device* device, const VKW_CommandPool* command_pool, const VKW_Path& path, Texture_Type type, const std::string& name);
 
 inline VkFormat Texture::find_format(const VKW_Device& device, Texture_Type type)
 {

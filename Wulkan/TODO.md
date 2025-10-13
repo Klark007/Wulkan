@@ -9,6 +9,9 @@
 * std::path instead of std::strings for path's [X] 
 * Descriptor Pool improvements [X] 
 
+* void VKW_Buffer::copy(const void* data, size_t data_size, size_t offset) change order of size/offset [ ] 
+* loadEXR memory leak due to no free? [ ] 
+
 * Update glfw due to https://github.com/glfw/glfw/issues/2684 or switch to SDL [ ]
 * m_ convention[ ] 
 * static_cast and not c style casts [ ] 
@@ -32,8 +35,9 @@
 * PBR Shader [~]
 
 * Texture mipmaps [ ] 
-* Automatically detect if texture requires alpha channel [ ] 
+
 * Performance of discard [ ] 
+* Automatically detect if texture requires alpha channel [ ] 
 * Normal mapping [ ] 
 * Emission / Ambient [ ] 
 * Support more textures [ ] 

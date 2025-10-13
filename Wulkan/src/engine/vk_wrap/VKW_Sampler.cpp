@@ -34,7 +34,7 @@ void VKW_Sampler::init(const VKW_Device* vkw_device, const std::string& obj_name
 
 	sampler_info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
 	sampler_info.minLod = 0;
-	sampler_info.maxLod = 0;
+	sampler_info.maxLod = VK_LOD_CLAMP_NONE; // no clamping
 
 	sampler_info.compareEnable = compare_enable;
 	sampler_info.compareOp = m_compare_op;
