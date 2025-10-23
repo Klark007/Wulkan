@@ -143,14 +143,17 @@ void Engine::update()
 		meshes[0].set_model_matrix(
 			glm::translate(glm::scale(glm::mat4(1), glm::vec3(0.8f)), glm::vec3(10, 0, 25 + cos(glfwGetTime() / 2) / 3))
 		);
+		meshes[0].set_visualization_mode(gui_input.pbr_vis_mode);
 
 		meshes[1].set_model_matrix(
 			glm::translate(glm::mat4(1), glm::vec3(0,0,40))
 		);
+		meshes[1].set_visualization_mode(gui_input.pbr_vis_mode);
 
 		meshes[2].set_model_matrix(
 			glm::translate(glm::mat4(1), glm::vec3(-5, 0, 30))
 		);
+		meshes[2].set_visualization_mode(gui_input.pbr_vis_mode);
 
 		meshes[3].set_model_matrix(
 			glm::translate(
@@ -160,6 +163,7 @@ void Engine::update()
 				glm::vec3(0, 20 * 100,0)
 			)
 		);
+		meshes[3].set_visualization_mode(gui_input.pbr_vis_mode);
 	}
 
 	update_uniforms();

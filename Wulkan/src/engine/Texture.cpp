@@ -345,6 +345,23 @@ stbi_uc* load_image(const VKW_Path& path, int& width, int& height, int& channels
 	return pixels;
 }
 
+// helper function for create_*_from_path
+VkBufferImageCopy create_buffer_image_copy(VkDeviceSize buffer_offset, uint32_t mip_level, uint32_t base_array_level, unsigned int width, unsigned int height) {
+	VkBufferImageCopy image_copy{};
+	image_copy.bufferOffset = buffer_offset;
+
+	image_copy.bufferRowLength = 0; // tightly packed
+	image_copy.bufferImageHeight = 0;
+
+	image_copy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	image_copy.imageSubresource.mipLevel = mip_level;
+	image_copy.imageSubresource.baseArrayLayer = base_array_level;
+	image_copy.imageSubresource.layerCount = 1;
+
+	image_copy.imageOffset = { 0,0,0 };
+	image_copy.imageExtent = { width, height, 1 };
+	return image_copy;
+}
 
 Texture create_texture_from_path(const VKW_Device* device, const VKW_CommandPool* command_pool, const VKW_Path& path, Texture_Type type, const std::string& name) {
 	VkFormat format = Texture::find_format(*device, type);
@@ -402,18 +419,7 @@ Texture create_texture_from_path(const VKW_Device* device, const VKW_CommandPool
 	);
 
 	// copying
-	VkBufferImageCopy image_copy{};
-	image_copy.bufferOffset = 0;
-	image_copy.bufferRowLength = 0; // tightly packed
-	image_copy.bufferImageHeight = 0;
-
-	image_copy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	image_copy.imageSubresource.mipLevel = 0;
-	image_copy.imageSubresource.baseArrayLayer = 0;
-	image_copy.imageSubresource.layerCount = 1;
-
-	image_copy.imageOffset = { 0,0,0 };
-	image_copy.imageExtent = { (unsigned int)width, (unsigned int)height, 1 };
+	VkBufferImageCopy image_copy = create_buffer_image_copy(0, 0, 0, (unsigned int) width, (unsigned int) height);
 
 	vkCmdCopyBufferToImage(command_buffer, staging_buffer, texture, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &image_copy);
 
@@ -556,7 +562,7 @@ Texture create_cube_map_from_path(const VKW_Device* device, const VKW_CommandPoo
 	return texture;
 }
 
-Texture create_mipmapped_texture(const VKW_Device* device, const VKW_CommandPool* command_pool, const VKW_Path& path, Texture_Type type, const std::string& name)
+Texture create_mipmapped_texture_from_path(const VKW_Device* device, const VKW_CommandPool* command_pool, const VKW_Path& path, Texture_Type type, const std::string& name)
 {
 	VkFormat format = Texture::find_format(*device, type);
 

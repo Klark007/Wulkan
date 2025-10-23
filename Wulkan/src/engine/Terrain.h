@@ -15,7 +15,6 @@ enum TerrainVisualizationMode {
 	Height,
 	Normal,
 	Error,
-	ShadowDepth,
 	ShadowCascade,
 };
 

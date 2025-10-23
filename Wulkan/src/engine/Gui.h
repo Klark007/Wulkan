@@ -14,6 +14,7 @@
 #include "vk_wrap/VKW_CommandBuffer.h"
 
 #include "Terrain.h"
+#include "PBRMaterial.h"
 #include "DirectionalLight.h"
 
 struct GUI_Input {
@@ -43,6 +44,7 @@ struct GUI_Input {
 	int nr_shadow_occluder_samples = 8;
 
 	ShadowMode shadow_mode = ShadowMode::SoftShadows;
+	PBRVisualizationMode pbr_vis_mode = PBRVisualizationMode::PBRShaded;
 };
 
 class GUI : public VKW_Object

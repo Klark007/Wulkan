@@ -12,9 +12,10 @@ void PBRMaterial::init(const VKW_Device& device, const VKW_CommandPool& graphics
 		material_name
 	);
 
+	m_uniform = uniform;
+
 	// create and set uniform buffers
 	for (size_t frame_idx = 0; frame_idx < MAX_FRAMES_IN_FLIGHT; frame_idx++) {
-		// TODO: different memory as we don't plan to change those on the fly
 		VKW_Buffer& uniform_buffer = m_uniform_buffers[frame_idx];
 
 		uniform_buffer.init(
@@ -27,7 +28,7 @@ void PBRMaterial::init(const VKW_Device& device, const VKW_CommandPool& graphics
 		);
 		uniform_buffer.map();
 
-		memcpy(uniform_buffer.get_mapped_address(), &uniform, sizeof(PBRUniform));
+		memcpy(uniform_buffer.get_mapped_address(), &m_uniform, sizeof(PBRUniform));
 	}
 
 	if (diffuse_path != "") {
@@ -40,7 +41,7 @@ void PBRMaterial::init(const VKW_Device& device, const VKW_CommandPool& graphics
 				});
 		}
 
-		m_diffuse_texture = std::optional<Texture>{ create_mipmapped_texture(
+		m_diffuse_texture = std::optional<Texture>{ create_mipmapped_texture_from_path(
 				&device,
 				&graphics_pool,
 				diffuse_p,

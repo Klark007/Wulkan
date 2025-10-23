@@ -34,7 +34,7 @@
 * Completly transparent texture support (discard; also in depth) [X] 
 * PBR Shader [~]
 
-* Texture mipmaps [ ] 
+* Texture mipmaps (store, exr) [~] 
 * Deduplicate texture code [ ] 
 
 * Performance of discard [ ] 

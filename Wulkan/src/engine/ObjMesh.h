@@ -29,6 +29,8 @@ private:
 	
 	VKW_Buffer m_vertex_buffer;
 	VkDeviceAddress m_vertex_buffer_address = 0;
+public:
+	inline void set_visualization_mode(PBRVisualizationMode mode);
 };
 
 
@@ -47,5 +49,12 @@ inline void ObjMesh::draw(const VKW_CommandBuffer& command_buffer, uint32_t curr
 		);
 
 		m_meshes[i].draw(command_buffer, current_frame);
+	}
+}
+
+inline void ObjMesh::set_visualization_mode(PBRVisualizationMode mode)
+{
+	for (PBRMaterial& mat : m_materials) {
+		mat.set_visualization_mode(mode);
 	}
 }

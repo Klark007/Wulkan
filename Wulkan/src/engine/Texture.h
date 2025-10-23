@@ -103,7 +103,7 @@ Texture create_cube_map_from_path(const VKW_Device* device, const VKW_CommandPoo
 // creates a mipmapped texture
 // first time will be more expensive but results will be stored at path_* (with star being level from 0 to N)
 // if path_0 exists we assume all exists, if it doesn't we assume non exist
-Texture create_mipmapped_texture(const VKW_Device* device, const VKW_CommandPool* command_pool, const VKW_Path& path, Texture_Type type, const std::string& name);
+Texture create_mipmapped_texture_from_path(const VKW_Device* device, const VKW_CommandPool* command_pool, const VKW_Path& path, Texture_Type type, const std::string& name);
 
 inline VkFormat Texture::find_format(const VKW_Device& device, Texture_Type type)
 {
