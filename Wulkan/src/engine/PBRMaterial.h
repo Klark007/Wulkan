@@ -17,11 +17,11 @@ struct PBRUniform {
 	alignas(4) uint32_t configuration; // 0 bit: if true, read from albedo texture; upper 16 bit for setting visualization mode
 };
 
-enum PBRVisualizationMode {
-	PBRShaded,
-	PBRNormals,
-	PBRDiffuse,
-	PBRShadowCascade,
+enum class PBRVisualizationMode {
+	Shaded,
+	Normals,
+	Diffuse,
+	ShadowCascade,
 };
 
 constexpr size_t PBR_MAT_DESC_SET_COUNT = 3;
@@ -54,16 +54,14 @@ Texture& PBRMaterial::get_diffuse_texture(Texture& fallback)
 	}
 }
 
-#include "spdlog/spdlog.h"
 inline void PBRMaterial::set_visualization_mode(PBRVisualizationMode mode)
 {
 	if (mode != m_visualization_mode) {
-		spdlog::info("Old uniform config {:032b}", m_uniform.configuration);
+		//spdlog::info("Old uniform config {:032b}", m_uniform.configuration);
 		// keep lower 16 bits as pervious
 		uint32_t conifg_kept = m_uniform.configuration & ((1 << 16) - 1);
-		m_uniform.configuration = conifg_kept | (mode << 16);
-		spdlog::info("New uniform config {:032b}", m_uniform.configuration);
-
+		m_uniform.configuration = conifg_kept | (static_cast<uint32_t>(mode) << 16);
+		
 		for (size_t frame_idx = 0; frame_idx < MAX_FRAMES_IN_FLIGHT; frame_idx++) {
 			VKW_Buffer& uniform_buffer = m_uniform_buffers[frame_idx];
 			memcpy(uniform_buffer.get_mapped_address(), &m_uniform, sizeof(PBRUniform));

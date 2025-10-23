@@ -9,7 +9,7 @@
 
 #include "vk_wrap/VKW_GraphicsPipeline.h"
 
-enum TerrainVisualizationMode {
+enum class TerrainVisualizationMode {
 	Shaded,
 	Level,
 	Height,
