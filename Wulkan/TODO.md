@@ -8,9 +8,9 @@
 * Separate sets for things bound at different freq (also allocate only if we need a unique one per object) [X]
 * std::path instead of std::strings for path's [X] 
 * Descriptor Pool improvements [X] 
+* loadEXR memory leak due to no free? [X] 
 
 * void VKW_Buffer::copy(const void* data, size_t data_size, size_t offset) change order of size/offset [ ] 
-* loadEXR memory leak due to no free? [ ] 
 
 * Update glfw due to https://github.com/glfw/glfw/issues/2684 or switch to SDL [ ]
 * m_ convention[ ] 
@@ -26,33 +26,33 @@
 * Maybe experiment with Slang [ ] 
 * Check best practises and synchronization regularly [ ]
 
-# Models and Materials 
+## Models and Materials 
 * Basic model loading [X]
 * Refactor the idea of Pipeline + Shared Data to smt closer to materials [X]
 * Shadows [X] 
 * Move textures (and maybe uniform buffers) into Material class instances [X] 
 * Completly transparent texture support (discard; also in depth) [X] 
-* PBR Shader [~]
+* Texture mipmaps [X]
 
-* Texture mipmaps (store, exr) [~] 
 * Deduplicate texture code [ ] 
+* Store Texture mipmaps [ ] 
+* Draw Indirect [ ] 
+* Fix assumption that per model only one pipeline [ ]
+* Mesh shaders [ ]
 
-* Performance of discard [ ] 
+## PBR
 * Automatically detect if texture requires alpha channel [ ] 
 * Normal mapping [ ] 
 * Emission / Ambient [ ] 
 * Support more textures [ ] 
-* Draw Indirect [ ] 
 * Support more parameters [ ]
-* Fix assumption that per model only one pipeline [ ]
-* Mesh shaders [ ]
 
-# Tracy 
+## Tracy 
 * CPU side basics [X]
 * GPU side basics [X]
 * Synchronization [X]
-* CPU Memory usage [ ]
-* GPU Memory usage [ ] 
+* CPU Memory usage [X]
+* GPU Memory usage [~] 
 
 ## Bugs
 * Flickering at high frame rates [ ]

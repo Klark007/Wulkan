@@ -531,18 +531,13 @@ Texture create_cube_map_from_path(const VKW_Device* device, const VKW_CommandPoo
 		std::array<VkBufferImageCopy, 6> image_copies{};
 
 		for (unsigned int i = 0; i < 6; i++) {
-			image_copies[i].bufferOffset = image_size * i;
-
-			image_copies[i].bufferRowLength = 0; // tightly packed
-			image_copies[i].bufferImageHeight = 0;
-
-			image_copies[i].imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			image_copies[i].imageSubresource.mipLevel = 0;
-			image_copies[i].imageSubresource.baseArrayLayer = i;
-			image_copies[i].imageSubresource.layerCount = 1;
-
-			image_copies[i].imageOffset = { 0,0,0 };
-			image_copies[i].imageExtent = { (unsigned int)width, (unsigned int)height, 1 };
+			image_copies[i] = create_buffer_image_copy(
+				image_size * i, // buffer offset
+				0, // mip level
+				i, // array level
+				(unsigned int) width,
+				(unsigned int) height
+			);
 		}
 
 		vkCmdCopyBufferToImage(command_buffer, staging_buffer, texture, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 6, image_copies.data());
@@ -712,38 +707,21 @@ Texture create_mipmapped_texture_from_path(const VKW_Device* device, const VKW_C
 			std::vector<VkBufferImageCopy> image_copies{};
 
 			for (unsigned int i = 0; i < mip_levels; i++) {
-				image_copies.push_back({});
-
-				image_copies[i].bufferOffset = staging_offsets[i];
-
-				image_copies[i].bufferRowLength = 0; // tightly packed
-				image_copies[i].bufferImageHeight = 0;
-
-				image_copies[i].imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-				image_copies[i].imageSubresource.mipLevel = i;
-				image_copies[i].imageSubresource.baseArrayLayer = 0;
-				image_copies[i].imageSubresource.layerCount = 1;
-
-				image_copies[i].imageOffset = { 0,0,0 };
-				image_copies[i].imageExtent = { ((unsigned int)width) >> i, ((unsigned int)height) >> i, 1 };
+				image_copies.push_back(
+					create_buffer_image_copy(
+						staging_offsets[i], // buffer offsetm
+						i, // mip level
+						0, // array kevek
+						((unsigned int)width) >> i, ((unsigned int)height) >> i // width / height
+					)
+				);
 			}
 
 			vkCmdCopyBufferToImage(command_buffer, staging_buffer, texture, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, static_cast<uint32_t>(image_copies.size()), image_copies.data());
 		}
 		else {
 			// copy staging buffer into mip level 0
-			VkBufferImageCopy image_copy{};
-			image_copy.bufferOffset = 0;
-			image_copy.bufferRowLength = 0; // tightly packed
-			image_copy.bufferImageHeight = 0;
-
-			image_copy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			image_copy.imageSubresource.mipLevel = 0;
-			image_copy.imageSubresource.baseArrayLayer = 0;
-			image_copy.imageSubresource.layerCount = 1;
-
-			image_copy.imageOffset = { 0,0,0 };
-			image_copy.imageExtent = { (unsigned int)width, (unsigned int)height, 1 };
+			VkBufferImageCopy image_copy = create_buffer_image_copy(0, 0, 0, (unsigned int) width, (unsigned int) height);
 
 			vkCmdCopyBufferToImage(command_buffer, staging_buffer, texture, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &image_copy);
 			
