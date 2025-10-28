@@ -48,7 +48,7 @@ inline void Mesh::draw(const VKW_CommandBuffer& command_buffer, uint32_t)
 	// bind index buffer
 	vkCmdBindIndexBuffer(command_buffer, index_buffer, 0, VK_INDEX_TYPE_UINT32);
 
-	vkCmdDrawIndexed(command_buffer, nr_indices, 1, 0, 0, 0);
+	vkCmdDrawIndexed(command_buffer, nr_indices, m_instance_count, 0, 0, 0);
 }
 
 // initializes a vertex buffer and also sets it's device address

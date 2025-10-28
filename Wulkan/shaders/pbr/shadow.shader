@@ -1,8 +1,6 @@
 #ifndef SHADOW_COMMON_INCLUDE
 #define SHADOW_COMMON_INCLUDE
 
-#include "../sampling.shader"
-
 layout(constant_id = 0) const int cascade_count = 4;
 layout(std430, set = 1, binding = 0) uniform DirectionalLightData {
     mat4 proj_views[cascade_count];
@@ -22,6 +20,8 @@ layout(set = 1, binding = 2) uniform sampler shadow_sampler;
 layout(set = 1, binding = 3) uniform sampler shadow_gather_sampler;
 
 #ifndef SHADOW_UNIFORM_ONLY
+
+#include "../sampling.shader"
 
 float hard_shadow(vec3 world_pos, uint cascade_idx);
 float soft_shadow(vec3 world_pos, uint cascade_idx);

@@ -15,8 +15,16 @@ struct Vertex {
 	vec4 color;
 };
 
+struct Instance {
+    vec3 position;
+};
+
 layout(buffer_reference, std430) readonly buffer VertexBuffer{ 
 	Vertex vertices[];
+};
+
+layout(buffer_reference, std430) readonly buffer InstanceBuffer{ 
+	Instance instances[];
 };
 
 #ifndef REDEFINE_PUSH_CONSTANT
@@ -25,6 +33,7 @@ layout( push_constant ) uniform PushConstant
 	mat4 model;
 	mat4 inv_model;
 	VertexBuffer vertex_buffer;
+    InstanceBuffer instance_buffer;
 	int cascade_idx;
 } pc;
 #endif

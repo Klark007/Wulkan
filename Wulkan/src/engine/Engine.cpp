@@ -164,6 +164,11 @@ void Engine::update()
 			)
 		);
 		meshes[3].set_visualization_mode(gui_input.pbr_vis_mode);
+
+		instanced_mesh.set_model_matrix(
+			glm::translate(glm::mat4(1), glm::vec3(-5, 0, 35))
+		);
+		instanced_mesh.set_visualization_mode(gui_input.pbr_vis_mode);
 	}
 
 	update_uniforms();
@@ -240,6 +245,9 @@ void Engine::draw()
 							meshes[j].set_cascade_idx(i);
 							meshes[j].draw(shadow_cmd, current_frame);
 						}
+
+						instanced_mesh.set_cascade_idx(i);
+						instanced_mesh.draw(shadow_cmd, current_frame);
 
 						pbr_depth_pass.end(shadow_cmd);
 					}
@@ -327,6 +335,8 @@ void Engine::draw()
 
 				for (size_t i = 0; i < 4; i++)
 					meshes[i].draw(cmd, current_frame);
+
+				instanced_mesh.draw(cmd, current_frame);
 
 				pbr_render_pass.end(cmd);
 
@@ -618,6 +628,21 @@ void Engine::init_data()
 	meshes[3].init(device, get_current_graphics_pool(), get_current_transfer_pool(), dyn_descriptor_pool, pbr_render_pass, "models/sponza/sponza.obj");
 	meshes[3].set_descriptor_bindings(texture_not_found, linear_texture_sampler);
 	cleanup_queue.add(&meshes[3]);
+
+	std::vector<InstanceData> per_instance_data{ 
+		{{0,10,0}}, 
+		{{10, 0,0 }}, 
+		{{0, 0, 10}},
+		{{0, 0, 0}},
+		{{3, -3, 3}},
+		{{3, 3, 3}},
+		{{3, 3, -3}},
+		{{-3, 3, -3}},
+		{{-3, 3, 3}},
+	};
+	instanced_mesh.init(device, get_current_graphics_pool(), get_current_transfer_pool(), descriptor_pool, pbr_render_pass, "models/mitsuba_texture.obj", per_instance_data);
+	instanced_mesh.set_descriptor_bindings(texture_not_found, linear_texture_sampler);
+	cleanup_queue.add(&instanced_mesh);
 }
 
 void Engine::init_descriptor_sets()
@@ -971,6 +996,7 @@ Required_Device_Features Engine::get_required_device_features()
 	features.rf.samplerAnisotropy = true;
 	features.rf.fillModeNonSolid = true;
 	features.rf.tessellationShader = true;
+	features.rf.shaderInt64 = true;
 	// 1.2 features
 	features.rf12.bufferDeviceAddress = true;
 	features.rf12.descriptorIndexing = true;

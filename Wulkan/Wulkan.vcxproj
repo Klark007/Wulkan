@@ -216,6 +216,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="external\tracy\public\TracyClient.cpp" />
+    <ClCompile Include="src\engine\InstancedShape.cpp" />
     <ClCompile Include="src\engine\ObjMesh.cpp" />
     <ClCompile Include="src\engine\PBRMaterial.cpp" />
     <ClCompile Include="src\engine\PoissonSampling.cpp" />
@@ -279,6 +280,7 @@
     <ClInclude Include="external\include\rapidcsv.h" />
     <ClInclude Include="external\include\tiny_obj_loader.h" />
     <ClInclude Include="external\include\tph_poisson.h" />
+    <ClInclude Include="src\engine\InstancedShape.h" />
     <ClInclude Include="src\engine\Material.h" />
     <ClInclude Include="src\engine\ObjMesh.h" />
     <ClInclude Include="src\engine\Path.h" />

@@ -1,5 +1,4 @@
 #include "Line.h"
-#include <iostream>
 
 void Line::init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, VKW_DescriptorPool& descriptor_pool, RenderPass<PushConstants, 1>& render_pass, const std::vector<glm::vec3>& points, const std::vector<uint32_t>& indices, const glm::vec4 color)
 {

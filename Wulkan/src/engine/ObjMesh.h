@@ -31,6 +31,7 @@ private:
 	VkDeviceAddress m_vertex_buffer_address = 0;
 public:
 	inline void set_visualization_mode(PBRVisualizationMode mode);
+	inline virtual virtual void set_instance_count(uint32_t count) override;
 };
 
 
@@ -44,6 +45,7 @@ inline void ObjMesh::draw(const VKW_CommandBuffer& command_buffer, uint32_t curr
 				m_model,
 				m_inv_model,
 				m_meshes[i].get_vertex_address(),
+				m_instance_buffer_address,
 				m_cascade_idx
 			}
 		);
@@ -57,4 +59,10 @@ inline void ObjMesh::set_visualization_mode(PBRVisualizationMode mode)
 	for (PBRMaterial& mat : m_materials) {
 		mat.set_visualization_mode(mode);
 	}
+}
+
+inline void ObjMesh::set_instance_count(uint32_t count)
+{
+	for (Mesh& m : m_meshes)
+		m.set_instance_count(count);
 }

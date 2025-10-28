@@ -40,11 +40,12 @@ inline void Line::draw(const VKW_CommandBuffer& command_buffer, uint32_t current
 			m_model,
 			m_inv_model,
 			vertex_address,
+			m_instance_buffer_address,
 			m_cascade_idx
 		}
 	);
 
 	// bind index buffer and draw
 	vkCmdBindIndexBuffer(command_buffer, index_buffer, 0, VK_INDEX_TYPE_UINT32);
-	vkCmdDrawIndexed(command_buffer, nr_indices, 1, 0, 0, 0);
+	vkCmdDrawIndexed(command_buffer, nr_indices, m_instance_count, 0, 0, 0);
 }
