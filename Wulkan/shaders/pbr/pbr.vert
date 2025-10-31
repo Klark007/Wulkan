@@ -21,7 +21,7 @@ void main()
 
 	gl_Position = ubo.proj * ubo.view * pc.model * vec4(local_pos, 1.0f);
 
-	outWorldPos = vec3(pc.model * vec4(v.position, 1.0f));
+	outWorldPos = vec3(pc.model * vec4(local_pos, 1.0f));
 	outNormal = mat3(transpose(pc.inv_model)) * v.normal;
 	outUV = vec2(v.uv_x, v.uv_y);
 }

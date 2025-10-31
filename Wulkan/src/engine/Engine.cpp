@@ -241,10 +241,12 @@ void Engine::draw()
 						view_descriptor_sets[current_frame].bind(shadow_cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pbr_depth_pass.get_pipeline_layout(), 0);
 						shadow_descriptor_sets[current_frame].bind(shadow_cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pbr_depth_pass.get_pipeline_layout(), 1);
 
+						/*
 						for (size_t j = 0; j < 4; j++) {
 							meshes[j].set_cascade_idx(i);
 							meshes[j].draw(shadow_cmd, current_frame);
 						}
+						*/
 
 						instanced_mesh.set_cascade_idx(i);
 						instanced_mesh.draw(shadow_cmd, current_frame);
@@ -333,8 +335,10 @@ void Engine::draw()
 				view_descriptor_sets[current_frame].bind(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pbr_render_pass.get_pipeline_layout(), 0);
 				shadow_descriptor_sets[current_frame].bind(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pbr_render_pass.get_pipeline_layout(), 1);
 
+				/*
 				for (size_t i = 0; i < 4; i++)
 					meshes[i].draw(cmd, current_frame);
+				*/
 
 				instanced_mesh.draw(cmd, current_frame);
 
@@ -639,8 +643,20 @@ void Engine::init_data()
 		{{3, 3, -3}},
 		{{-3, 3, -3}},
 		{{-3, 3, 3}},
+		{{10, 0, -2}},
+		{{2, 3, -5}},
+		{{10, 6, -16}},
+		{{4, 2, 7}},
+		{{8, 9, -2}},
+		{{-6, 18, -4}},
+		{{-6, 2, 9}},
+		{{3, 3, 3}},
+		{{3, 10, -5}},
+		{{-6, 7, 9}},
+		{{-2, 4, -6}},
+		{{16, 8, 8}},
 	};
-	instanced_mesh.init(device, get_current_graphics_pool(), get_current_transfer_pool(), descriptor_pool, pbr_render_pass, "models/mitsuba_texture.obj", per_instance_data);
+	instanced_mesh.init(device, get_current_graphics_pool(), get_current_transfer_pool(), descriptor_pool, pbr_render_pass, "models/smooth_normals.obj", per_instance_data);
 	instanced_mesh.set_descriptor_bindings(texture_not_found, linear_texture_sampler);
 	cleanup_queue.add(&instanced_mesh);
 }
