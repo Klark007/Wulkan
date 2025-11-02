@@ -1,0 +1,13 @@
+# Blender 4.5.4 LTS MTL File: 'T.blend'
+# www.blender.org
+
+newmtl Acer_large_2_Billboard_Mat
+Ns 44.721355
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+illum 2
+map_Kd textures/Acer_large_2_Billboard_Mat_baseColor.png
+map_d textures/Acer_large_2_Billboard_Mat_baseColor.png
+map_Bump -bm 1.000000 textures/Acer_large_2_Billboard_Mat_normal.jpg

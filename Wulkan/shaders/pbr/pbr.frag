@@ -30,7 +30,8 @@ void main()
 	
 				vec4 pbr_res = pbr(w_i, w_o, n, directional_light_ubo.light_color, inUV, in_shadow);
 
-				if (pbr_res.a == 0) {
+				// pbr frag does not support semitransparent geometry. Only fully transparant
+				if (pbr_res.a < 0.2) {
 					discard;
 				}
 				outColor = pbr_res;
