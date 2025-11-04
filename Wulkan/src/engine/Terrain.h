@@ -30,7 +30,7 @@ struct TerrainPushConstants {
 	alignas(4) int cascade_idx;
 };
 
-class Terrain : public Shape
+class Terrain : public Mesh
 {
 public:
 	Terrain() = default;
@@ -45,7 +45,6 @@ public:
 
 	inline void draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame) override;
 private:
-	Mesh mesh;
 	const VKW_Sampler* texture_sampler = nullptr;
 	Texture height_map;
 	Texture albedo;
@@ -77,7 +76,7 @@ inline void Terrain::draw(const VKW_CommandBuffer& command_buffer, uint32_t curr
 		current_frame,
 		{
 			m_model,
-			mesh.get_vertex_address(),
+			get_vertex_address(),
 			tesselation_strength,
 			max_tesselation,
 			texture_eps,
@@ -86,5 +85,5 @@ inline void Terrain::draw(const VKW_CommandBuffer& command_buffer, uint32_t curr
 		}
 	);
 
-	mesh.draw(command_buffer, current_frame);
+	Mesh::draw(command_buffer, current_frame);
 }

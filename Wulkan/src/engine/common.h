@@ -72,6 +72,25 @@ void* operator new(std::size_t count);
 void operator delete(void* ptr) noexcept;
 #endif
 
+
+template<>
+struct fmt::formatter<glm::vec3> : fmt::formatter<std::string>
+{
+    auto format(glm::vec3 vec, format_context& ctx) const -> decltype(ctx.out())
+    {
+        return fmt::format_to(ctx.out(), "[{},{},{}]", vec[0], vec[1], vec[2]);
+    }
+};
+
+template<>
+struct fmt::formatter<glm::vec4> : fmt::formatter<std::string>
+{
+    auto format(glm::vec4 vec, format_context& ctx) const -> decltype(ctx.out())
+    {
+        return fmt::format_to(ctx.out(), "[{},{},{},{}]", vec[0], vec[1], vec[2], vec[3]);
+    }
+};
+
 #define VK_CHECK(x)                                                     \
     do {                                                                \
         VkResult err = x;                                               \

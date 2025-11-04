@@ -29,6 +29,12 @@ protected:
 public:
 	// update vertex position. Needs to be the same length as original vertices
 	void update_vertices(const std::vector<glm::vec3>& points);
+
+	void set_model_matrix(const glm::mat4& m) override { m_model = m; };
+	void set_cascade_idx(int idx) override { m_cascade_idx = idx; };
+	inline void set_visualization_mode(VisualizationMode mode) override;
+	void set_instance_count(uint32_t count) { m_instance_count = count; };
+	inline  void set_instance_buffer_address(VkDeviceAddress address) override;
 };
 
 inline void Line::draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame)
@@ -48,4 +54,14 @@ inline void Line::draw(const VKW_CommandBuffer& command_buffer, uint32_t current
 	// bind index buffer and draw
 	vkCmdBindIndexBuffer(command_buffer, index_buffer, 0, VK_INDEX_TYPE_UINT32);
 	vkCmdDrawIndexed(command_buffer, nr_indices, m_instance_count, 0, 0, 0);
+}
+
+inline void Line::set_visualization_mode(VisualizationMode mode)
+{
+	throw NotImplementedException("set_visualization_mode not implemented for Line class", __FILE__, __LINE__);
+}
+
+inline void Line::set_instance_buffer_address(VkDeviceAddress address)
+{
+	throw NotImplementedException("set_instance_buffer_address not implemented for Line class", __FILE__, __LINE__);
 }

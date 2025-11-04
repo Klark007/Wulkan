@@ -40,7 +40,7 @@ void EnvironmentMap::init(const VKW_Device& device, const VKW_CommandPool& graph
 
 	};
 
-	mesh.init(device, transfer_pool, cube_vertices, cube_indices);
+	Mesh::init(device, transfer_pool, cube_vertices, cube_indices);
 }
 
 void EnvironmentMap::set_descriptor_bindings(const VKW_Sampler& texture_sampler)
@@ -112,7 +112,7 @@ VKW_DescriptorSetLayout EnvironmentMap::create_descriptor_set_layout(const VKW_D
 
 void EnvironmentMap::del()
 {
+	Mesh::del();
 	cube_map.del();
-	mesh.del();
 	material.del();
 }

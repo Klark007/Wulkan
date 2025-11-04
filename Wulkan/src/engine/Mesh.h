@@ -41,6 +41,12 @@ protected:
 public:
 	void set_vertex_address(VkDeviceAddress address) { vertex_address = address; };
 	VkDeviceAddress get_vertex_address() const { return vertex_address; };
+
+	void set_model_matrix(const glm::mat4& m) override { m_model = m; };
+	void set_cascade_idx(int idx) override { m_cascade_idx = idx; };
+	inline void set_visualization_mode(VisualizationMode mode) override;
+	void set_instance_count(uint32_t count) { m_instance_count = count; };
+	inline  void set_instance_buffer_address(VkDeviceAddress address) override;
 };
 
 inline void Mesh::draw(const VKW_CommandBuffer& command_buffer, uint32_t)
@@ -49,6 +55,16 @@ inline void Mesh::draw(const VKW_CommandBuffer& command_buffer, uint32_t)
 	vkCmdBindIndexBuffer(command_buffer, index_buffer, 0, VK_INDEX_TYPE_UINT32);
 
 	vkCmdDrawIndexed(command_buffer, nr_indices, m_instance_count, 0, 0, 0);
+}
+
+inline void Mesh::set_visualization_mode(VisualizationMode mode)
+{
+	throw NotImplementedException("set_visualization_mode not implemented for Mesh class", __FILE__, __LINE__);
+}
+
+inline void Mesh::set_instance_buffer_address(VkDeviceAddress address)
+{
+	throw NotImplementedException("set_instance_buffer_address not implemented for Mesh class", __FILE__, __LINE__);
 }
 
 // initializes a vertex buffer and also sets it's device address

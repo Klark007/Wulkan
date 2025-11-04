@@ -4,6 +4,7 @@
 #include "Path.h"
 #include "Renderpass.h"
 #include "Texture.h"
+#include "Shape.h"
 
 struct PBRUniform {
 	alignas(16) glm::vec3 diffuse;
@@ -17,13 +18,6 @@ struct PBRUniform {
 	alignas(4) uint32_t configuration; // 0 bit: if true, read from albedo texture; upper 16 bit for setting visualization mode
 };
 
-enum class PBRVisualizationMode {
-	Shaded,
-	Normals,
-	Diffuse,
-	ShadowCascade,
-};
-
 constexpr size_t PBR_MAT_DESC_SET_COUNT = 3;
 class PBRMaterial : public MaterialInstance< PushConstants, 1>{
 public:
@@ -34,14 +28,14 @@ public:
 	void del() override;
 private:
 	PBRUniform m_uniform;
-	PBRVisualizationMode m_visualization_mode;
+	VisualizationMode m_visualization_mode;
 
 	std::optional<Texture> m_diffuse_texture;
 	std::array< VKW_Buffer, MAX_FRAMES_IN_FLIGHT> m_uniform_buffers;
 public:
 	inline const VKW_Buffer& get_uniform_buffer(uint32_t current_frame) const { return m_uniform_buffers[current_frame]; };
 	inline Texture& get_diffuse_texture(Texture& fallback);
-	inline void set_visualization_mode(PBRVisualizationMode mode);
+	inline void set_visualization_mode(VisualizationMode mode);
 };
 
 Texture& PBRMaterial::get_diffuse_texture(Texture& fallback)
@@ -54,7 +48,7 @@ Texture& PBRMaterial::get_diffuse_texture(Texture& fallback)
 	}
 }
 
-inline void PBRMaterial::set_visualization_mode(PBRVisualizationMode mode)
+inline void PBRMaterial::set_visualization_mode(VisualizationMode mode)
 {
 	if (mode != m_visualization_mode) {
 		//spdlog::info("Old uniform config {:032b}", m_uniform.configuration);

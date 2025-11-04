@@ -144,7 +144,7 @@
     <ClCompile Include="src\engine\PBRMaterial.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\engine\InstancedShape.cpp">
+    <ClCompile Include="src\engine\PBRMesh.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -330,6 +330,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\engine\InstancedShape.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\engine\PBRMesh.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\engine\LODShape.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -14,7 +14,7 @@ struct EnvironmentMapPushConstants {
 	alignas(8) VkDeviceAddress vertex_buffer;
 };
 
-class EnvironmentMap : public Shape
+class EnvironmentMap : public Mesh
 {
 public:
 	EnvironmentMap() = default;
@@ -28,7 +28,6 @@ public:
 	inline void draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame) override;
 private:
 	Texture cube_map;
-	Mesh mesh; // incorrect normals and uv
 	VKW_Sampler sampler;
 
 	inline static VKW_DescriptorSetLayout descriptor_set_layout;
@@ -40,9 +39,9 @@ inline void EnvironmentMap::draw(const VKW_CommandBuffer& command_buffer, uint32
 	material.bind(
 		command_buffer,
 		current_frame,
-		{ mesh.get_vertex_address() }
+		{ get_vertex_address() }
 	);
 
-	mesh.draw(command_buffer, current_frame);
+	Mesh::draw(command_buffer, current_frame);
 }
 

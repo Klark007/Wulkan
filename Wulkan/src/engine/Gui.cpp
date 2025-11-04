@@ -146,7 +146,7 @@ void GUI::draw_gui(const VKW_CommandBuffer& cmd)
 			constexpr const char* visualization_modes[] = { "Shaded", "Normals", "Diffuse", "Shadow map cascade" };
 			static int selected_vis = 0;
 			ImGui::ListBox("PBR Mode", &selected_vis, visualization_modes, IM_ARRAYSIZE(visualization_modes));
-			m_data.pbr_vis_mode = static_cast<PBRVisualizationMode>(selected_vis);
+			m_data.pbr_vis_mode = static_cast<VisualizationMode>(selected_vis);
 
 			ImGui::SliderFloat("Constant depth bias", &m_data.depth_bias, 1e4, 1e5);
 			ImGui::SliderFloat("Slope depth bias", &m_data.slope_depth_bias, 1e-2f, 1e1);

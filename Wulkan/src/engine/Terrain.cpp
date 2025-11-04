@@ -73,7 +73,7 @@ void Terrain::init(const VKW_Device& device, const VKW_CommandPool& graphics_poo
 		}
 	}
 	
-	mesh.init(device, transfer_pool, terrain_vertices, terrain_indices);
+	Mesh::init(device, transfer_pool, terrain_vertices, terrain_indices);
 }
 
 void Terrain::set_descriptor_bindings()
@@ -278,6 +278,6 @@ void Terrain::del()
 	curvatue.del();
 	albedo.del();
 	normal_map.del();
-	mesh.del();
+	Mesh::del();
 	material.del();
 }

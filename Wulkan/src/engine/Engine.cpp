@@ -165,13 +165,14 @@ void Engine::update()
 			)
 		); // for sponza
 		*/
+
 		meshes[3].set_model_matrix(
 			glm::translate(
 				glm::scale(
 					glm::mat4(1.f),
 					glm::vec3(1.f)
 				),
-				glm::vec3(10, -1.7, 12)
+				glm::vec3(10, -2.5, 12)
 			)
 		);
 		meshes[3].set_visualization_mode(gui_input.pbr_vis_mode);
@@ -180,6 +181,17 @@ void Engine::update()
 			glm::translate(glm::mat4(1), glm::vec3(-5, 0, 35))
 		);
 		instanced_mesh.set_visualization_mode(gui_input.pbr_vis_mode);
+
+		lod_mesh.set_model_matrix(
+			glm::translate(
+				glm::scale(
+					glm::mat4(1.f),
+					glm::vec3(1.f)
+				),
+				glm::vec3(10, -2.5, 12)
+			)
+		);
+		lod_mesh.set_visualization_mode(gui_input.pbr_vis_mode);
 	}
 
 	update_uniforms();
@@ -252,13 +264,18 @@ void Engine::draw()
 						view_descriptor_sets[current_frame].bind(shadow_cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pbr_depth_pass.get_pipeline_layout(), 0);
 						shadow_descriptor_sets[current_frame].bind(shadow_cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pbr_depth_pass.get_pipeline_layout(), 1);
 
+						/*
 						for (size_t j = 0; j < 4; j++) {
 							meshes[j].set_cascade_idx(i);
 							meshes[j].draw(shadow_cmd, current_frame);
 						}
+						*/
 
 						instanced_mesh.set_cascade_idx(i);
 						instanced_mesh.draw(shadow_cmd, current_frame);
+
+						lod_mesh.set_cascade_idx(i);
+						lod_mesh.draw(shadow_cmd, current_frame);
 
 						pbr_depth_pass.end(shadow_cmd);
 					}
@@ -344,12 +361,14 @@ void Engine::draw()
 				view_descriptor_sets[current_frame].bind(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pbr_render_pass.get_pipeline_layout(), 0);
 				shadow_descriptor_sets[current_frame].bind(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pbr_render_pass.get_pipeline_layout(), 1);
 
-				
+				/*
 				for (size_t i = 0; i < 4; i++)
 					meshes[i].draw(cmd, current_frame);
-				
+				*/
 
 				instanced_mesh.draw(cmd, current_frame);
+
+				lod_mesh.draw(cmd, current_frame);
 
 				pbr_render_pass.end(cmd);
 
@@ -566,17 +585,17 @@ void Engine::init_data()
 	directional_light.init(
 		&device,
 		graphic_pools,
-		
+
 		glm::vec3(0, 0, 0), // look at for shadow
 		glm::vec3(0, 0, 1), // direction for shadow
 		50,                 // distance from look at for projection
-		1024*4,             // resolution
-		1024*4,
+		1024 * 4,             // resolution
+		1024 * 4,
 		40,                 // height of orthographic projection
 		0.1f,                // near
 		50.0f                // far plane
- 	);
-	
+	);
+
 	// can toggle debug drawings of cascade frustums
 	directional_light.init_debug_lines(
 		get_current_transfer_pool(),
@@ -625,49 +644,84 @@ void Engine::init_data()
 	);
 	cleanup_queue.add(&texture_not_found);
 
-	meshes[0].init(device, get_current_graphics_pool(), get_current_transfer_pool(), descriptor_pool, pbr_render_pass, "models/baloon.obj");
-	meshes[0].set_descriptor_bindings(texture_not_found, linear_texture_sampler);
-	cleanup_queue.add(&meshes[0]);
+	{
+		meshes[0].init(device, get_current_graphics_pool(), get_current_transfer_pool(), descriptor_pool, pbr_render_pass, "models/baloon.obj");
+		meshes[0].set_descriptor_bindings(texture_not_found, linear_texture_sampler);
+		cleanup_queue.add(&meshes[0]);
 
-	meshes[1].init(device, get_current_graphics_pool(), get_current_transfer_pool(), descriptor_pool, pbr_render_pass, "models/plane.obj");
-	meshes[1].set_descriptor_bindings(texture_not_found, linear_texture_sampler);
-	cleanup_queue.add(&meshes[1]);
+		meshes[1].init(device, get_current_graphics_pool(), get_current_transfer_pool(), descriptor_pool, pbr_render_pass, "models/plane.obj");
+		meshes[1].set_descriptor_bindings(texture_not_found, linear_texture_sampler);
+		cleanup_queue.add(&meshes[1]);
 
-	meshes[2].init(device, get_current_graphics_pool(), get_current_transfer_pool(), descriptor_pool, pbr_render_pass, "models/material_tests/mitsuba_texture.obj");
-	meshes[2].set_descriptor_bindings(texture_not_found, linear_texture_sampler);
-	cleanup_queue.add(&meshes[2]);
+		meshes[2].init(device, get_current_graphics_pool(), get_current_transfer_pool(), descriptor_pool, pbr_render_pass, "models/material_tests/mitsuba_texture.obj");
+		meshes[2].set_descriptor_bindings(texture_not_found, linear_texture_sampler);
+		cleanup_queue.add(&meshes[2]);
 
-	meshes[3].init(device, get_current_graphics_pool(), get_current_transfer_pool(), dyn_descriptor_pool, pbr_render_pass, "models/trees/Tree0.obj");
-	//meshes[3].init(device, get_current_graphics_pool(), get_current_transfer_pool(), dyn_descriptor_pool, pbr_render_pass, "models/sponza/sponza.obj");
-	meshes[3].set_descriptor_bindings(texture_not_found, linear_texture_sampler);
-	cleanup_queue.add(&meshes[3]);
+		meshes[3].init(device, get_current_graphics_pool(), get_current_transfer_pool(), dyn_descriptor_pool, pbr_render_pass, "models/trees/Tree0.obj");
+		//meshes[3].init(device, get_current_graphics_pool(), get_current_transfer_pool(), dyn_descriptor_pool, pbr_render_pass, "models/sponza/sponza.obj");
+		meshes[3].set_descriptor_bindings(texture_not_found, linear_texture_sampler);
+		cleanup_queue.add(&meshes[3]);
+	}
 
-	std::vector<InstanceData> per_instance_data{ 
-		{{0,10,0}}, 
-		{{10, 0,0 }}, 
-		{{0, 0, 10}},
-		{{0, 0, 0}},
-		{{3, -3, 3}},
-		{{3, 3, 3}},
-		{{3, 3, -3}},
-		{{-3, 3, -3}},
-		{{-3, 3, 3}},
-		{{10, 0, -2}},
-		{{2, 3, -5}},
-		{{10, 6, -16}},
-		{{4, 2, 7}},
-		{{8, 9, -2}},
-		{{-6, 18, -4}},
-		{{-6, 2, 9}},
-		{{3, 3, 3}},
-		{{3, 10, -5}},
-		{{-6, 7, 9}},
-		{{-2, 4, -6}},
-		{{16, 8, 8}},
-	};
-	instanced_mesh.init(device, get_current_graphics_pool(), get_current_transfer_pool(), descriptor_pool, pbr_render_pass, "models/baloon.obj", per_instance_data);
-	instanced_mesh.set_descriptor_bindings(texture_not_found, linear_texture_sampler);
-	cleanup_queue.add(&instanced_mesh);
+	{
+		std::vector<InstanceData> per_instance_data{ 
+			{{0,10,0}}, 
+			{{10, 0,0 }}, 
+			{{0, 0, 10}},
+			{{0, 0, 0}},
+			{{3, -3, 3}},
+			{{3, 3, 3}},
+			{{3, 3, -3}},
+			{{-3, 3, -3}},
+			{{-3, 3, 3}},
+			{{10, 0, -2}},
+			{{2, 3, -5}},
+			{{10, 6, -16}},
+			{{4, 2, 7}},
+			{{8, 9, -2}},
+			{{-6, 18, -4}},
+			{{-6, 2, 9}},
+			{{3, 3, 3}},
+			{{3, 10, -5}},
+			{{-6, 7, 9}},
+			{{-2, 4, -6}},
+			{{16, 8, 8}},
+		};
+
+	
+		ObjMesh mesh{};
+		mesh.init(
+			device, get_current_graphics_pool(), get_current_transfer_pool(), descriptor_pool, pbr_render_pass,
+			"models/baloon.obj"
+		);
+		mesh.set_descriptor_bindings(texture_not_found, linear_texture_sampler);
+		instanced_mesh.init(device, get_current_transfer_pool(),
+			std::move(mesh),
+			per_instance_data
+		);
+		cleanup_queue.add(&instanced_mesh);
+	}
+
+	{
+		std::vector <ObjMesh> meshes{};
+		std::vector<VKW_Path> mesh_path{ "models/trees/Tree0.obj", /*"models/trees/Tree1.obj",*/ "models/trees/Tree2.obj", "models/trees/Tree3.obj" };
+	
+		for (const VKW_Path& path : mesh_path) {
+			ObjMesh mesh{};
+			mesh.init(
+				device, get_current_graphics_pool(), get_current_transfer_pool(), descriptor_pool, pbr_render_pass,
+				path
+			);
+			mesh.set_descriptor_bindings(texture_not_found, linear_texture_sampler);
+			meshes.push_back(mesh);
+		}
+
+		lod_mesh.init(
+			std::move(meshes)
+		);
+		cleanup_queue.add(&lod_mesh);
+	}
+	
 }
 
 void Engine::init_descriptor_sets()
