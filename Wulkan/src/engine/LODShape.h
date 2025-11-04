@@ -29,6 +29,8 @@ public:
 	inline void set_instance_buffer_address(VkDeviceAddress address) override;
 	inline void set_instance_count(uint32_t count) override;
 	inline void set_visualization_mode(VisualizationMode mode) override;
+
+	int idx;
 };
 
 template <typename T> requires std::is_base_of_v<Shape, T>
@@ -47,7 +49,7 @@ inline void LODShape<T>::del()
 template<typename T> requires std::is_base_of_v<Shape, T>
 inline void LODShape<T>::draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame)
 {
-	m_shapes[2].draw(command_buffer, current_frame);
+	m_shapes[idx].draw(command_buffer, current_frame);
 }
 
 template <typename T> requires std::is_base_of_v<Shape, T>

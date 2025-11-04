@@ -160,6 +160,8 @@ void GUI::draw_gui(const VKW_CommandBuffer& cmd)
 			ImGui::Checkbox("Show debug frustums", &m_data.shadow_draw_debug_frustums);
 		}
 
+		ImGui::SliderInt("LOD_IDX", &m_data.lod_idx, 0, 3);
+
 		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 	}
 	ImGui::End();

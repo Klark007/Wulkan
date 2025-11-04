@@ -1,17 +1,6 @@
 # Blender 4.5.4 LTS MTL File: 'T.blend'
 # www.blender.org
 
-newmtl Acer_small_1_Billboard_Mat
-Ns 44.721355
-Ka 1.000000 1.000000 1.000000
-Ks 0.500000 0.500000 0.500000
-Ke 0.000000 0.000000 0.000000
-Ni 1.500000
-illum 2
-map_Kd C:/Acer_small_1_Billboard_Mat_baseColor.png
-map_d C:/Acer_small_1_Billboard_Mat_baseColor.png
-map_Bump -bm 1.000000 C:/Acer_small_1_Billboard_Mat_normal.jpg
-
 newmtl Bark_Mat
 Ka 1.000000 1.000000 1.000000
 Ks 0.500000 0.500000 0.500000
@@ -23,3 +12,15 @@ map_Kd textures/Bark_Mat_baseColor.jpg
 map_Ns textures/Bark_Mat_metallicRoughness_rough.jpg
 map_refl textures/Bark_Mat_metallicRoughness_metal_scale0.jpg
 map_Bump -bm 1.000000 textures/Bark_Mat_normal.jpg
+
+newmtl Cluster_Mat
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+illum 2
+map_Kd textures/Cluster_Mat_baseColor.png
+map_Ns textures/Cluster_Mat_metallicRoughness_rough.jpg
+map_refl textures/Cluster_Mat_metallicRoughness_metal_scale0.jpg
+map_d textures/Cluster_Mat_baseColor.png
+map_Bump -bm 1.000000 textures/Cluster_Mat_normal.jpg

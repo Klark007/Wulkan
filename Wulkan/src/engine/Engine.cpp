@@ -192,6 +192,7 @@ void Engine::update()
 			)
 		);
 		lod_mesh.set_visualization_mode(gui_input.pbr_vis_mode);
+		lod_mesh.idx = gui_input.lod_idx;
 	}
 
 	update_uniforms();
@@ -704,7 +705,7 @@ void Engine::init_data()
 
 	{
 		std::vector <ObjMesh> meshes{};
-		std::vector<VKW_Path> mesh_path{ "models/trees/Tree0.obj", /*"models/trees/Tree1.obj",*/ "models/trees/Tree2.obj", "models/trees/Tree3.obj" };
+		std::vector<VKW_Path> mesh_path{ "models/trees/Tree0.obj", "models/trees/Tree1.obj", "models/trees/Tree2.obj", "models/trees/Tree3.obj" };
 	
 		for (const VKW_Path& path : mesh_path) {
 			ObjMesh mesh{};

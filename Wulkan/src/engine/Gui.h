@@ -45,6 +45,8 @@ struct GUI_Input {
 
 	ShadowMode shadow_mode = ShadowMode::SoftShadows;
 	VisualizationMode pbr_vis_mode = VisualizationMode::Shaded;
+
+	int lod_idx = 0;
 };
 
 class GUI : public VKW_Object
