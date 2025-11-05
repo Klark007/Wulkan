@@ -33,6 +33,7 @@ public:
 	// might be different for shapes composed of multiple shapes (see ObjMesh)
 	virtual void set_instance_count(uint32_t count) = 0;
 	virtual void set_instance_buffer_address(VkDeviceAddress address) = 0;
+	virtual glm::vec3 get_instance_position(uint32_t instance = 0) = 0;
 };
 
 inline void Shape::set_model_matrix(const glm::mat4& m)

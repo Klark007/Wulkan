@@ -47,6 +47,8 @@ private:
 
 	bool freeze_virtual_camera = false;
 	glm::mat4 virtual_view_mat;
+	glm::vec3 virtual_pos;
+	glm::vec3 virtual_dir;
 
 public:
 	inline glm::mat4 generate_view_mat() const;
@@ -56,6 +58,8 @@ public:
 	// ortho_height (scale how big projection plane is) is default initialized to zero
 	inline glm::mat4 generate_ortho_mat() const;
 	inline glm::vec3 get_pos() const { return position; };
+	inline glm::vec3 get_virtual_pos() const;
+	inline glm::vec3 get_virtual_dir() const;
 	inline glm::vec3 get_des() const { return position + get_dir(); };
 	inline glm::vec3 get_dir() const;
 	inline glm::vec3 get_up() const;
@@ -94,6 +98,8 @@ inline void Camera::set_virtual_camera_enabled(bool enabled)
 	freeze_virtual_camera = enabled;
 	if (freeze_virtual_camera) {
 		virtual_view_mat = generate_view_mat();
+		virtual_pos = get_pos();
+		virtual_dir = get_dir();
 	}
 }
 
@@ -133,6 +139,26 @@ inline glm::mat4 Camera::generate_ortho_mat() const
 {
 	float aspect = get_aspect_ratio();
 	return glm::ortho(-ortho_height * aspect, ortho_height * aspect, -ortho_height, ortho_height, m_z_near, m_z_far);
+}
+
+inline glm::vec3 Camera::get_virtual_pos() const
+{
+	if (freeze_virtual_camera) {
+		return virtual_pos;
+	}
+	else {
+		return get_pos();
+	}
+}
+
+inline glm::vec3 Camera::get_virtual_dir() const
+{
+	if (freeze_virtual_camera) {
+		return virtual_dir;
+	}
+	else {
+		return get_dir();
+	}
 }
 
 // calculate dir given yaw and pitch

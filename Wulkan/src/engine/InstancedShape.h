@@ -18,24 +18,27 @@ public:
 	inline void draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame) override;
 private:
 	T m_shape;
+	std::vector<InstanceData> m_instance_data;
 	VKW_Buffer m_instance_buffer;
 public:
 	void set_model_matrix(const glm::mat4& m) override { m_shape.set_model_matrix(m); };
 	void set_cascade_idx(int idx) override { m_shape.set_cascade_idx( idx); };
 
-	virtual void set_instance_buffer_address(VkDeviceAddress address) { m_shape.set_instance_buffer_address(address); };
 	inline void set_visualization_mode(VisualizationMode mode) { m_shape.set_visualization_mode(mode); };
-	inline virtual virtual void set_instance_count(uint32_t count) override { m_shape.set_instance_count(count); };
+	inline virtual virtual void set_instance_count(uint32_t count) override;
+	virtual void set_instance_buffer_address(VkDeviceAddress address) { m_shape.set_instance_buffer_address(address); };
+	glm::vec3 get_instance_position(uint32_t instance = 0) override;
 };
 
 template<typename T>  requires std::is_base_of_v<Shape, T>
 inline void InstancedShape<T>::init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, T&& shape, const std::vector<InstanceData>& per_instance_data)
 {
 	m_shape = shape;
+	m_instance_data = per_instance_data;
 
 	// copy per instance data into a buffer
-	VkDeviceSize instance_buffer_size = sizeof(InstanceData) * per_instance_data.size();
-	VKW_Buffer instance_staging_buffer = create_staging_buffer(&device, instance_buffer_size, per_instance_data.data(), instance_buffer_size, "Instance staging buffer");
+	VkDeviceSize instance_buffer_size = sizeof(InstanceData) * m_instance_data.size();
+	VKW_Buffer instance_staging_buffer = create_staging_buffer(&device, instance_buffer_size, m_instance_data.data(), instance_buffer_size, "Instance staging buffer");
 
 	m_instance_buffer.init(
 		&device,
@@ -55,7 +58,7 @@ inline void InstancedShape<T>::init(const VKW_Device& device, const VKW_CommandP
 	address_info.buffer = m_instance_buffer;
 
 	set_instance_buffer_address(vkGetBufferDeviceAddress(device, &address_info));
-	set_instance_count(per_instance_data.size());
+	set_instance_count(m_instance_data.size());
 }
 
 // overhead cost of virtual function call
@@ -63,6 +66,20 @@ template<typename T> requires std::is_base_of_v<Shape, T>
 inline void InstancedShape<T>::draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame)
 {
 	m_shape.draw(command_buffer, current_frame);
+}
+
+template<typename T> requires std::is_base_of_v<Shape, T>
+inline void InstancedShape<T>::set_instance_count(uint32_t count)
+{
+	m_instance_count = count;
+	m_shape.set_instance_count(count);
+}
+
+template<typename T> requires std::is_base_of_v<Shape, T>
+inline glm::vec3 InstancedShape<T>::get_instance_position(uint32_t instance)
+{
+	assert(instance < m_instance_count && "Attempt to get position with invalid instance");
+	return glm::vec3(m_model[3]) + m_instance_data[instance].position; 
 }
 
 template<typename T> requires std::is_base_of_v<Shape, T>

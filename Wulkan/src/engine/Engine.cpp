@@ -191,6 +191,8 @@ void Engine::update()
 				glm::vec3(10, -2.5, 12)
 			)
 		);
+		lod_mesh.set_camera_info(camera.get_virtual_pos(), camera.get_virtual_dir(), camera.get_near_plane(), camera.get_far_plane());
+
 		lod_mesh.set_visualization_mode(gui_input.pbr_vis_mode);
 		lod_mesh.idx = gui_input.lod_idx;
 	}

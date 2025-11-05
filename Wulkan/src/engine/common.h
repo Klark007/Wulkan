@@ -66,6 +66,11 @@ inline constexpr SharingInfo sharing_exlusive() {
 // convert to phi, theta representation of an already normalized direction
 glm::vec2 dir_to_spherical(const glm::vec3& dir);
 
+// remap value between min1 and max1 to min2 to max2
+inline float map(float value, float min1, float max1, float min2, float max2) {
+    return min2 + (value - min1) * (max2 - min2) / (max1 - min1);
+}
+
 #ifdef TRACY_ENABLE
 // Track cpu allocations
 void* operator new(std::size_t count);

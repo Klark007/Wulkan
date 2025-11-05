@@ -35,6 +35,7 @@ public:
 	inline void set_visualization_mode(VisualizationMode mode) override;
 	void set_instance_count(uint32_t count) { m_instance_count = count; };
 	inline  void set_instance_buffer_address(VkDeviceAddress address) override;
+	glm::vec3 get_instance_position(uint32_t instance = 0) override;
 };
 
 inline void Line::draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame)
@@ -64,4 +65,10 @@ inline void Line::set_visualization_mode(VisualizationMode mode)
 inline void Line::set_instance_buffer_address(VkDeviceAddress address)
 {
 	throw NotImplementedException("set_instance_buffer_address not implemented for Line class", __FILE__, __LINE__);
+}
+
+inline glm::vec3 Line::get_instance_position(uint32_t instance)
+{
+	assert(instance < m_instance_count && "Attempt to get position with invalid instance");
+	return glm::vec3(m_model[3]);
 }

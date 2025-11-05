@@ -33,6 +33,7 @@ public:
 	
 	inline void set_instance_count(uint32_t count) override;
 	void set_instance_buffer_address(VkDeviceAddress address) override { m_instance_buffer_address = address; };
+	glm::vec3 get_instance_position(uint32_t instance = 0) override;
 };
 
 inline void PBRMesh::set_visualization_mode(VisualizationMode mode)
@@ -44,6 +45,13 @@ inline void PBRMesh::set_visualization_mode(VisualizationMode mode)
 
 inline void PBRMesh::set_instance_count(uint32_t count)
 {
+	m_instance_count = count;
 	for (Mesh& m : m_meshes)
-		m.set_instance_count(count);
+		m.set_instance_count(m_instance_count);
+}
+
+inline glm::vec3 PBRMesh::get_instance_position(uint32_t instance)
+{
+	assert(instance < m_instance_count && "Attempt to get position with invalid instance");
+	return glm::vec3(m_model[3]);
 }
