@@ -151,6 +151,7 @@ private:
 	RenderPass<PushConstants, 1> line_render_pass;
 
 	RenderPass<PushConstants, PBR_MAT_DESC_SET_COUNT> pbr_render_pass;
+	RenderPass<PushConstants, PBR_MAT_DESC_SET_COUNT> pbr_render_double_sided_pass;
 	RenderPass<PushConstants, PBR_MAT_DESC_SET_COUNT> pbr_depth_pass;
 
 	// general sampler for texture (Linear sampling, repeat address mode)

@@ -33,8 +33,8 @@
 * Move textures (and maybe uniform buffers) into Material class instances [X] 
 * Completly transparent texture support (discard; also in depth) [X] 
 * Texture mipmaps [X]
+* Deduplicate texture code [X] 
 
-* Deduplicate texture code [ ] 
 * Store Texture mipmaps [ ] 
 * Draw Indirect [ ] 
 * Fix assumption that per model only one pipeline [ ]
@@ -55,6 +55,7 @@
 * GPU Memory usage [~] 
 
 ## Bugs
+* Blender UV imporing weird [ ] 
 * Flickering at high frame rates [ ]
 * Looking up / down changes shadows [ ]
 
@@ -72,8 +73,14 @@
 ### Soft shadows [X]
 
 ## Foliage
-* Instanced rendering [ ]
-* Bill boards [ ]
+### CPU Side
+* CPU Instances [X]
+* CPU LOD [X]
+* Backface culling disable for certain models [X] 
+* Orienting Bill boards [ ]
+* CPU Instanced LOD [ ] 
+
+### GPU Side
 * Procedural placement[ ] 
 * Wind [ ] 
 * Culling/LOD [ ]

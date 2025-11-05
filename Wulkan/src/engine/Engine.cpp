@@ -369,15 +369,31 @@ void Engine::draw()
 					meshes[i].draw(cmd, current_frame);
 				*/
 
-				instanced_mesh.draw(cmd, current_frame);
-
-				lod_mesh.draw(cmd, current_frame);
-
 				pbr_render_pass.end(cmd);
 
 				cmd.end_debug_zone();
 			}
 
+			{
+				TracyVkZone(get_current_tracy_context(), cmd, "PBR Meshes Double sided");
+				cmd.begin_debug_zone("PBR pass Double sided");
+
+				pbr_render_double_sided_pass.begin(
+					cmd,
+					swapchain.get_extent(),
+					color_render_target.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT),
+					depth_render_target.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT)
+				);
+				view_descriptor_sets[current_frame].bind(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pbr_render_double_sided_pass.get_pipeline_layout(), 0);
+				shadow_descriptor_sets[current_frame].bind(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pbr_render_double_sided_pass.get_pipeline_layout(), 1);
+
+				instanced_mesh.draw(cmd, current_frame);
+				lod_mesh.draw(cmd, current_frame);
+
+				pbr_render_double_sided_pass.end(cmd);
+
+				cmd.end_debug_zone();
+			}
 			// draw lines
 			{
 				TracyVkZone(get_current_tracy_context(), cmd, "Debug Lines");
@@ -695,7 +711,7 @@ void Engine::init_data()
 		ObjMesh mesh{};
 		mesh.init(
 			device, get_current_graphics_pool(), get_current_transfer_pool(), descriptor_pool, pbr_render_pass,
-			"models/baloon.obj"
+			"models/baloon_billboard.obj"
 		);
 		mesh.set_descriptor_bindings(texture_not_found, linear_texture_sampler);
 		instanced_mesh.init(device, get_current_transfer_pool(),
@@ -897,6 +913,9 @@ void Engine::create_render_passes()
 
 	pbr_render_pass = ObjMesh::create_render_pass(&device, { view_desc_set_layout, shadow_desc_set_layout, pbr_desc_set_layout }, color_render_target, depth_render_target);
 	cleanup_queue.add(&pbr_render_pass);
+
+	pbr_render_double_sided_pass = ObjMesh::create_render_pass(&device, { view_desc_set_layout, shadow_desc_set_layout, pbr_desc_set_layout }, color_render_target, depth_render_target, false, false, true);
+	cleanup_queue.add(&pbr_render_double_sided_pass);
 
 	pbr_depth_pass = ObjMesh::create_render_pass(&device, { view_desc_set_layout, shadow_desc_set_layout, pbr_desc_set_layout }, color_render_target, depth_render_target, true, true);
 	cleanup_queue.add(&pbr_depth_pass);

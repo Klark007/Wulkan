@@ -12,7 +12,7 @@ public:
 
 	// TODO: could be kept seperate (Other file formats should use same render_pass types (different from eg terrain)
 	// bias_depth only works in depth_only mode
-	static RenderPass<PushConstants, PBR_MAT_DESC_SET_COUNT> create_render_pass(const VKW_Device* device, const std::array<VKW_DescriptorSetLayout, PBR_MAT_DESC_SET_COUNT>& layouts, Texture& color_rt, Texture& depth_rt, bool depth_only = false, bool bias_depth = false);
+	static RenderPass<PushConstants, PBR_MAT_DESC_SET_COUNT> create_render_pass(const VKW_Device* device, const std::array<VKW_DescriptorSetLayout, PBR_MAT_DESC_SET_COUNT>& layouts, Texture& color_rt, Texture& depth_rt, bool depth_only = false, bool bias_depth = false, bool cull_backfaces = true);
 	static VKW_DescriptorSetLayout create_descriptor_set_layout(const VKW_Device& device);
 
 	// goes over all materials in obj and renders them, expects to be in active command buffer
