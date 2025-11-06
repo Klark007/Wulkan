@@ -193,8 +193,7 @@ private:
 
 	Texture texture_not_found;
 	std::array<ObjMesh, 4> meshes;
-	InstancedShape<ObjMesh> instanced_mesh;
-	LODShape<ObjMesh> lod_mesh;
+	LODShape<InstancedShape<ObjMesh>> lod_mesh;
 
 	inline const VKW_CommandPool& get_current_graphics_pool() const;
 	inline const VKW_CommandPool& get_current_transfer_pool() const;

@@ -58,7 +58,6 @@ inline void LODShape<T>::init(std::vector<T > && shapes, std::vector<float> rati
 	}
 }
 
-
 template <typename T> requires std::is_base_of_v<Shape, T>
 inline void LODShape<T>::del()
 {
@@ -71,7 +70,8 @@ inline void LODShape<T>::draw(const VKW_CommandBuffer& command_buffer, uint32_t 
 {	
 	// project onto camera dir and see distance (crorresponds to distance to plane)
 	float distance = glm::dot(m_camera_direction, get_instance_position() - m_camera_position);
-	float distance_01 = map(std::clamp(distance, m_near_plane, m_far_plane), m_near_plane, m_far_plane, 0, 1);
+	// treat negative distances also as far away (TODO: Shouldn't matter if culling were supported)
+	float distance_01 = map(std::clamp(abs(distance), m_near_plane, m_far_plane), m_near_plane, m_far_plane, 0, 1);
 	
 	uint32_t lod_idx = 0;
 	while (distance_01 > m_ratios[lod_idx]) {
@@ -126,11 +126,11 @@ inline glm::vec3 LODShape<T>::get_instance_position(uint32_t instance)
 template <typename T> requires std::is_base_of_v<Shape, T>
 inline void LODShape<T>::set_instance_buffer_address(VkDeviceAddress address)
 {
-	throw RuntimeException("set_instance_buffer_address not supported for LODMesh. If we want Instanced LOD: create an LODShape<InstancedShape<T>>", __FILE__, __LINE__);
+	throw RuntimeException("set_instance_buffer_address not supported for LODMesh. If we want Instanced LOD: create an InstancedLODShape<InstancedShape<T>>", __FILE__, __LINE__);
 }
 
 template <typename T> requires std::is_base_of_v<Shape, T>
 inline void LODShape<T>::set_instance_count(uint32_t count)
 {
-	throw RuntimeException("set_instance_count not supported for LODMesh. If we want Instanced LOD: create an LODShape<InstancedShape<T>>", __FILE__, __LINE__);
+	throw RuntimeException("set_instance_count not supported for LODMesh. If we want Instanced LOD: create an InstancedLODShape<InstancedShape<T>>", __FILE__, __LINE__);
 }

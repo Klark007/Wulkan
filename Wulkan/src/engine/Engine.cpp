@@ -10,6 +10,8 @@
 #include "spdlog/sinks/basic_file_sink.h"
 #include <cstdio>
 
+#include <random>
+
 void Engine::init(unsigned int w, unsigned int h)
 {
 	res_x = w;
@@ -177,11 +179,6 @@ void Engine::update()
 		);
 		meshes[3].set_visualization_mode(gui_input.pbr_vis_mode);
 
-		instanced_mesh.set_model_matrix(
-			glm::translate(glm::mat4(1), glm::vec3(-5, 0, 35))
-		);
-		instanced_mesh.set_visualization_mode(gui_input.pbr_vis_mode);
-
 		lod_mesh.set_model_matrix(
 			glm::translate(
 				glm::scale(
@@ -273,9 +270,6 @@ void Engine::draw()
 							meshes[j].draw(shadow_cmd, current_frame);
 						}
 						*/
-
-						instanced_mesh.set_cascade_idx(i);
-						instanced_mesh.draw(shadow_cmd, current_frame);
 
 						lod_mesh.set_cascade_idx(i);
 						lod_mesh.draw(shadow_cmd, current_frame);
@@ -387,7 +381,6 @@ void Engine::draw()
 				view_descriptor_sets[current_frame].bind(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pbr_render_double_sided_pass.get_pipeline_layout(), 0);
 				shadow_descriptor_sets[current_frame].bind(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pbr_render_double_sided_pass.get_pipeline_layout(), 1);
 
-				instanced_mesh.draw(cmd, current_frame);
 				lod_mesh.draw(cmd, current_frame);
 
 				pbr_render_double_sided_pass.end(cmd);
@@ -683,48 +676,26 @@ void Engine::init_data()
 	}
 
 	{
-		std::vector<InstanceData> per_instance_data{ 
-			{{0,10,0}}, 
-			{{10, 0,0 }}, 
-			{{0, 0, 10}},
-			{{0, 0, 0}},
-			{{3, -3, 3}},
-			{{3, 3, 3}},
-			{{3, 3, -3}},
-			{{-3, 3, -3}},
-			{{-3, 3, 3}},
-			{{10, 0, -2}},
-			{{2, 3, -5}},
-			{{10, 6, -16}},
-			{{4, 2, 7}},
-			{{8, 9, -2}},
-			{{-6, 18, -4}},
-			{{-6, 2, 9}},
-			{{3, 3, 3}},
-			{{3, 10, -5}},
-			{{-6, 7, 9}},
-			{{-2, 4, -6}},
-			{{16, 8, 8}},
-		};
+		std::default_random_engine generator{};
+		std::uniform_real_distribution<float> distribution{ -32, 32 };
 
-	
-		ObjMesh mesh{};
-		mesh.init(
-			device, get_current_graphics_pool(), get_current_transfer_pool(), descriptor_pool, pbr_render_pass,
-			"models/baloon_billboard.obj"
-		);
-		mesh.set_descriptor_bindings(texture_not_found, linear_texture_sampler);
-		instanced_mesh.init(device, get_current_transfer_pool(),
-			std::move(mesh),
-			per_instance_data
-		);
-		cleanup_queue.add(&instanced_mesh);
-	}
+		const int nr_instances = 1024;
+		std::vector<InstanceData> per_instance_data{};
+		per_instance_data.reserve(nr_instances);
 
-	{
-		std::vector <ObjMesh> meshes{};
+		for (int i = 0; i < nr_instances; i++) {
+			per_instance_data.push_back(
+				{{
+					distribution(generator),
+					distribution(generator),
+					distribution(generator)
+				}}
+			);
+		}
+
+		std::vector <InstancedShape<ObjMesh>> meshes{};
 		std::vector<VKW_Path> mesh_path{ "models/trees/Tree0.obj", "models/trees/Tree1.obj", "models/trees/Tree2.obj", "models/trees/Tree3.obj" };
-	
+
 		for (const VKW_Path& path : mesh_path) {
 			ObjMesh mesh{};
 			mesh.init(
@@ -732,7 +703,14 @@ void Engine::init_data()
 				path
 			);
 			mesh.set_descriptor_bindings(texture_not_found, linear_texture_sampler);
-			meshes.push_back(mesh);
+			
+			InstancedShape<ObjMesh> instanced_mesh{};
+			instanced_mesh.init(device, get_current_transfer_pool(),
+				std::move(mesh),
+				per_instance_data
+			);
+			
+			meshes.push_back(instanced_mesh);
 		}
 
 		lod_mesh.init(
@@ -740,7 +718,6 @@ void Engine::init_data()
 		);
 		cleanup_queue.add(&lod_mesh);
 	}
-	
 }
 
 void Engine::init_descriptor_sets()
