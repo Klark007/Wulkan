@@ -8,6 +8,10 @@ void VKW_Buffer::init(const VKW_Device* vkw_device, VkDeviceSize size, VkBufferU
 	length = (size_t) size;
 	name = obj_name;
 
+	if (size == 0) {
+		throw RuntimeException(fmt::format("Tried to allocate buffer {} with size 0", obj_name), __FILE__, __LINE__);
+	}
+
 	VkBufferCreateInfo buffer_info = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
 	buffer_info.size = size;
 	buffer_info.usage = usage;
