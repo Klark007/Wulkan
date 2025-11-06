@@ -191,7 +191,6 @@ void Engine::update()
 		lod_mesh.set_camera_info(camera.get_virtual_pos(), camera.get_virtual_dir(), camera.get_near_plane(), camera.get_far_plane());
 
 		lod_mesh.set_visualization_mode(gui_input.pbr_vis_mode);
-		lod_mesh.idx = gui_input.lod_idx;
 	}
 
 	update_uniforms();
@@ -707,14 +706,17 @@ void Engine::init_data()
 			InstancedShape<ObjMesh> instanced_mesh{};
 			instanced_mesh.init(device, get_current_transfer_pool(),
 				std::move(mesh),
-				per_instance_data
+				nr_instances,
+				{}
 			);
+			instanced_mesh.update_instance_data(per_instance_data);
 			
 			meshes.push_back(instanced_mesh);
 		}
 
 		lod_mesh.init(
-			std::move(meshes)
+			std::move(meshes),
+			per_instance_data
 		);
 		cleanup_queue.add(&lod_mesh);
 	}

@@ -280,6 +280,7 @@
     <ClInclude Include="external\include\rapidcsv.h" />
     <ClInclude Include="external\include\tiny_obj_loader.h" />
     <ClInclude Include="external\include\tph_poisson.h" />
+    <ClInclude Include="src\engine\InstancedLODShape.h" />
     <ClInclude Include="src\engine\LODShape.h" />
     <ClInclude Include="src\engine\InstancedShape.h" />
     <ClInclude Include="src\engine\Material.h" />

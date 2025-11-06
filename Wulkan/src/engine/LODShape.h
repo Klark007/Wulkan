@@ -1,8 +1,7 @@
 #pragma once
 #include "Shape.h"
 #include <type_traits>
-
-#include <spdlog/spdlog.h>
+#include "InstancedLODShape.h"
 
 template <typename T> requires std::is_base_of_v<Shape, T>
 class LODShape : public Shape
@@ -16,8 +15,8 @@ public:
 	void init(std::vector<T >&& shapes, std::vector<float> ratios = {});
 	void del() override;
 
-	void draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame) override;
-private:
+	virtual void draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame) override;
+protected:
 	std::vector<T> m_shapes;
 	std::vector<float> m_ratios;
 	uint32_t m_lod_levels;
@@ -26,6 +25,8 @@ private:
 	glm::vec3 m_camera_direction;
 	float m_near_plane;
 	float m_far_plane;
+
+	uint32_t get_lod_level(uint32_t instance = 0);
 public:
 	inline void set_camera_info(const glm::vec3& pos, const glm::vec3& dir, float near_plane, float far_plane);
 
@@ -36,8 +37,6 @@ public:
 	inline void set_instance_count(uint32_t count) override;
 	inline void set_visualization_mode(VisualizationMode mode) override;
 	glm::vec3 get_instance_position(uint32_t instance = 0) override;
-
-	int idx;
 };
 
 template <typename T> requires std::is_base_of_v<Shape, T>
@@ -68,11 +67,17 @@ inline void LODShape<T>::del()
 template<typename T> requires std::is_base_of_v<Shape, T>
 inline void LODShape<T>::draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame)
 {	
+	m_shapes[get_lod_level()].draw(command_buffer, current_frame);
+}
+
+template<typename T> requires std::is_base_of_v<Shape, T>
+inline uint32_t LODShape<T>::get_lod_level(uint32_t instance)
+{
 	// project onto camera dir and see distance (crorresponds to distance to plane)
-	float distance = glm::dot(m_camera_direction, get_instance_position() - m_camera_position);
+	float distance = glm::dot(m_camera_direction, get_instance_position(instance) - m_camera_position);
 	// treat negative distances also as far away (TODO: Shouldn't matter if culling were supported)
 	float distance_01 = map(std::clamp(abs(distance), m_near_plane, m_far_plane), m_near_plane, m_far_plane, 0, 1);
-	
+
 	uint32_t lod_idx = 0;
 	while (distance_01 > m_ratios[lod_idx]) {
 		lod_idx++;
@@ -82,7 +87,7 @@ inline void LODShape<T>::draw(const VKW_CommandBuffer& command_buffer, uint32_t 
 		}
 	}
 
-	m_shapes[lod_idx].draw(command_buffer, current_frame);
+	return lod_idx;
 }
 
 template <typename T> requires std::is_base_of_v<Shape, T>

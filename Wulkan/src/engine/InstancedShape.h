@@ -40,12 +40,13 @@ inline void InstancedShape<T>::init(const VKW_Device& device, const VKW_CommandP
 {
 	m_shape = shape;
 	m_instance_data = per_instance_data;
+	m_max_instance_count = instance_count;
 
-	if (!(m_instance_data.empty() || m_instance_data.size() == instance_count)) {
+	if (!(m_instance_data.empty() || m_instance_data.size() == m_max_instance_count)) {
 		throw RuntimeException(fmt::format("Tried to initialize InstancedShape with {} many instances but {} per_instance_data", instance_count, per_instance_data.size()), __FILE__, __LINE__);
 	}
 
-	VkDeviceSize instance_buffer_size = sizeof(InstanceData) * m_instance_data.size();
+	VkDeviceSize instance_buffer_size = sizeof(InstanceData) * m_max_instance_count;
 	if (!m_instance_data.empty()) {
 		// copy per instance data into a buffer
 		VKW_Buffer instance_staging_buffer = create_staging_buffer(&device, instance_buffer_size, m_instance_data.data(), instance_buffer_size, "Instance staging buffer");
@@ -66,7 +67,7 @@ inline void InstancedShape<T>::init(const VKW_Device& device, const VKW_CommandP
 		m_instance_buffer.init(
 			&device,
 			instance_buffer_size,
-			VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+			VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
 			sharing_exlusive(),
 			true,
 			"Instance buffer"
@@ -82,7 +83,6 @@ inline void InstancedShape<T>::init(const VKW_Device& device, const VKW_CommandP
 	address_info.buffer = m_instance_buffer;
 
 	set_instance_buffer_address(vkGetBufferDeviceAddress(device, &address_info));
-	m_max_instance_count = instance_count;
 	set_instance_count(m_max_instance_count);
 }
 
