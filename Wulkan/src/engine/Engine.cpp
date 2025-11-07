@@ -191,6 +191,7 @@ void Engine::update()
 		lod_mesh.set_camera_info(camera.get_virtual_pos(), camera.get_virtual_dir(), camera.get_near_plane(), camera.get_far_plane());
 
 		lod_mesh.set_visualization_mode(gui_input.pbr_vis_mode);
+		lod_mesh.update();
 	}
 
 	update_uniforms();
@@ -707,7 +708,8 @@ void Engine::init_data()
 			instanced_mesh.init(device, get_current_transfer_pool(),
 				std::move(mesh),
 				nr_instances,
-				{}
+				{},
+				true
 			);
 			instanced_mesh.update_instance_data(per_instance_data);
 			

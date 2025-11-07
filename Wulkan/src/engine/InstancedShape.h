@@ -12,8 +12,7 @@ class InstancedShape : public Shape
 {
 public:
 	// before will need to have called set_descriptor_bindings
-	// If per_instance_data is empty then dynamically update the m_instance_buffer
-	void init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, T&& shape, uint32_t instance_count, const std::vector<InstanceData>& per_instance_data);
+	void init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, T&& shape, uint32_t instance_count, const std::vector<InstanceData>& per_instance_data, bool mappable = false);
 	void del() override;
 
 	inline void draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame) override;
@@ -21,7 +20,7 @@ private:
 	T m_shape;
 	std::vector<InstanceData> m_instance_data;
 	VKW_Buffer m_instance_buffer;
-	bool m_can_update;
+	bool m_mappable;
 	uint32_t m_max_instance_count; // the number of instances m_instance_buffer supports. Current instance_count can be lower 
 public:
 	void update_instance_data(const std::vector<InstanceData>& per_instance_data);
@@ -36,13 +35,14 @@ public:
 };
 
 template<typename T>  requires std::is_base_of_v<Shape, T>
-inline void InstancedShape<T>::init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, T&& shape, uint32_t instance_count, const std::vector<InstanceData>& per_instance_data)
+inline void InstancedShape<T>::init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, T&& shape, uint32_t instance_count, const std::vector<InstanceData>& per_instance_data, bool mappable)
 {
 	m_shape = shape;
 	m_instance_data = per_instance_data;
 	m_max_instance_count = instance_count;
+	m_mappable = mappable;
 
-	if (!(m_instance_data.empty() || m_instance_data.size() == m_max_instance_count)) {
+	if (!(m_instance_data.empty() && mappable) || m_instance_data.size() == m_max_instance_count) {
 		throw RuntimeException(fmt::format("Tried to initialize InstancedShape with {} many instances but {} per_instance_data", instance_count, per_instance_data.size()), __FILE__, __LINE__);
 	}
 
@@ -56,7 +56,7 @@ inline void InstancedShape<T>::init(const VKW_Device& device, const VKW_CommandP
 			instance_buffer_size,
 			VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
 			sharing_exlusive(),
-			false,
+			mappable,
 			"Instance buffer"
 		);
 
@@ -64,6 +64,7 @@ inline void InstancedShape<T>::init(const VKW_Device& device, const VKW_CommandP
 		instance_staging_buffer.del();
 	}
 	else {
+		// m_mappable guaranteed to be true
 		m_instance_buffer.init(
 			&device,
 			instance_buffer_size,
@@ -73,8 +74,6 @@ inline void InstancedShape<T>::init(const VKW_Device& device, const VKW_CommandP
 			"Instance buffer"
 		);
 		m_instance_buffer.map();
-
-		m_can_update = true;
 	}
 
 	// get instance buffer address
@@ -97,8 +96,8 @@ inline void InstancedShape<T>::draw(const VKW_CommandBuffer& command_buffer, uin
 template<typename T> requires std::is_base_of_v<Shape, T>
 inline void InstancedShape<T>::update_instance_data(const std::vector<InstanceData>& per_instance_data)
 {
-	assert(m_can_update && "InstancedShape needs to be initalized with empty m_instance_data to make updatable");
-	assert(per_instance_data.size() <= m_instance_count && "per_instance_data size needs to be at least");
+	assert(m_mappable && "InstancedShape needs to be initalized with mappable=true to call update_instance_data");
+	assert(per_instance_data.size() <= m_max_instance_count && "Can support only m_max_instance_count data");
 	
 	m_instance_data = per_instance_data;
 	set_instance_count(m_instance_data.size());

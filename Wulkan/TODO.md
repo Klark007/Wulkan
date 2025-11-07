@@ -56,6 +56,7 @@
 
 ## Bugs
 * Blender UV imporing weird [ ] 
+* Synchronization of mapped memory (see https://docs.vulkan.org/guide/latest/synchronization_examples.html#_transfer_dependencies) [ ] 
 * Flickering at high frame rates [ ]
 * Looking up / down changes shadows [ ]
 

@@ -5,7 +5,6 @@
 #include "LODShape.h"
 
 #include <type_traits>
-#include <spdlog/spdlog.h>
 
 template <typename T> requires std::is_base_of_v<Shape, T>
 class InstancedLODShape : public LODShape<InstancedShape<T>> {
@@ -15,6 +14,7 @@ public:
 	// if ratios are left empty (default) the LOD choice will be distributed equally in distance
 	void init(std::vector<InstancedShape<T>>&& shapes, const std::vector<InstanceData>& per_instance_data, std::vector<float> ratios = {});
 
+	void update();
 	void draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame) override;
 private:
 	std::vector<InstanceData> m_instance_data;
@@ -22,20 +22,43 @@ private:
 	glm::vec3 get_instance_position(uint32_t instance = 0) override;
 };
 
+#include <spdlog/spdlog.h>
 template<typename T> requires std::is_base_of_v<Shape, T>
 inline void InstancedLODShape<T>::init(std::vector<InstancedShape<T>>&& shapes, const std::vector<InstanceData>& per_instance_data, std::vector<float> ratios)
 {
 	LODShape<InstancedShape<T>>::init(std::move(shapes), ratios);
 
 	m_instance_data = per_instance_data;
-	m_per_lod_instance_data.resize(m_instance_data.size());
+	m_per_lod_instance_data.resize(this->m_lod_levels);
+}
+
+
+template<typename T> requires std::is_base_of_v<Shape, T>
+inline void InstancedLODShape<T>::update()
+{
+	// needs explicit this due to templated base class
+	for (uint32_t i = 0; i < m_instance_data.size(); i++) {
+		uint32_t lod_level = this->get_lod_level(i);
+		m_per_lod_instance_data[lod_level].push_back({ m_instance_data[i] });
+	}
+
+	uint32_t sum = 0;
+	for (uint32_t i = 0; i < this->m_lod_levels; i++) {
+		sum += m_per_lod_instance_data[i].size();
+		this->m_shapes[i].update_instance_data(m_per_lod_instance_data[i]);
+		// clear for next frame's draw
+		m_per_lod_instance_data[i].clear();
+	}
+	spdlog::info("{}", sum);
+
 }
 
 template<typename T>  requires std::is_base_of_v<Shape, T>
 inline void InstancedLODShape<T>::draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame)
 {
-	// needs explicit this due to templated base class
-	this->m_shapes[this->get_lod_level()].draw(command_buffer, current_frame);
+	for (uint32_t i = 0; i < this->m_lod_levels; i++) {
+		this->m_shapes[i].draw(command_buffer, current_frame);	
+	}
 }
 
 template<typename T>  requires std::is_base_of_v<Shape, T>
