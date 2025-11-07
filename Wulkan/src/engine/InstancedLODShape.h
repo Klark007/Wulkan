@@ -49,8 +49,6 @@ inline void InstancedLODShape<T>::update()
 		// clear for next frame's draw
 		m_per_lod_instance_data[i].clear();
 	}
-	spdlog::info("{}", sum);
-
 }
 
 template<typename T>  requires std::is_base_of_v<Shape, T>
