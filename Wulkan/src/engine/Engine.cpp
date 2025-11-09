@@ -655,6 +655,7 @@ void Engine::init_data()
 	cleanup_queue.add(&texture_not_found);
 
 	{
+		/*
 		meshes[0].init(device, get_current_graphics_pool(), get_current_transfer_pool(), descriptor_pool, pbr_render_pass, "models/baloon.obj");
 		meshes[0].set_descriptor_bindings(texture_not_found, linear_texture_sampler);
 		cleanup_queue.add(&meshes[0]);
@@ -671,6 +672,7 @@ void Engine::init_data()
 		//meshes[3].init(device, get_current_graphics_pool(), get_current_transfer_pool(), dyn_descriptor_pool, pbr_render_pass, "models/sponza/sponza.obj");
 		meshes[3].set_descriptor_bindings(texture_not_found, linear_texture_sampler);
 		cleanup_queue.add(&meshes[3]);
+		*/
 	}
 
 	{
@@ -807,10 +809,9 @@ void Engine::create_uniform_buffers()
 			sizeof(UniformStruct), 
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
 			sharing_exlusive(), 
-			true,
+			Mapping::Persistent,
 			"Main Uniform buffer"
 		);
-		uniform_buffer.map();
 		cleanup_queue.add(&uniform_buffer);
 	}
 }
@@ -1038,7 +1039,7 @@ void Engine::update_uniforms()
 	uniform.near_far_plane = glm::vec2(camera.get_near_plane(), camera.get_far_plane());
 	glfw_input_mutex.unlock();
 
-	memcpy(uniform_buffers.at(current_frame).get_mapped_address(), &uniform, sizeof(UniformStruct));
+	uniform_buffers.at(current_frame).copy(&uniform, sizeof(UniformStruct));
 }
 
 std::vector<const char*> Engine::get_required_instance_extensions()

@@ -1,11 +1,10 @@
 #include "VKW_Buffer.h"
 #include <spdlog/spdlog.h>
 
-void VKW_Buffer::init(const VKW_Device* vkw_device, VkDeviceSize size, VkBufferUsageFlags usage, SharingInfo sharing_info, bool m, const std::string& obj_name)
+void VKW_Buffer::init(const VKW_Device* vkw_device, VkDeviceSize size, VkBufferUsageFlags usage, SharingInfo sharing_info, Mapping mapping, const std::string& obj_name)
 {
 	device = vkw_device;
 	allocator = device->get_allocator();
-	mappable = m;
 	length = (size_t) size;
 	name = obj_name;
 
@@ -24,9 +23,12 @@ void VKW_Buffer::init(const VKW_Device* vkw_device, VkDeviceSize size, VkBufferU
 
 	VmaAllocationCreateInfo alloc_create_info{};
 	alloc_create_info.usage = VMA_MEMORY_USAGE_AUTO;
-	if (mappable) {
+	if (mapping == Mapping::Mapped) {
 		// does sequential access as mapped memory should be written to using memcpy
 		alloc_create_info.flags |= VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
+		
+	} else if (mapping == Mapping::Persistent) {
+		alloc_create_info.flags |= VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT; // directly mapped from beginning
 	}
 	if (buffer_info.usage & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) {
 		alloc_create_info.flags |= VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
@@ -45,7 +47,6 @@ void VKW_Buffer::init(const VKW_Device* vkw_device, VkDeviceSize size, VkBufferU
 #endif
 
 	memory = alloc_info.deviceMemory;
-	m_memory_offset = alloc_info.offset;
 
 	// name device
 	device->name_object((uint64_t)buffer, VK_OBJECT_TYPE_BUFFER, name);
@@ -54,10 +55,6 @@ void VKW_Buffer::init(const VKW_Device* vkw_device, VkDeviceSize size, VkBufferU
 void VKW_Buffer::del()
 {
 	if (buffer && allocation && memory) {
-		// if mapped need to unmap before destroy
-		if (is_mapped) {
-			unmap();
-		}
 		vmaDestroyBuffer(allocator, buffer, allocation);
 
 #ifdef TRACY_ENABLE
@@ -77,7 +74,10 @@ void VKW_Buffer::copy(const void* data, size_t data_size, size_t offset)
 			fmt::format("Tried copy that would write outside of bounds of buffer ({})", name), __FILE__, __LINE__
 		);
 	}
+	/*
 	memcpy_s((char*) mapped_address+offset, size(), data, data_size);
+	*/
+	vmaCopyMemoryToAllocation(allocator, data, allocation, offset, data_size);
 }
 
 void VKW_Buffer::copy(const VKW_CommandPool* command_pool, const VKW_Buffer& other_buffer)
@@ -110,48 +110,6 @@ void VKW_Buffer::copy(const VKW_CommandPool* command_pool, const VKW_Buffer& oth
 	command_buffer.submit_single_use();
 }
 
-void VKW_Buffer::flush()
-{
-	uint32_t nonCoherentAtomSize = device->get_device_properties().limits.nonCoherentAtomSize;
-
-	uint32_t alignedSize = (length - 1) - ((length - 1) % nonCoherentAtomSize) + nonCoherentAtomSize;
-
-	VkMappedMemoryRange memory_range{
-		.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
-		.memory = memory,
-		.offset = m_memory_offset, // TODO is this correct
-		.size = alignedSize
-	};
-	
-	VK_CHECK_ET(
-		vkFlushMappedMemoryRanges(*device, 1, &memory_range), 
-		RuntimeException, 
-		fmt::format("Failed to allocate buffer ({})", name)
-	);
-}
-
-// maps whole buffer to cpu adress
-void VKW_Buffer::map()
-{
-	if (!mappable) {
-		throw SetupException(fmt::format("Tried to map a buffer ({}) that was not created as mappable", name), __FILE__, __LINE__);
-	}
-
-	VK_CHECK_ET(vmaMapMemory(allocator, allocation, &mapped_address), RuntimeException, fmt::format("Failed to map buffer ({}) to memory", name));
-	is_mapped = true;
-}
-
-void VKW_Buffer::unmap()
-{
-	if (!mappable) {
-		throw SetupException(fmt::format("Tried to unmap a buffer ({}) that was not created as mappable", name), __FILE__, __LINE__);
-	}
-
-	mapped_address = nullptr;
-	vmaUnmapMemory(allocator, allocation);
-	is_mapped = false;
-}
-
 VKW_Buffer create_staging_buffer(const VKW_Device* device, VkDeviceSize buffer_size, const void* data, size_t data_size, const std::string& name)
 {
 	VKW_Buffer staging_buffer = {};
@@ -160,13 +118,11 @@ VKW_Buffer create_staging_buffer(const VKW_Device* device, VkDeviceSize buffer_s
 		buffer_size,
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		sharing_exlusive(),
-		true,
+		Mapping::Mapped,
 		name
 	);
 
-	staging_buffer.map();
 	staging_buffer.copy(data, data_size);
-	staging_buffer.unmap();
 
 	return staging_buffer;
 }

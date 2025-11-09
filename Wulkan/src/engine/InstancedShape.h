@@ -59,7 +59,7 @@ inline void InstancedShape<T>::init(const VKW_Device& device, const VKW_CommandP
 				instance_buffer_size,
 				VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
 				sharing_exlusive(),
-				mappable,
+				Mapping::NotMapped,
 				fmt::format("Instance buffer {}", i)
 			);
 
@@ -73,10 +73,9 @@ inline void InstancedShape<T>::init(const VKW_Device& device, const VKW_CommandP
 				instance_buffer_size,
 				VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
 				sharing_exlusive(),
-				true,
+				Mapping::Persistent,
 				fmt::format("Instance buffer {}", i)
 			);
-			m_instance_buffers[i].map();
 		}
 
 		// get instance buffer address
@@ -109,7 +108,6 @@ inline void InstancedShape<T>::update_instance_data(const std::vector<InstanceDa
 	set_instance_count(m_instance_data.size());
 
 	m_instance_buffers[current_frame].copy(m_instance_data.data(), sizeof(InstanceData) * m_instance_data.size());
-	m_instance_buffers[current_frame].flush();
 }
 
 template<typename T> requires std::is_base_of_v<Shape, T>

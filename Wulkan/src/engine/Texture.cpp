@@ -477,7 +477,6 @@ Texture create_cube_map_from_path(const VKW_Device* device, const VKW_CommandPoo
 
 		image_size = width * height * channels * sizeof(float);
 		staging_buffer = create_staging_buffer(device, image_size*6, rgba, image_size, "Cube map staging buffer");
-		staging_buffer.map();
 
 		free(rgba);
 	}
@@ -495,8 +494,6 @@ Texture create_cube_map_from_path(const VKW_Device* device, const VKW_CommandPoo
 
 		free(rgba);
 	}
-	staging_buffer.unmap();
-
 
 	Texture texture{};
 	texture.init(
@@ -635,11 +632,9 @@ Texture create_mipmapped_texture_from_path(const VKW_Device* device, const VKW_C
 		staging_buffer = create_staging_buffer(device, image_size, pixel_mips[0], image_sizes[0], "Image staging buffer");
 
 		// copy images into staging buffer
-		staging_buffer.map();
 		for (unsigned int i = 1; i < mip_levels; i++) {
 			staging_buffer.copy(pixel_mips[i], image_sizes[i], staging_offsets[i]);
 		}
-		staging_buffer.unmap();
 
 		for (unsigned int i = 0; i < mip_levels; i++) {
 			stbi_image_free(pixel_mips[i]);
