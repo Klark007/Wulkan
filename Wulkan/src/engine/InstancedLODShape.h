@@ -14,7 +14,7 @@ public:
 	// if ratios are left empty (default) the LOD choice will be distributed equally in distance
 	void init(std::vector<InstancedShape<T>>&& shapes, const std::vector<InstanceData>& per_instance_data, std::vector<float> ratios = {});
 
-	void update();
+	void update(uint32_t current_frame);
 	void draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame) override;
 private:
 	std::vector<InstanceData> m_instance_data;
@@ -34,7 +34,7 @@ inline void InstancedLODShape<T>::init(std::vector<InstancedShape<T>>&& shapes, 
 
 
 template<typename T> requires std::is_base_of_v<Shape, T>
-inline void InstancedLODShape<T>::update()
+inline void InstancedLODShape<T>::update(uint32_t current_frame)
 {
 	// needs explicit this due to templated base class
 	for (uint32_t i = 0; i < m_instance_data.size(); i++) {
@@ -45,7 +45,7 @@ inline void InstancedLODShape<T>::update()
 	uint32_t sum = 0;
 	for (uint32_t i = 0; i < this->m_lod_levels; i++) {
 		sum += m_per_lod_instance_data[i].size();
-		this->m_shapes[i].update_instance_data(m_per_lod_instance_data[i]);
+		this->m_shapes[i].update_instance_data(m_per_lod_instance_data[i], current_frame);
 		// clear for next frame's draw
 		m_per_lod_instance_data[i].clear();
 	}

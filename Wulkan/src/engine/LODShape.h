@@ -33,7 +33,7 @@ public:
 	inline void set_model_matrix(const glm::mat4& m) override;
 	void set_cascade_idx(int idx) override;
 
-	inline void set_instance_buffer_address(VkDeviceAddress address) override;
+	inline void set_instance_buffer_address(const std::array<VkDeviceAddress, MAX_FRAMES_IN_FLIGHT>& addresses) override;
 	inline void set_instance_count(uint32_t count) override;
 	inline void set_visualization_mode(VisualizationMode mode) override;
 	glm::vec3 get_instance_position(uint32_t instance = 0) override;
@@ -129,7 +129,7 @@ inline glm::vec3 LODShape<T>::get_instance_position(uint32_t instance)
 }
 
 template <typename T> requires std::is_base_of_v<Shape, T>
-inline void LODShape<T>::set_instance_buffer_address(VkDeviceAddress address)
+inline void LODShape<T>::set_instance_buffer_address(const std::array<VkDeviceAddress, MAX_FRAMES_IN_FLIGHT>& addresses)
 {
 	throw RuntimeException("set_instance_buffer_address not supported for LODMesh. If we want Instanced LOD: create an InstancedLODShape<InstancedShape<T>>", __FILE__, __LINE__);
 }

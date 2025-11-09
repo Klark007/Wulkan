@@ -35,6 +35,9 @@ private:
 
 	std::unique_ptr<vkb::PhysicalDeviceSelector> selector;
 
+	mutable bool got_device_properties;
+	mutable VkPhysicalDeviceProperties device_properties;
+
 	VmaAllocator allocator;
 	void init_allocator();
 public:
@@ -49,6 +52,7 @@ public:
 	inline VkDevice get_device() const { return device.device; };
 	inline operator VkDevice() const { return device.device; };
 	inline VkPhysicalDevice get_physical_device() const { return physical_device.physical_device; };
+	inline const VkPhysicalDeviceProperties& get_device_properties() const;
 
 	inline VmaAllocator get_allocator() const { return allocator; };
 };
@@ -71,4 +75,12 @@ inline void VKW_Device::name_object(uint64_t object_handle, VkObjectType object_
 #ifndef NDEBUG
 	vkSetDebugUtilsObjectNameEXT(device, &name_info);
 #endif
+}
+
+inline const VkPhysicalDeviceProperties& VKW_Device::get_device_properties() const
+{
+	if (!got_device_properties) {
+		vkGetPhysicalDeviceProperties(get_physical_device(), &device_properties);
+	}
+	return device_properties;
 }

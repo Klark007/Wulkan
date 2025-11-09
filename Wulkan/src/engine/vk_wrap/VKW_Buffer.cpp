@@ -1,4 +1,5 @@
 #include "VKW_Buffer.h"
+#include <spdlog/spdlog.h>
 
 void VKW_Buffer::init(const VKW_Device* vkw_device, VkDeviceSize size, VkBufferUsageFlags usage, SharingInfo sharing_info, bool m, const std::string& obj_name)
 {
@@ -44,6 +45,7 @@ void VKW_Buffer::init(const VKW_Device* vkw_device, VkDeviceSize size, VkBufferU
 #endif
 
 	memory = alloc_info.deviceMemory;
+	m_memory_offset = alloc_info.offset;
 
 	// name device
 	device->name_object((uint64_t)buffer, VK_OBJECT_TYPE_BUFFER, name);
@@ -106,6 +108,26 @@ void VKW_Buffer::copy(const VKW_CommandPool* command_pool, const VKW_Buffer& oth
 	vkCmdCopyBuffer(command_buffer, other_buffer, buffer, 1, &copyRegion);
 
 	command_buffer.submit_single_use();
+}
+
+void VKW_Buffer::flush()
+{
+	uint32_t nonCoherentAtomSize = device->get_device_properties().limits.nonCoherentAtomSize;
+
+	uint32_t alignedSize = (length - 1) - ((length - 1) % nonCoherentAtomSize) + nonCoherentAtomSize;
+
+	VkMappedMemoryRange memory_range{
+		.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
+		.memory = memory,
+		.offset = m_memory_offset, // TODO is this correct
+		.size = alignedSize
+	};
+	
+	VK_CHECK_ET(
+		vkFlushMappedMemoryRanges(*device, 1, &memory_range), 
+		RuntimeException, 
+		fmt::format("Failed to allocate buffer ({})", name)
+	);
 }
 
 // maps whole buffer to cpu adress

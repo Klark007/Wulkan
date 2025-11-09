@@ -34,7 +34,7 @@ public:
 	void set_cascade_idx(int idx) override { m_cascade_idx = idx; };
 	inline void set_visualization_mode(VisualizationMode mode) override;
 	void set_instance_count(uint32_t count) { m_instance_count = count; };
-	inline  void set_instance_buffer_address(VkDeviceAddress address) override;
+	inline  void set_instance_buffer_address(const std::array<VkDeviceAddress, MAX_FRAMES_IN_FLIGHT>& addresses) override;
 	glm::vec3 get_instance_position(uint32_t instance = 0) override;
 };
 
@@ -47,7 +47,7 @@ inline void Line::draw(const VKW_CommandBuffer& command_buffer, uint32_t current
 			m_model,
 			m_inv_model,
 			vertex_address,
-			m_instance_buffer_address,
+			m_instance_buffer_addresses[current_frame],
 			m_cascade_idx
 		}
 	);
@@ -62,7 +62,7 @@ inline void Line::set_visualization_mode(VisualizationMode mode)
 	throw NotImplementedException("set_visualization_mode not implemented for Line class", __FILE__, __LINE__);
 }
 
-inline void Line::set_instance_buffer_address(VkDeviceAddress address)
+inline void Line::set_instance_buffer_address(const std::array<VkDeviceAddress, MAX_FRAMES_IN_FLIGHT>& addresses)
 {
 	throw NotImplementedException("set_instance_buffer_address not implemented for Line class", __FILE__, __LINE__);
 }

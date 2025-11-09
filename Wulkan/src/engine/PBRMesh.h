@@ -32,7 +32,7 @@ public:
 	inline void set_visualization_mode(VisualizationMode mode) override;
 	
 	inline void set_instance_count(uint32_t count) override;
-	void set_instance_buffer_address(VkDeviceAddress address) override { m_instance_buffer_address = address; };
+	void set_instance_buffer_address(const std::array<VkDeviceAddress, MAX_FRAMES_IN_FLIGHT>& addresses) override { m_instance_buffer_addresses = addresses; };
 	glm::vec3 get_instance_position(uint32_t instance = 0) override;
 };
 

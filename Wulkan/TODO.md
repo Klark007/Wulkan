@@ -10,6 +10,7 @@
 * Descriptor Pool improvements [X] 
 * loadEXR memory leak due to no free? [X] 
 
+* Better mapping interface with VMA (https://gpuopen-librariesandsdks.github.io/VulkanMemoryAllocator/html/memory_mapping.html) [ ] 
 * void VKW_Buffer::copy(const void* data, size_t data_size, size_t offset) change order of size/offset [ ] 
 
 * Update glfw due to https://github.com/glfw/glfw/issues/2684 or switch to SDL [ ]

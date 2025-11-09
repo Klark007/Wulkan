@@ -17,6 +17,8 @@ public:
 
 	void copy(const void* data, size_t data_size, size_t offset=0); // copies data into VKW_Buffer (copies data_size many bytes from data to mapped_address + offset)
 	void copy(const VKW_CommandPool* command_pool, const VKW_Buffer& other_buffer); // copies other buffer into this one, creates and submits single use command buffer
+	
+	void flush();
 	void map(); // maps buffer into cpu accessible memory and returns pointer to it 
 	void unmap();
 private:
@@ -29,6 +31,7 @@ private:
 	size_t length;
 	VmaAllocation allocation = VK_NULL_HANDLE; // dont peek inside, treat as opaque
 	VkDeviceMemory memory;
+	uint32_t m_memory_offset;
 
 	bool mappable;
 	bool is_mapped; // true if currently mapped to cpu memory

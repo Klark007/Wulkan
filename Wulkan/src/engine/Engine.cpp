@@ -191,7 +191,7 @@ void Engine::update()
 		lod_mesh.set_camera_info(camera.get_virtual_pos(), camera.get_virtual_dir(), camera.get_near_plane(), camera.get_far_plane());
 
 		lod_mesh.set_visualization_mode(gui_input.pbr_vis_mode);
-		lod_mesh.update();
+		lod_mesh.update(current_frame);
 	}
 
 	update_uniforms();
@@ -550,10 +550,8 @@ void Engine::create_device()
 	device.init(&instance, surface, get_required_device_extensions(), required_features, "Device");
 	cleanup_queue.add(&device);
 
-	VkPhysicalDeviceProperties deviceProperties;
-	vkGetPhysicalDeviceProperties(device.get_physical_device(), &deviceProperties);
-	spdlog::info("Selected GPU: {}", deviceProperties.deviceName);
-	spdlog::info("Tesselation limit: {}", deviceProperties.limits.maxTessellationGenerationLevel);
+	spdlog::info("Selected GPU: {}", device.get_device_properties().deviceName);
+	spdlog::info("Tesselation limit: {}", device.get_device_properties().limits.maxTessellationGenerationLevel);
 }
 
 void Engine::create_queues()
@@ -688,7 +686,7 @@ void Engine::init_data()
 				{{
 					distribution(generator),
 					distribution(generator),
-					distribution(generator)
+					distribution(generator)					
 				}}
 			);
 		}
@@ -711,7 +709,6 @@ void Engine::init_data()
 				{},
 				true
 			);
-			instanced_mesh.update_instance_data(per_instance_data);
 			
 			meshes.push_back(instanced_mesh);
 		}
