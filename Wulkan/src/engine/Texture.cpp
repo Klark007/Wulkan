@@ -5,8 +5,6 @@
 #define TINYEXR_IMPLEMENTATION
 #include <tinyexr.h>
 
-#include "spdlog/spdlog.h"
-
 void Texture::init(const VKW_Device* vkw_device, unsigned int w, unsigned int h, VkFormat f, VkImageUsageFlags usage, SharingInfo sharing_info, const std::string& obj_name, VkImageCreateFlags flags, uint32_t array_layers, uint32_t mip_levels)
 {
 	device = vkw_device;

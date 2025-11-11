@@ -268,6 +268,7 @@
     <None Include="shaders\line\line.vert" />
     <None Include="shaders\pbr\pbr.frag" />
     <None Include="shaders\pbr\pbr.vert" />
+    <None Include="shaders\pbr\pbr_common.shader" />
     <None Include="shaders\pbr\pbr_depth.frag" />
     <None Include="shaders\pbr\pbr_depth.vert" />
     <None Include="shaders\pbr\shadow.shader" />

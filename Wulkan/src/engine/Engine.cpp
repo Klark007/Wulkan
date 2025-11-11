@@ -84,9 +84,9 @@ void Engine::render_thread_func()
 	spdlog::info("Start rendering");
 
 	while (!should_window_close.load()) {
-		update();
-
 		if (aquire_image()) {
+			update();
+
 			draw();
 
 			present();
@@ -137,6 +137,12 @@ void Engine::update()
 		directional_light.set_intensity(gui_input.sun_intensity);
 		directional_light.set_sample_info(gui_input.receiver_sample_region, gui_input.occluder_sample_region, gui_input.nr_shadow_receiver_samples, gui_input.nr_shadow_occluder_samples);
 		directional_light.set_shadow_mode(gui_input.shadow_mode);
+
+		int nr_cascades = gui_input.nr_shadow_cascades;
+
+		glfw_input_mutex.lock();
+		directional_light.set_uniforms(camera, nr_cascades, current_frame);
+		glfw_input_mutex.unlock();
 	}
 
 	{
@@ -207,10 +213,6 @@ void Engine::draw()
 	{
 		// TODO: Use camera controllers active camera
 		int nr_cascades = gui_input.nr_shadow_cascades;
-
-		glfw_input_mutex.lock();
-		directional_light.set_uniforms(camera, nr_cascades, current_frame);
-		glfw_input_mutex.unlock();
 
 		const VKW_CommandBuffer& shadow_cmd = directional_light.begin_depth_pass(current_frame);
 		{
@@ -461,7 +463,6 @@ void Engine::late_update()
 	ZoneScoped;
 
 	current_frame = (current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
-
 }
 
 void Engine::init_logger()

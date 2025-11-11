@@ -143,7 +143,7 @@ void GUI::draw_gui(const VKW_CommandBuffer& cmd)
 			ImGui::ListBox("Mode", &selected_shadow_mode, shadow_modes, IM_ARRAYSIZE(shadow_modes));
 			m_data.shadow_mode = static_cast<ShadowMode>(selected_shadow_mode);
 
-			constexpr const char* visualization_modes[] = { "Shaded", "Normals", "Diffuse", "Shadow map cascade" };
+			constexpr const char* visualization_modes[] = { "Shaded", "Normals", "Diffuse", "Shadow map cascade", "Instance number"};
 			static int selected_vis = 0;
 			ImGui::ListBox("PBR Mode", &selected_vis, visualization_modes, IM_ARRAYSIZE(visualization_modes));
 			m_data.pbr_vis_mode = static_cast<VisualizationMode>(selected_vis);

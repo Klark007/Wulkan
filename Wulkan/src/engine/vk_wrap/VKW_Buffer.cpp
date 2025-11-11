@@ -1,5 +1,4 @@
 #include "VKW_Buffer.h"
-#include <spdlog/spdlog.h>
 
 void VKW_Buffer::init(const VKW_Device* vkw_device, VkDeviceSize size, VkBufferUsageFlags usage, SharingInfo sharing_info, Mapping mapping, const std::string& obj_name)
 {

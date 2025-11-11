@@ -22,7 +22,6 @@ private:
 	glm::vec3 get_instance_position(uint32_t instance = 0) override;
 };
 
-#include <spdlog/spdlog.h>
 template<typename T> requires std::is_base_of_v<Shape, T>
 inline void InstancedLODShape<T>::init(std::vector<InstancedShape<T>>&& shapes, const std::vector<InstanceData>& per_instance_data, std::vector<float> ratios)
 {
@@ -38,13 +37,12 @@ inline void InstancedLODShape<T>::update(uint32_t current_frame)
 {
 	// needs explicit this due to templated base class
 	for (uint32_t i = 0; i < m_instance_data.size(); i++) {
+		InstanceData data = m_instance_data[i];
 		uint32_t lod_level = this->get_lod_level(i);
-		m_per_lod_instance_data[lod_level].push_back({ m_instance_data[i] });
+		m_per_lod_instance_data[lod_level].push_back({ data });
 	}
 
-	uint32_t sum = 0;
 	for (uint32_t i = 0; i < this->m_lod_levels; i++) {
-		sum += m_per_lod_instance_data[i].size();
 		this->m_shapes[i].update_instance_data(m_per_lod_instance_data[i], current_frame);
 		// clear for next frame's draw
 		m_per_lod_instance_data[i].clear();

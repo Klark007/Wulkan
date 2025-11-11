@@ -9,6 +9,7 @@ enum class VisualizationMode {
 	Normals,
 	Diffuse,
 	ShadowCascade,
+	InstanceCount,
 };
 
 class Shape : public VKW_Object {
