@@ -18,8 +18,11 @@
 #include "DirectionalLight.h"
 
 struct GUI_Input {
+	// Camera
 	float camera_rotation_speed = 0.001f;
 	float camera_movement_speed = 25.0f;
+	float camera_near_plane = 0.1f;
+	float camera_far_plane = 100.0f;
 
 	// Terrain
 	float terrain_tesselation = 0.1f;
@@ -44,6 +47,9 @@ struct GUI_Input {
 	int nr_shadow_occluder_samples = 8;
 
 	ShadowMode shadow_mode = ShadowMode::SoftShadows;
+	
+	std::array<float, 3> lod_ratios{0.25, 0.5, 0.75};
+
 	VisualizationMode pbr_vis_mode = VisualizationMode::Shaded;
 };
 

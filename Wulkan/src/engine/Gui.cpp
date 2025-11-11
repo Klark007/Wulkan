@@ -97,6 +97,8 @@ void GUI::draw_gui(const VKW_CommandBuffer& cmd)
 		if (ImGui::CollapsingHeader("Camera")) {
 			ImGui::SliderFloat("Movement speed", &m_data.camera_movement_speed, 5.0f, 50.0f);
 			ImGui::SliderFloat("Rotation speed", &m_data.camera_rotation_speed, 0.0005f, 0.005f);
+			ImGui::SliderFloat("Near plane", &m_data.camera_near_plane, 0.01f, 0.2f);
+			ImGui::SliderFloat("Far plane", &m_data.camera_far_plane, 10.0f, 250.0f);
 
 			// TODO: support smt like https://github.com/btzy/nativefiledialog-extended
 			m_camera_recursive_mutex->lock();
@@ -138,26 +140,38 @@ void GUI::draw_gui(const VKW_CommandBuffer& cmd)
 			ImGui::ColorEdit3("Sun Color", glm::value_ptr(m_data.sun_color), ImGuiColorEditFlags_None);
 			ImGui::SliderFloat("Sun Intensity", &m_data.sun_intensity, 0.1f, 25.0f);
 
-			constexpr const char* shadow_modes[] = { "No shadows", "Hard shadows", "Soft Shadows"};
-			static int selected_shadow_mode = 2;
-			ImGui::ListBox("Mode", &selected_shadow_mode, shadow_modes, IM_ARRAYSIZE(shadow_modes));
-			m_data.shadow_mode = static_cast<ShadowMode>(selected_shadow_mode);
+			if (ImGui::TreeNode("Shadows")) {
+				constexpr const char* shadow_modes[] = { "No shadows", "Hard shadows", "Soft Shadows" };
+				static int selected_shadow_mode = 2;
+				ImGui::ListBox("Mode", &selected_shadow_mode, shadow_modes, IM_ARRAYSIZE(shadow_modes));
+				m_data.shadow_mode = static_cast<ShadowMode>(selected_shadow_mode);
+
+				ImGui::SliderInt("Number of shadow cascades", &m_data.nr_shadow_cascades, 1, MAX_CASCADE_COUNT);
+				ImGui::SliderFloat("Constant depth bias", &m_data.depth_bias, 1e4, 1e5);
+				ImGui::SliderFloat("Slope depth bias", &m_data.slope_depth_bias, 1e-2f, 1e1);
+
+				ImGui::SliderInt("Nr Receiver Samples", &m_data.nr_shadow_receiver_samples, 1, 32);
+				ImGui::SliderInt("Nr Occluder Samples", &m_data.nr_shadow_occluder_samples, 1, 16);
+				ImGui::SliderFloat("Receiver Occlusion Sample Region", &m_data.receiver_sample_region, 1.0f, 64.0f);
+				ImGui::SliderFloat("Occluder Depth Sample Region", &m_data.occluder_sample_region, 1.0f, 64.0f);
+
+				ImGui::Checkbox("Show debug frustums", &m_data.shadow_draw_debug_frustums);
+
+				ImGui::TreePop();
+			}
 
 			constexpr const char* visualization_modes[] = { "Shaded", "Normals", "Diffuse", "Shadow map cascade", "Instance number"};
 			static int selected_vis = 0;
 			ImGui::ListBox("PBR Mode", &selected_vis, visualization_modes, IM_ARRAYSIZE(visualization_modes));
 			m_data.pbr_vis_mode = static_cast<VisualizationMode>(selected_vis);
 
-			ImGui::SliderFloat("Constant depth bias", &m_data.depth_bias, 1e4, 1e5);
-			ImGui::SliderFloat("Slope depth bias", &m_data.slope_depth_bias, 1e-2f, 1e1);
-			ImGui::SliderInt("Number of shadow cascades", &m_data.nr_shadow_cascades, 1, MAX_CASCADE_COUNT);
 
-			ImGui::SliderFloat("Receiver Occlusion Sample Region", &m_data.receiver_sample_region, 1.0f, 64.0f);
-			ImGui::SliderFloat("Occluder Depth Sample Region", &m_data.occluder_sample_region, 1.0f, 64.0f);
-			ImGui::SliderInt("Nr Receiver Samples", &m_data.nr_shadow_receiver_samples, 1, 32);
-			ImGui::SliderInt("Nr Occluder Samples", &m_data.nr_shadow_occluder_samples, 1, 16);
-
-			ImGui::Checkbox("Show debug frustums", &m_data.shadow_draw_debug_frustums);
+			if (ImGui::TreeNode("LOD")) {
+				ImGui::SliderFloat("Distance ratio LOD 0", &m_data.lod_ratios[0], 0, m_data.lod_ratios[1]);
+				ImGui::SliderFloat("Distance ratio LOD 1", &m_data.lod_ratios[1], m_data.lod_ratios[0], m_data.lod_ratios[2]);
+				ImGui::SliderFloat("Distance ratio LOD 2", &m_data.lod_ratios[2], m_data.lod_ratios[1], 1);
+				ImGui::TreePop();
+			}
 		}
 
 		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);

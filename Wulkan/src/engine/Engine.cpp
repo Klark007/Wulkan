@@ -112,10 +112,12 @@ void Engine::update()
 	{
 		ZoneScopedN("IO");
 
+		gui_input = gui.get_input();
+		
 		camera_controller.set_move_strength(gui_input.camera_movement_speed);
 		camera_controller.set_rotation_strength(gui_input.camera_rotation_speed);
-
-		gui_input = gui.get_input();
+		camera.set_near_plane(gui_input.camera_near_plane);
+		camera.set_far_plane(gui_input.camera_far_plane);
 	}
 
 	{
@@ -195,8 +197,9 @@ void Engine::update()
 			)
 		);
 		lod_mesh.set_camera_info(camera.get_virtual_pos(), camera.get_virtual_dir(), camera.get_near_plane(), camera.get_far_plane());
-
 		lod_mesh.set_visualization_mode(gui_input.pbr_vis_mode);
+		lod_mesh.set_lod_ratios(std::vector<float>{gui_input.lod_ratios[0], gui_input.lod_ratios[1], gui_input.lod_ratios[2], 1});
+
 		lod_mesh.update(current_frame);
 	}
 

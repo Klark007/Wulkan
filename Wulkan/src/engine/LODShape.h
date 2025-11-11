@@ -32,6 +32,7 @@ public:
 
 	inline void set_model_matrix(const glm::mat4& m) override;
 	void set_cascade_idx(int idx) override;
+	void set_lod_ratios(const std::vector<float>& ratios);
 
 	inline void set_instance_buffer_address(const std::array<VkDeviceAddress, MAX_FRAMES_IN_FLIGHT>& addresses) override;
 	inline void set_instance_count(uint32_t count) override;
@@ -112,6 +113,13 @@ inline void LODShape<T>::set_cascade_idx(int idx)
 {
 	for (T& s : m_shapes)
 		s.set_cascade_idx(idx);
+}
+
+template<typename T> requires std::is_base_of_v<Shape, T>
+inline void LODShape<T>::set_lod_ratios(const std::vector<float>& ratios)
+{
+	assert(ratios.size() == m_shapes.size() && "Incorrect number of ratios for set_lod_ratios");
+	m_ratios = ratios;
 }
 
 template <typename T> requires std::is_base_of_v<Shape, T>

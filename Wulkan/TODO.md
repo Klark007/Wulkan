@@ -12,7 +12,6 @@
 * Better mapping interface with VMA (https://gpuopen-librariesandsdks.github.io/VulkanMemoryAllocator/html/memory_mapping.html) [X] 
 
 * void VKW_Buffer::copy(const void* data, size_t data_size, size_t offset) change order of size/offset [ ] 
-
 * Update glfw due to https://github.com/glfw/glfw/issues/2684 or switch to SDL [ ]
 * m_ convention[ ] 
 * static_cast and not c style casts [ ] 
@@ -80,6 +79,9 @@
 * Backface culling disable for certain models [X] 
 * Synchronization of mapped memory (see https://docs.vulkan.org/guide/latest/synchronization_examples.html#_transfer_dependencies) [X]
 * CPU Instanced LOD [X] 
+* Change ranges GUI [X] 
+* Change near, far plane [X] 
+* Visualize LOD variant [ ]
 
 * Orienting Bill boards [ ]
 
