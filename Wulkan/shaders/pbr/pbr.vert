@@ -5,8 +5,6 @@
 layout (location = 0) out vec3 outWorldPos;
 layout (location = 1) out vec3 outNormal;
 layout (location = 2) out vec2 outUV;
-layout (location = 3) out vec3 outColor;
-
 
 #include "../common.shader"
 #include "pbr_common.shader"
@@ -27,13 +25,4 @@ void main()
 	outWorldPos = vec3(pc.model * vec4(local_pos, 1.0f));
 	outNormal = mat3(transpose(pc.inv_model)) * v.normal;
 	outUV = vec2(v.uv_x, v.uv_y);
-
-	uint visualization_mode = pbr_uniforms.configuration >> 16;
-	switch (visualization_mode) {
-		case 4: // visualize instance
-			outColor = vec3(gl_InstanceIndex / 128.0, 0, 0);
-			break;
-		default:
-			break;
-	}
 }

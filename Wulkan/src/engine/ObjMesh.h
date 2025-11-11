@@ -26,7 +26,8 @@ inline void ObjMesh::draw(const VKW_CommandBuffer& command_buffer, uint32_t curr
 				m_inv_model,
 				m_meshes[i].get_vertex_address(),
 				m_instance_buffer_addresses[current_frame],
-				m_cascade_idx
+				m_cascade_idx,
+				m_lod_level
 			}
 		);
 

@@ -81,7 +81,7 @@ inline void Terrain::draw(const VKW_CommandBuffer& command_buffer, uint32_t curr
 			max_tesselation,
 			texture_eps,
 			visualization_mode,
-			m_cascade_idx
+			m_cascade_idx,
 		}
 	);
 

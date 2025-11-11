@@ -160,7 +160,7 @@ void GUI::draw_gui(const VKW_CommandBuffer& cmd)
 				ImGui::TreePop();
 			}
 
-			constexpr const char* visualization_modes[] = { "Shaded", "Normals", "Diffuse", "Shadow map cascade", "Instance number"};
+			constexpr const char* visualization_modes[] = { "Shaded", "Normals", "Diffuse", "Shadow map cascade", "LOD Level"};
 			static int selected_vis = 0;
 			ImGui::ListBox("PBR Mode", &selected_vis, visualization_modes, IM_ARRAYSIZE(visualization_modes));
 			m_data.pbr_vis_mode = static_cast<VisualizationMode>(selected_vis);

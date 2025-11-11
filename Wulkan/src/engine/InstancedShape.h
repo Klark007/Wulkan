@@ -29,6 +29,7 @@ public:
 
 	void set_model_matrix(const glm::mat4& m) override { m_shape.set_model_matrix(m); };
 	void set_cascade_idx(int idx) override { m_shape.set_cascade_idx( idx); };
+	void set_lod_level(int lod_level) override { m_shape.set_lod_level(lod_level); };
 
 	inline void set_visualization_mode(VisualizationMode mode) { m_shape.set_visualization_mode(mode); };
 	inline virtual virtual void set_instance_count(uint32_t count) override;

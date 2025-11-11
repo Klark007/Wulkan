@@ -29,15 +29,23 @@ protected:
 	uint32_t get_lod_level(uint32_t instance = 0);
 public:
 	inline void set_camera_info(const glm::vec3& pos, const glm::vec3& dir, float near_plane, float far_plane);
+	void set_lod_ratios(const std::vector<float>& ratios);
 
 	inline void set_model_matrix(const glm::mat4& m) override;
 	void set_cascade_idx(int idx) override;
-	void set_lod_ratios(const std::vector<float>& ratios);
-
-	inline void set_instance_buffer_address(const std::array<VkDeviceAddress, MAX_FRAMES_IN_FLIGHT>& addresses) override;
-	inline void set_instance_count(uint32_t count) override;
 	inline void set_visualization_mode(VisualizationMode mode) override;
 	glm::vec3 get_instance_position(uint32_t instance = 0) override;
+
+
+	void set_lod_level(int lod_level) override {
+		throw RuntimeException("se_lod_level of LODShape is not supported. An LODShape has multiple shapes each with differrent lod levels", __FILE__, __LINE__);
+	};
+	void set_instance_buffer_address(const std::array<VkDeviceAddress, MAX_FRAMES_IN_FLIGHT>& addresses) override {
+		throw RuntimeException("set_instance_buffer_address not supported for LODMesh. If we want Instanced LOD: create an InstancedLODShape<InstancedShape<T>>", __FILE__, __LINE__);
+	};
+	void set_instance_count(uint32_t count) override {
+		throw RuntimeException("set_instance_count not supported for LODMesh. If we want Instanced LOD: create an InstancedLODShape<InstancedShape<T>>", __FILE__, __LINE__);
+	};
 };
 
 template <typename T> requires std::is_base_of_v<Shape, T>
@@ -55,6 +63,10 @@ inline void LODShape<T>::init(std::vector<T > && shapes, std::vector<float> rati
 	}
 	else {
 		m_ratios = ratios;
+	}
+
+	for (uint32_t i = 0; i < m_lod_levels; i++) {
+		m_shapes[i].set_lod_level(static_cast<int>(i));
 	}
 }
 
@@ -134,16 +146,4 @@ inline glm::vec3 LODShape<T>::get_instance_position(uint32_t instance)
 {
 	assert(instance < m_instance_count && "Attempt to get position with invalid instance");
 	return glm::vec3(m_model[3]);
-}
-
-template <typename T> requires std::is_base_of_v<Shape, T>
-inline void LODShape<T>::set_instance_buffer_address(const std::array<VkDeviceAddress, MAX_FRAMES_IN_FLIGHT>& addresses)
-{
-	throw RuntimeException("set_instance_buffer_address not supported for LODMesh. If we want Instanced LOD: create an InstancedLODShape<InstancedShape<T>>", __FILE__, __LINE__);
-}
-
-template <typename T> requires std::is_base_of_v<Shape, T>
-inline void LODShape<T>::set_instance_count(uint32_t count)
-{
-	throw RuntimeException("set_instance_count not supported for LODMesh. If we want Instanced LOD: create an InstancedLODShape<InstancedShape<T>>", __FILE__, __LINE__);
 }

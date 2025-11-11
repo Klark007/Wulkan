@@ -9,7 +9,6 @@
 layout (location = 0) in vec3 inWorldPos;
 layout (location = 1) in vec3 inWorldNormal;
 layout (location = 2) in vec2 inUV;
-layout (location = 3) in vec3 inColor;
 
 layout (location = 0) out vec4 outColor;
 
@@ -76,7 +75,23 @@ void main()
             }
             break;
 		case 4:
-			outColor = vec4(inColor, 1);
+			switch (pc.lod_level) {
+                case 0:
+                    outColor = vec4(1,0,0,1);
+                    break;
+                case 1:
+                    outColor = vec4(1,1,0,1);
+                    break;
+                case 2:
+                    outColor = vec4(0,1,0,1);
+                    break;
+                case 3:
+                    outColor = vec4(0,0,1,1);
+                    break;
+                default:
+                    outColor = vec4(1,0,1,1);
+                    break;
+            }
 			break;
 		default:
 			outColor = vec4(1,0,1,1);

@@ -30,6 +30,7 @@ public:
 	// update vertex position. Needs to be the same length as original vertices
 	void update_vertices(const std::vector<glm::vec3>& points);
 
+	void set_lod_level(int lod_level) override { m_lod_level = lod_level; };
 	void set_model_matrix(const glm::mat4& m) override { m_model = m; };
 	void set_cascade_idx(int idx) override { m_cascade_idx = idx; };
 	inline void set_visualization_mode(VisualizationMode mode) override;
@@ -48,7 +49,8 @@ inline void Line::draw(const VKW_CommandBuffer& command_buffer, uint32_t current
 			m_inv_model,
 			vertex_address,
 			m_instance_buffer_addresses[current_frame],
-			m_cascade_idx
+			m_cascade_idx,
+			m_lod_level
 		}
 	);
 
