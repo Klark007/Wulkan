@@ -674,7 +674,7 @@ void Engine::init_data()
 		std::default_random_engine generator{};
 		std::uniform_real_distribution<float> distribution{ -25, 25};
 
-		const int nr_instances = 1024;
+		const int nr_instances = 1024*4;
 		std::vector<InstanceData> per_instance_data{};
 		per_instance_data.reserve(nr_instances);
 
@@ -691,8 +691,7 @@ void Engine::init_data()
 			};
 
 			// height = text * 25 * 0.8f
-			glm::vec4 text_sample = terrain.height_map.cpu_texture_sample(uv);
-			pos.z = text_sample.x * 25 * 0.8;
+			pos.z = terrain.height_map.cpu_texture_sample(uv).x * 25 * 0.8;
 
 			per_instance_data.push_back(
 				{pos}
