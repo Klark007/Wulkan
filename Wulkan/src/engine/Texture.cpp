@@ -106,6 +106,21 @@ VkImageView Texture::get_image_view(VkImageAspectFlags aspect_flag, VkImageViewT
 	}
 }
 
+glm::vec4 Texture::cpu_texture_sample(glm::vec2 uv)
+{
+	if (!m_cpu_texture.has_value()) {
+		throw RuntimeException(fmt::format("Failed to sample from cpu texture {}. Needs to set_cpu_texture before sampling", name), __FILE__, __LINE__);
+	}
+
+	size_t offset = 4 * (size_t)(floor(uv.y*height) * width + floor(uv.x*width));
+	return glm::vec4(
+		m_cpu_texture.value()[offset], 
+		m_cpu_texture.value()[offset+1], 
+		m_cpu_texture.value()[offset+2], 
+		m_cpu_texture.value()[offset+3]
+	);
+}
+
 void Texture::transition_layout(const VKW_CommandPool* command_pool, VkImageLayout initial_layout, VkImageLayout new_layout, uint32_t old_ownership, uint32_t new_ownership, uint32_t mip_level, uint32_t level_count)
 {
 	VKW_CommandBuffer command_buffer{};
@@ -361,10 +376,14 @@ VkBufferImageCopy create_buffer_image_copy(VkDeviceSize buffer_offset, uint32_t 
 	return image_copy;
 }
 
+#include <spdlog/spdlog.h>
 Texture create_texture_from_path(const VKW_Device* device, const VKW_CommandPool* command_pool, const VKW_Path& path, Texture_Type type, const std::string& name) {
 	VkFormat format = Texture::find_format(*device, type);
 
 	bool is_exr = path.extension().string() == ".exr";
+
+	Texture texture{};
+
 
 	VKW_Buffer staging_buffer;
 	int width, height;
@@ -372,7 +391,23 @@ Texture create_texture_from_path(const VKW_Device* device, const VKW_CommandPool
 		int channels;
 		
 		float* rgba = load_exr_image(path, width, height, channels);
+		assert(channels == 4 && "load_exr_image should always return 4 channels");
 		
+		texture.init(
+			device,
+			width, height,
+			format,
+			VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+			sharing_exlusive(), // exclusively owned by graphics queue
+			name
+		);
+
+		std::vector<float> data{};
+		data.resize(4 * width * height);
+		memcpy(data.data(), rgba, sizeof(float) * 4 * width * height);
+
+		texture.set_cpu_texture(data);
+
 		VkDeviceSize image_size = width * height * channels * sizeof(float);
 		staging_buffer = create_staging_buffer(device, image_size, rgba, image_size, "EXR staging buffer");
 
@@ -381,21 +416,31 @@ Texture create_texture_from_path(const VKW_Device* device, const VKW_CommandPool
 		int channels;
 		stbi_uc* pixels = load_image(path, width, height, channels, format);
 
+		texture.init(
+			device,
+			width, height,
+			format,
+			VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+			sharing_exlusive(), // exclusively owned by graphics queue
+			name
+		);
+		
+		std::vector<float> data{};
+		data.resize(4 * width * height);
+		for (int y = 0; y < height; y++) {
+			for (int x = 0; x < width; x++) {
+				for (int c = 0; c < channels; c++) {
+					data[4 * (y * width + x) + c] = pixels[channels * (y * width + x) + c] / 255.0f;
+				}
+			}
+		}
+		texture.set_cpu_texture(data);
+
 		VkDeviceSize image_size = width * height * channels * sizeof(stbi_uc);
 		staging_buffer = create_staging_buffer(device, image_size, pixels, image_size, "Image staging buffer");
 	
 		stbi_image_free(pixels);
 	}
-
-	Texture texture{};
-	texture.init(
-		device,
-		width, height,
-		format,
-		VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-		sharing_exlusive(), // exclusively owned by graphics queue
-		name
-	);
 
 
 	VKW_CommandBuffer command_buffer{};

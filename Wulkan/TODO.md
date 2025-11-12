@@ -11,6 +11,9 @@
 * loadEXR memory leak due to no free? [X] 
 * Better mapping interface with VMA (https://gpuopen-librariesandsdks.github.io/VulkanMemoryAllocator/html/memory_mapping.html) [X] 
 
+* Compute shader for sampling arbitrary textures from cpu side (https://docs.vulkan.org/guide/latest/storage_image_and_texel_buffers.html#_storage_images) [ ]
+* Better init with faster start up time [ ]
+
 * void VKW_Buffer::copy(const void* data, size_t data_size, size_t offset) change order of size/offset [ ] 
 * Update glfw due to https://github.com/glfw/glfw/issues/2684 or switch to SDL [ ]
 * m_ convention[ ] 
