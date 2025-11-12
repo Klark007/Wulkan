@@ -84,9 +84,9 @@ void Engine::render_thread_func()
 	spdlog::info("Start rendering");
 
 	while (!should_window_close.load()) {
-		update();
-
 		if (aquire_image()) {
+			update();
+
 			draw();
 
 			present();
@@ -112,10 +112,12 @@ void Engine::update()
 	{
 		ZoneScopedN("IO");
 
+		gui_input = gui.get_input();
+		
 		camera_controller.set_move_strength(gui_input.camera_movement_speed);
 		camera_controller.set_rotation_strength(gui_input.camera_rotation_speed);
-
-		gui_input = gui.get_input();
+		camera.set_near_plane(gui_input.camera_near_plane);
+		camera.set_far_plane(gui_input.camera_far_plane);
 	}
 
 	{
@@ -137,6 +139,12 @@ void Engine::update()
 		directional_light.set_intensity(gui_input.sun_intensity);
 		directional_light.set_sample_info(gui_input.receiver_sample_region, gui_input.occluder_sample_region, gui_input.nr_shadow_receiver_samples, gui_input.nr_shadow_occluder_samples);
 		directional_light.set_shadow_mode(gui_input.shadow_mode);
+
+		int nr_cascades = gui_input.nr_shadow_cascades;
+
+		glfw_input_mutex.lock();
+		directional_light.set_uniforms(camera, nr_cascades, current_frame);
+		glfw_input_mutex.unlock();
 	}
 
 	{
@@ -189,9 +197,10 @@ void Engine::update()
 			)
 		);
 		lod_mesh.set_camera_info(camera.get_virtual_pos(), camera.get_virtual_dir(), camera.get_near_plane(), camera.get_far_plane());
-
 		lod_mesh.set_visualization_mode(gui_input.pbr_vis_mode);
-		lod_mesh.idx = gui_input.lod_idx;
+		lod_mesh.set_lod_ratios(std::vector<float>{gui_input.lod_ratios[0], gui_input.lod_ratios[1], gui_input.lod_ratios[2], 1});
+
+		lod_mesh.update(current_frame);
 	}
 
 	update_uniforms();
@@ -207,10 +216,6 @@ void Engine::draw()
 	{
 		// TODO: Use camera controllers active camera
 		int nr_cascades = gui_input.nr_shadow_cascades;
-
-		glfw_input_mutex.lock();
-		directional_light.set_uniforms(camera, nr_cascades, current_frame);
-		glfw_input_mutex.unlock();
 
 		const VKW_CommandBuffer& shadow_cmd = directional_light.begin_depth_pass(current_frame);
 		{
@@ -461,7 +466,6 @@ void Engine::late_update()
 	ZoneScoped;
 
 	current_frame = (current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
-
 }
 
 void Engine::init_logger()
@@ -550,10 +554,8 @@ void Engine::create_device()
 	device.init(&instance, surface, get_required_device_extensions(), required_features, "Device");
 	cleanup_queue.add(&device);
 
-	VkPhysicalDeviceProperties deviceProperties;
-	vkGetPhysicalDeviceProperties(device.get_physical_device(), &deviceProperties);
-	spdlog::info("Selected GPU: {}", deviceProperties.deviceName);
-	spdlog::info("Tesselation limit: {}", deviceProperties.limits.maxTessellationGenerationLevel);
+	spdlog::info("Selected GPU: {}", device.get_device_properties().deviceName);
+	spdlog::info("Tesselation limit: {}", device.get_device_properties().limits.maxTessellationGenerationLevel);
 }
 
 void Engine::create_queues()
@@ -657,6 +659,7 @@ void Engine::init_data()
 	cleanup_queue.add(&texture_not_found);
 
 	{
+		/*
 		meshes[0].init(device, get_current_graphics_pool(), get_current_transfer_pool(), descriptor_pool, pbr_render_pass, "models/baloon.obj");
 		meshes[0].set_descriptor_bindings(texture_not_found, linear_texture_sampler);
 		cleanup_queue.add(&meshes[0]);
@@ -673,6 +676,7 @@ void Engine::init_data()
 		//meshes[3].init(device, get_current_graphics_pool(), get_current_transfer_pool(), dyn_descriptor_pool, pbr_render_pass, "models/sponza/sponza.obj");
 		meshes[3].set_descriptor_bindings(texture_not_found, linear_texture_sampler);
 		cleanup_queue.add(&meshes[3]);
+		*/
 	}
 
 	{
@@ -688,7 +692,7 @@ void Engine::init_data()
 				{{
 					distribution(generator),
 					distribution(generator),
-					distribution(generator)
+					distribution(generator)					
 				}}
 			);
 		}
@@ -707,14 +711,17 @@ void Engine::init_data()
 			InstancedShape<ObjMesh> instanced_mesh{};
 			instanced_mesh.init(device, get_current_transfer_pool(),
 				std::move(mesh),
-				per_instance_data
+				nr_instances,
+				{},
+				true
 			);
 			
 			meshes.push_back(instanced_mesh);
 		}
 
 		lod_mesh.init(
-			std::move(meshes)
+			std::move(meshes),
+			per_instance_data
 		);
 		cleanup_queue.add(&lod_mesh);
 	}
@@ -806,10 +813,9 @@ void Engine::create_uniform_buffers()
 			sizeof(UniformStruct), 
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
 			sharing_exlusive(), 
-			true,
+			Mapping::Persistent,
 			"Main Uniform buffer"
 		);
-		uniform_buffer.map();
 		cleanup_queue.add(&uniform_buffer);
 	}
 }
@@ -1037,7 +1043,7 @@ void Engine::update_uniforms()
 	uniform.near_far_plane = glm::vec2(camera.get_near_plane(), camera.get_far_plane());
 	glfw_input_mutex.unlock();
 
-	memcpy(uniform_buffers.at(current_frame).get_mapped_address(), &uniform, sizeof(UniformStruct));
+	uniform_buffers.at(current_frame).copy(&uniform, sizeof(UniformStruct));
 }
 
 std::vector<const char*> Engine::get_required_instance_extensions()

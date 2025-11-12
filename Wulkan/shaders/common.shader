@@ -35,6 +35,7 @@ layout( push_constant ) uniform PushConstant
 	VertexBuffer vertex_buffer;
     InstanceBuffer instance_buffer;
 	int cascade_idx;
+    int lod_level;
 } pc;
 #endif
 

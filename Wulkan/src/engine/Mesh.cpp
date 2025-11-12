@@ -24,7 +24,7 @@ void Mesh::init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, 
 		index_buffer_size,
 		VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
 		sharing_exlusive(),
-		false,
+		Mapping::NotMapped,
 		"Mesh index buffer"
 	);
 
@@ -53,7 +53,7 @@ void create_vertex_buffer(const VKW_Device& device, const VKW_CommandPool& trans
 		vertex_buffer_size,
 		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
 		sharing_exlusive(),
-		false,
+		Mapping::NotMapped,
 		"Mesh vertex buffer"
 	);
 

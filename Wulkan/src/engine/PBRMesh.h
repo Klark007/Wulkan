@@ -30,9 +30,10 @@ public:
 	void set_model_matrix(const glm::mat4& m) override { m_model = m; };
 	void set_cascade_idx(int idx) override { m_cascade_idx = idx; };
 	inline void set_visualization_mode(VisualizationMode mode) override;
-	
+	void set_lod_level(int lod_level) override { m_lod_level = lod_level; };
+
 	inline void set_instance_count(uint32_t count) override;
-	void set_instance_buffer_address(VkDeviceAddress address) override { m_instance_buffer_address = address; };
+	void set_instance_buffer_address(const std::array<VkDeviceAddress, MAX_FRAMES_IN_FLIGHT>& addresses) override { m_instance_buffer_addresses = addresses; };
 	glm::vec3 get_instance_position(uint32_t instance = 0) override;
 };
 

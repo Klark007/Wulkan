@@ -5,8 +5,6 @@
 #define TINYEXR_IMPLEMENTATION
 #include <tinyexr.h>
 
-#include "spdlog/spdlog.h"
-
 void Texture::init(const VKW_Device* vkw_device, unsigned int w, unsigned int h, VkFormat f, VkImageUsageFlags usage, SharingInfo sharing_info, const std::string& obj_name, VkImageCreateFlags flags, uint32_t array_layers, uint32_t mip_levels)
 {
 	device = vkw_device;
@@ -171,7 +169,7 @@ void Texture::transition_layout(const VKW_CommandBuffer& command_buffer, VkImage
 
 	if (initial_layout == VK_IMAGE_LAYOUT_UNDEFINED && new_layout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL) {
 		// new texture to be used as color attachment
-		barrier.srcStageMask = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT;
+		barrier.srcStageMask = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT | VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
 		barrier.dstStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
 
 		barrier.srcAccessMask = VK_ACCESS_2_NONE;
@@ -199,7 +197,7 @@ void Texture::transition_layout(const VKW_CommandBuffer& command_buffer, VkImage
 		barrier.dstAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT;
 	}
 	else if (initial_layout == VK_IMAGE_LAYOUT_UNDEFINED && new_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
-		barrier.srcStageMask = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT;
+		barrier.srcStageMask = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT | VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
 		barrier.dstStageMask = VK_PIPELINE_STAGE_2_ALL_TRANSFER_BIT_KHR; // needs to be in new layout before transfer stage
 
 		barrier.srcAccessMask = VK_ACCESS_2_NONE; // nothing from before as data is undefined
@@ -216,7 +214,7 @@ void Texture::transition_layout(const VKW_CommandBuffer& command_buffer, VkImage
 	} 
 	else if (initial_layout == VK_IMAGE_LAYOUT_UNDEFINED && new_layout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL) {
 		// new texture to be used as a depth attachment
-		barrier.srcStageMask = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT;
+		barrier.srcStageMask = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT | VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
 		barrier.dstStageMask = VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT;
 
 		barrier.srcAccessMask = VK_ACCESS_2_NONE;
@@ -477,7 +475,6 @@ Texture create_cube_map_from_path(const VKW_Device* device, const VKW_CommandPoo
 
 		image_size = width * height * channels * sizeof(float);
 		staging_buffer = create_staging_buffer(device, image_size*6, rgba, image_size, "Cube map staging buffer");
-		staging_buffer.map();
 
 		free(rgba);
 	}
@@ -495,8 +492,6 @@ Texture create_cube_map_from_path(const VKW_Device* device, const VKW_CommandPoo
 
 		free(rgba);
 	}
-	staging_buffer.unmap();
-
 
 	Texture texture{};
 	texture.init(
@@ -635,11 +630,9 @@ Texture create_mipmapped_texture_from_path(const VKW_Device* device, const VKW_C
 		staging_buffer = create_staging_buffer(device, image_size, pixel_mips[0], image_sizes[0], "Image staging buffer");
 
 		// copy images into staging buffer
-		staging_buffer.map();
 		for (unsigned int i = 1; i < mip_levels; i++) {
 			staging_buffer.copy(pixel_mips[i], image_sizes[i], staging_offsets[i]);
 		}
-		staging_buffer.unmap();
 
 		for (unsigned int i = 0; i < mip_levels; i++) {
 			stbi_image_free(pixel_mips[i]);

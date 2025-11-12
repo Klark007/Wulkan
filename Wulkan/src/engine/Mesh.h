@@ -44,9 +44,10 @@ public:
 
 	void set_model_matrix(const glm::mat4& m) override { m_model = m; };
 	void set_cascade_idx(int idx) override { m_cascade_idx = idx; };
+	void set_lod_level(int lod_level) override { m_lod_level = lod_level; };
 	inline void set_visualization_mode(VisualizationMode mode) override;
 	void set_instance_count(uint32_t count) { m_instance_count = count; };
-	inline  void set_instance_buffer_address(VkDeviceAddress address) override;
+	inline  void set_instance_buffer_address(const std::array<VkDeviceAddress, MAX_FRAMES_IN_FLIGHT>& addresses) override;
 	glm::vec3 get_instance_position(uint32_t instance = 0) override;
 };
 
@@ -63,7 +64,7 @@ inline void Mesh::set_visualization_mode(VisualizationMode mode)
 	throw NotImplementedException("set_visualization_mode not implemented for Mesh class", __FILE__, __LINE__);
 }
 
-inline void Mesh::set_instance_buffer_address(VkDeviceAddress address)
+inline void Mesh::set_instance_buffer_address(const std::array<VkDeviceAddress, MAX_FRAMES_IN_FLIGHT>& addresses)
 {
 	throw NotImplementedException("set_instance_buffer_address not implemented for Mesh class", __FILE__, __LINE__);
 }

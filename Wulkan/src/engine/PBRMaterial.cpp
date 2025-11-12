@@ -23,12 +23,11 @@ void PBRMaterial::init(const VKW_Device& device, const VKW_CommandPool& graphics
 			sizeof(PBRUniform),
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			sharing_exlusive(),
-			true,
+			Mapping::Persistent,
 			fmt::format("PBR Uniform {} ({})", material_name, frame_idx)
 		);
-		uniform_buffer.map();
 
-		memcpy(uniform_buffer.get_mapped_address(), &m_uniform, sizeof(PBRUniform));
+		uniform_buffer.copy(&m_uniform, sizeof(PBRUniform));
 	}
 
 	if (diffuse_path != "") {

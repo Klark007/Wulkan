@@ -6,7 +6,10 @@ class RenderPass : public VKW_Object
 {
 public:
 	RenderPass() = default;
-	friend MaterialInstance;
+
+	// friend for any S,M (it seems that its not possible to fix T and keep M varying)
+	template<typename S, size_t M> 
+	friend class MaterialInstance;
 
 	// init with initalized pipeline
 	// Pipeline is owned by RenderPass, layouts not

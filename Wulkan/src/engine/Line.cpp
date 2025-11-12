@@ -23,10 +23,9 @@ void Line::init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, 
 		vertex_buffer_size,
 		VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
 		sharing_exlusive(),
-		true,
+		Mapping::Persistent,
 		"Line vertex buffer"
 	);
-	vertex_buffer.map();
 	vertex_buffer.copy(vertices.data(), vertex_buffer_size);
 
 	VkDeviceSize index_buffer_size = sizeof(uint32_t) * indices.size();
@@ -37,7 +36,7 @@ void Line::init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, 
 		index_buffer_size,
 		VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
 		sharing_exlusive(),
-		false,
+		Mapping::NotMapped,
 		"Mesh index buffer"
 	);
 
