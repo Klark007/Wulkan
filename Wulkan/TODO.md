@@ -1,8 +1,8 @@
 # Planned features
 
 ## General features
-* 1Compute shader for sampling arbitrary textures from cpu side (https://docs.vulkan.org/guide/latest/storage_image_and_texel_buffers.html#_storage_images) [ ]
-* 2MSAA [ ]
+* 1 Compute shader for sampling arbitrary textures from cpu side (https://docs.vulkan.org/guide/latest/storage_image_and_texel_buffers.html#_storage_images) [ ]
+* 2 MSAA [ ]
 * Better init with faster start up time [ ]
 
 ## Maybe and Convetions
@@ -27,7 +27,7 @@
 * Mesh shaders [ ]
 
 ## PBR
-* 3Normal mapping [ ] 
+* 3 Normal mapping [ ] 
 * Automatically detect if texture requires alpha channel [ ] 
 * Emission / Ambient [ ] 
 * Support more textures [ ] 
