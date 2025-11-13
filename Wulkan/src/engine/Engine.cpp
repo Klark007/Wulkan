@@ -828,6 +828,19 @@ void Engine::init_render_targets()
 	); // TODO: FIX might add it multiple times to the clean up queue	
 	cleanup_queue.add(&color_render_target);
 
+	color_render_target_msaa.init(
+		&device,
+		swapchain.get_extent().width,
+		swapchain.get_extent().height,
+		Texture::find_format(device, Texture_Type::Tex_Colortarget),
+		VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+		sharing_exlusive(),
+		"Color render target MSAA",
+		1, // mip layers
+		VK_SAMPLE_COUNT_4_BIT
+	); // TODO: FIX might add it multiple times to the clean up queue	
+	cleanup_queue.add(&color_render_target_msaa);
+
 	depth_render_target.init(
 		&device,
 		swapchain.get_extent().width,
@@ -838,6 +851,19 @@ void Engine::init_render_targets()
 		"Depth render target"
 	);
 	cleanup_queue.add(&depth_render_target);
+
+	depth_render_target_msaa.init(
+		&device,
+		swapchain.get_extent().width,
+		swapchain.get_extent().height,
+		Texture::find_format(device, Texture_Type::Tex_D),
+		VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+		sharing_exlusive(),
+		"Depth render target MSAA",
+		1, // mip layers
+		VK_SAMPLE_COUNT_4_BIT
+	);
+	cleanup_queue.add(&depth_render_target_msaa);
 }
 
 void Engine::create_render_passes()

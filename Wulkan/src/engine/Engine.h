@@ -137,6 +137,8 @@ private:
 
 	VKW_Swapchain swapchain;
 
+	Texture color_render_target_msaa;
+	Texture depth_render_target_msaa;
 	Texture color_render_target;
 	Texture depth_render_target;
 

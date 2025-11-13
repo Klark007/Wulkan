@@ -7,7 +7,7 @@
 
 #include "spdlog/spdlog.h"
 
-void Texture::init(const VKW_Device* vkw_device, unsigned int w, unsigned int h, VkFormat f, VkImageUsageFlags usage, SharingInfo sharing_info, const std::string& obj_name, VkImageCreateFlags flags, uint32_t array_layers, uint32_t mip_levels)
+void Texture::init(const VKW_Device* vkw_device, unsigned int w, unsigned int h, VkFormat f, VkImageUsageFlags usage, SharingInfo sharing_info, const std::string& obj_name, uint32_t mip_levels, VkSampleCountFlagBits samples, uint32_t array_layers, VkImageCreateFlags flags)
 {
 	device = vkw_device;
 	allocator = device->get_allocator();
@@ -34,7 +34,7 @@ void Texture::init(const VKW_Device* vkw_device, unsigned int w, unsigned int h,
 
 	image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	image_info.usage = usage;
-	image_info.samples = VK_SAMPLE_COUNT_1_BIT;
+	image_info.samples = samples;
 	
 	// todo start exclusive, if transfered into: change ownership during layout transition
 	image_info.sharingMode = sharing_info.mode;
@@ -506,8 +506,10 @@ Texture create_cube_map_from_path(const VKW_Device* device, const VKW_CommandPoo
 		VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
 		sharing_exlusive(), // exclusively owned by graphics queue
 		name,
-		VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,
-		6
+		1,						// mip levels
+		VK_SAMPLE_COUNT_1_BIT,  // sample count
+		6,					    // array layers
+		VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT
 	);
 
 	VKW_CommandBuffer command_buffer{};
@@ -679,8 +681,6 @@ Texture create_mipmapped_texture_from_path(const VKW_Device* device, const VKW_C
 		VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
 		sharing_exlusive(), // exclusively owned by graphics queue
 		name,
-		0, // no special flags
-		1, // not texture array
 		mip_levels
 	);
 

@@ -182,7 +182,7 @@ void VKW_GraphicsPipeline::add_push_constants(const std::vector<VkPushConstantRa
 	push_consts_range.insert(std::end(push_consts_range), std::begin(ranges), std::end(ranges));
 }
 
-void VKW_GraphicsPipeline::set_color_attachment(VkImageView attachment, bool do_clear_color, VkClearColorValue clear_color_value)
+void VKW_GraphicsPipeline::set_color_attachment(VkImageView attachment, bool do_clear_color, VkClearColorValue clear_color_value, VkImageView resolve_attachment, VkResolveModeFlagBits resolve_mode)
 {
 	
 	color_attachment_info.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -197,11 +197,15 @@ void VKW_GraphicsPipeline::set_color_attachment(VkImageView attachment, bool do_
 	color_attachment_info.imageView = attachment;
 	color_attachment_info.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
+	color_attachment_info.resolveImageView = resolve_attachment;
+	color_attachment_info.resolveImageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	color_attachment_info.resolveMode = resolve_mode;
+
 	attachment_state.pColorAttachments = &color_attachment_info;
 	attachment_state.colorAttachmentCount = 1;
 }
 
-void VKW_GraphicsPipeline::set_depth_attachment(VkImageView attachment, bool do_clear_depth, float clear_depth_value)
+void VKW_GraphicsPipeline::set_depth_attachment(VkImageView attachment, bool do_clear_depth, float clear_depth_value, VkImageView resolve_attachment, VkResolveModeFlagBits resolve_mode)
 {
 	depth_attachment_info.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 	if (do_clear_depth) {
@@ -214,6 +218,10 @@ void VKW_GraphicsPipeline::set_depth_attachment(VkImageView attachment, bool do_
 
 	depth_attachment_info.imageView = attachment;
 	depth_attachment_info.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+	depth_attachment_info.resolveImageView = resolve_attachment;
+	depth_attachment_info.resolveImageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+	depth_attachment_info.resolveMode = resolve_mode;
 
 	attachment_state.pDepthAttachment = &depth_attachment_info;
 }

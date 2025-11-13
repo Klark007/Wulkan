@@ -34,7 +34,7 @@ class Texture : public VKW_Object
 public:
 	Texture() = default;
 	// create an image (and memory) but not load it (to be used as attachment), if we want to load an image, use create_texture_from_path
-	void init(const VKW_Device* vkw_device, unsigned int width, unsigned int height, VkFormat format, VkImageUsageFlags usage, SharingInfo sharing_info, const std::string& obj_name, VkImageCreateFlags flags = 0, uint32_t array_layers = 1, uint32_t mip_levels = 1);
+	void init(const VKW_Device* vkw_device, unsigned int width, unsigned int height, VkFormat format, VkImageUsageFlags usage, SharingInfo sharing_info, const std::string& obj_name, uint32_t mip_levels = 1, VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT, uint32_t array_layers = 1, VkImageCreateFlags flags = 0);
 	void del() override;
 
 private:
