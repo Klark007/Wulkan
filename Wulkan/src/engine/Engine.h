@@ -39,8 +39,7 @@
 #include "Frustum.h"
 #include "DirectionalLight.h"
 #include "ObjMesh.h"
-#include "InstancedShape.h"
-#include "LODShape.h"
+#include "InstancedLODShape.h"
 
 #include "Gui.h"
 
@@ -195,7 +194,7 @@ private:
 
 	Texture texture_not_found;
 	std::array<ObjMesh, 4> meshes;
-	LODShape<InstancedShape<ObjMesh>> lod_mesh;
+	InstancedLODShape<ObjMesh> lod_mesh;
 
 	inline const VKW_CommandPool& get_current_graphics_pool() const;
 	inline const VKW_CommandPool& get_current_transfer_pool() const;

@@ -90,7 +90,7 @@ VKW_DescriptorSetLayout PBRMesh::create_descriptor_set_layout(const VKW_Device& 
 	descriptor_set_layout.add_binding(
 		0,
 		VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-		VK_SHADER_STAGE_FRAGMENT_BIT
+		VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT
 	);
 
 	// diffuse texture

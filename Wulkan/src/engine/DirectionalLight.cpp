@@ -48,10 +48,9 @@ void DirectionalLight::init(const VKW_Device* vkw_device, const std::array<VKW_C
 			sizeof(DirectionalLightUniform),
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			sharing_exlusive(),
-			true,
+			Mapping::Persistent,
 			"Shadow Uniform buffer"
 		);
-		uniform_buffers.at(i).map();
 
 
 		cmds.at(i).init(device, &graphics_pools.at(i), false, "Shadow CMD");
@@ -212,7 +211,7 @@ void DirectionalLight::set_uniforms(const Camera& camera, int nr_current_cascade
 	uniform.nr_shadow_occluder_samples = o_nr_samples;
 	uniform.shadow_mode = shadow_mode;
 
-	memcpy(uniform_buffers.at(current_frame).get_mapped_address(), &uniform, sizeof(DirectionalLightUniform));
+	uniform_buffers.at(current_frame).copy(&uniform, sizeof(DirectionalLightUniform));
 }
 
 VKW_DescriptorSetLayout DirectionalLight::create_shadow_descriptor_layout(const VKW_Device& device)

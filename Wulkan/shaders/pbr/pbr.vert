@@ -7,6 +7,7 @@ layout (location = 1) out vec3 outNormal;
 layout (location = 2) out vec2 outUV;
 
 #include "../common.shader"
+#include "pbr_common.shader"
 
 void main() 
 {	

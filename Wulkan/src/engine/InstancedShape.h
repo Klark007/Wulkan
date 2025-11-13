@@ -12,53 +12,90 @@ class InstancedShape : public Shape
 {
 public:
 	// before will need to have called set_descriptor_bindings
-	void init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, T&& shape, const std::vector<InstanceData>& per_instance_data);
+	void init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, T&& shape, uint32_t instance_count, const std::vector<InstanceData>& per_instance_data, bool dynamic = false);
 	void del() override;
 
 	inline void draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame) override;
-private:
+protected:
 	T m_shape;
 	std::vector<InstanceData> m_instance_data;
-	VKW_Buffer m_instance_buffer;
 public:
+	std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT> m_instance_buffers;
+protected:
+	bool m_dynamic;
+	uint32_t m_max_instance_count; // the number of instances m_instance_buffer supports. Current instance_count can be lower 
+public:
+	void update_instance_data(const std::vector<InstanceData>& per_instance_data, uint32_t current_frame);
+
 	void set_model_matrix(const glm::mat4& m) override { m_shape.set_model_matrix(m); };
 	void set_cascade_idx(int idx) override { m_shape.set_cascade_idx( idx); };
+	void set_lod_level(int lod_level) override { m_shape.set_lod_level(lod_level); };
 
 	inline void set_visualization_mode(VisualizationMode mode) { m_shape.set_visualization_mode(mode); };
 	inline virtual virtual void set_instance_count(uint32_t count) override;
-	virtual void set_instance_buffer_address(VkDeviceAddress address) { m_shape.set_instance_buffer_address(address); };
+	virtual void set_instance_buffer_address(const std::array<VkDeviceAddress, MAX_FRAMES_IN_FLIGHT>& addresses) { m_shape.set_instance_buffer_address(addresses); };
 	glm::vec3 get_instance_position(uint32_t instance = 0) override;
 };
 
 template<typename T>  requires std::is_base_of_v<Shape, T>
-inline void InstancedShape<T>::init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, T&& shape, const std::vector<InstanceData>& per_instance_data)
+inline void InstancedShape<T>::init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, T&& shape, uint32_t instance_count, const std::vector<InstanceData>& per_instance_data, bool dynamic)
 {
 	m_shape = shape;
 	m_instance_data = per_instance_data;
+	m_max_instance_count = instance_count;
+	m_dynamic = dynamic;
 
-	// copy per instance data into a buffer
-	VkDeviceSize instance_buffer_size = sizeof(InstanceData) * m_instance_data.size();
-	VKW_Buffer instance_staging_buffer = create_staging_buffer(&device, instance_buffer_size, m_instance_data.data(), instance_buffer_size, "Instance staging buffer");
+	if (!(m_instance_data.empty() && dynamic) || m_instance_data.size() == m_max_instance_count) {
+		throw RuntimeException(fmt::format("Tried to initialize InstancedShape with {} many instances but {} per_instance_data", instance_count, per_instance_data.size()), __FILE__, __LINE__);
+	}
 
-	m_instance_buffer.init(
-		&device,
-		instance_buffer_size,
-		VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-		sharing_exlusive(),
-		false,
-		"Instance buffer"
-	);
+	VkDeviceSize instance_buffer_size = sizeof(InstanceData) * m_max_instance_count;
+	std::array<VkDeviceAddress, MAX_FRAMES_IN_FLIGHT> addresses{};
 
-	m_instance_buffer.copy(&transfer_pool, instance_staging_buffer);
-	instance_staging_buffer.del();
+	for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+		if (!m_instance_data.empty()) {
+			// copy per instance data into a buffer
+			VKW_Buffer instance_staging_buffer = create_staging_buffer(&device, instance_buffer_size, m_instance_data.data(), instance_buffer_size, "Instance staging buffer");
 
-	// get instance buffer address
-	VkBufferDeviceAddressInfo address_info{};
-	address_info.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
-	address_info.buffer = m_instance_buffer;
+			m_instance_buffers[i].init(
+				&device,
+				instance_buffer_size,
+				VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+				sharing_exlusive(),
+				Mapping::NotMapped,
+				fmt::format("Instance buffer {}", i)
+			);
 
-	set_instance_buffer_address(vkGetBufferDeviceAddress(device, &address_info));
-	set_instance_count(m_instance_data.size());
+			m_instance_buffers[i].copy(&transfer_pool, instance_staging_buffer);
+			instance_staging_buffer.del();
+		}
+		else {
+			// m_mappable guaranteed to be true
+			m_instance_buffers[i].init(
+				&device,
+				instance_buffer_size,
+				VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+				sharing_exlusive(),
+				Mapping::Persistent,
+				fmt::format("Instance buffer {}", i)
+			);
+		}
+
+		// get instance buffer address
+		VkBufferDeviceAddressInfo address_info{};
+		address_info.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+		address_info.buffer = m_instance_buffers[i];
+
+		addresses[i] = vkGetBufferDeviceAddress(device, &address_info);
+	}
+
+	// guaramteed to be of size m_max_instance_count
+	if (m_instance_data.empty()) {
+		m_instance_data.resize(m_max_instance_count);
+	}
+
+	set_instance_buffer_address(addresses);
+	set_instance_count(m_max_instance_count);
 }
 
 // overhead cost of virtual function call
@@ -66,6 +103,18 @@ template<typename T> requires std::is_base_of_v<Shape, T>
 inline void InstancedShape<T>::draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame)
 {
 	m_shape.draw(command_buffer, current_frame);
+}
+
+template<typename T> requires std::is_base_of_v<Shape, T>
+inline void InstancedShape<T>::update_instance_data(const std::vector<InstanceData>& per_instance_data, uint32_t current_frame)
+{
+	assert(m_dynamic && "InstancedShape needs to be initalized with mappable=true to call update_instance_data");
+	assert(per_instance_data.size() <= m_max_instance_count && "Can support only m_max_instance_count data");
+	
+	// copy into m_instance_data, which is guaranteed to be of size m_max_instance_count
+	memcpy_s(m_instance_data.data(), sizeof(InstanceData) * m_instance_data.size(), per_instance_data.data(), sizeof(InstanceData) * per_instance_data.size());
+	m_instance_buffers[current_frame].copy(m_instance_data.data(), sizeof(InstanceData) * per_instance_data.size());
+	set_instance_count(per_instance_data.size());
 }
 
 template<typename T> requires std::is_base_of_v<Shape, T>
@@ -86,5 +135,7 @@ template<typename T> requires std::is_base_of_v<Shape, T>
 void InstancedShape<T>::del()
 {
 	m_shape.del();
-	m_instance_buffer.del();
+	for (VKW_Buffer& instance_buffer : m_instance_buffers) {
+		instance_buffer.del();
+	}
 }

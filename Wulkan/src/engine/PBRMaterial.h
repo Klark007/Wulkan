@@ -58,7 +58,8 @@ inline void PBRMaterial::set_visualization_mode(VisualizationMode mode)
 		
 		for (size_t frame_idx = 0; frame_idx < MAX_FRAMES_IN_FLIGHT; frame_idx++) {
 			VKW_Buffer& uniform_buffer = m_uniform_buffers[frame_idx];
-			memcpy(uniform_buffer.get_mapped_address(), &m_uniform, sizeof(PBRUniform));
+
+			uniform_buffer.copy(&m_uniform, sizeof(PBRUniform));
 		}
 		
 		m_visualization_mode = mode;

@@ -74,6 +74,25 @@ void main()
                     break;
             }
             break;
+		case 4:
+			switch (pc.lod_level) {
+                case 0:
+                    outColor = vec4(1,0,0,1);
+                    break;
+                case 1:
+                    outColor = vec4(1,1,0,1);
+                    break;
+                case 2:
+                    outColor = vec4(0,1,0,1);
+                    break;
+                case 3:
+                    outColor = vec4(0,0,1,1);
+                    break;
+                default:
+                    outColor = vec4(1,0,1,1);
+                    break;
+            }
+			break;
 		default:
 			outColor = vec4(1,0,1,1);
             break;
