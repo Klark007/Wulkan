@@ -47,7 +47,6 @@ private:
 	VkDeviceMemory memory;
 
 	mutable std::map<std::tuple<VkImageAspectFlags, VkImageViewType, int>, VkImageView> image_views;
-	std::map<std::tuple<VkImageAspectFlags, VkImageViewType, int>, VkImageView> image_views;
 	std::optional<std::vector<float>> m_cpu_texture;
 
 	unsigned int width, height;
