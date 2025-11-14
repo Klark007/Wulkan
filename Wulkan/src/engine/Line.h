@@ -12,7 +12,7 @@ public:
 	void init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, VKW_DescriptorPool& descriptor_pool, RenderPass<PushConstants, 1>& render_pass, const std::vector<glm::vec3>& points, const std::vector<uint32_t>& indices, const std::vector<glm::vec4>& colors);
 	
 	// creates singleton render pass, needs to be deleted by caller of function
-	static RenderPass<PushConstants, 1> create_render_pass(const VKW_Device* device, const std::array<VKW_DescriptorSetLayout, 1>& layouts, Texture& color_rt, Texture& depth_rt);
+	static RenderPass<PushConstants, 1> create_render_pass(const VKW_Device* device, const std::array<VKW_DescriptorSetLayout, 1>& layouts, Texture& color_rt, Texture& depth_rt, VkSampleCountFlagBits sample_count);
 
 	void del() override;
 

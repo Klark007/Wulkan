@@ -34,7 +34,7 @@ class Texture : public VKW_Object
 public:
 	Texture() = default;
 	// create an image (and memory) but not load it (to be used as attachment), if we want to load an image, use create_texture_from_path
-	void init(const VKW_Device* vkw_device, unsigned int width, unsigned int height, VkFormat format, VkImageUsageFlags usage, SharingInfo sharing_info, const std::string& obj_name, VkImageCreateFlags flags = 0, uint32_t array_layers = 1, uint32_t mip_levels = 1);
+	void init(const VKW_Device* vkw_device, unsigned int width, unsigned int height, VkFormat format, VkImageUsageFlags usage, SharingInfo sharing_info, const std::string& obj_name, uint32_t mip_levels = 1, VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT, uint32_t array_layers = 1, VkImageCreateFlags flags = 0);
 	void del() override;
 
 private:
@@ -46,6 +46,7 @@ private:
 	VkImage image;
 	VkDeviceMemory memory;
 
+	mutable std::map<std::tuple<VkImageAspectFlags, VkImageViewType, int>, VkImageView> image_views;
 	std::map<std::tuple<VkImageAspectFlags, VkImageViewType, int>, VkImageView> image_views;
 	std::optional<std::vector<float>> m_cpu_texture;
 
@@ -81,7 +82,7 @@ public:
 	inline static int get_stbi_channels(VkFormat format);
 
 	// gets image view of aspect with specific type (assumes one view per aspect flag, image view type combiniation)
-	VkImageView get_image_view(VkImageAspectFlags aspect_flag, VkImageViewType type = VK_IMAGE_VIEW_TYPE_2D, uint32_t base_layer = 0, uint32_t array_layers = 1);
+	VkImageView get_image_view(VkImageAspectFlags aspect_flag, VkImageViewType type = VK_IMAGE_VIEW_TYPE_2D, uint32_t base_layer = 0, uint32_t array_layers = 1) const;
 
 	inline VkImage get_image() const { return image; };
 	inline operator VkImage() const { return image; };

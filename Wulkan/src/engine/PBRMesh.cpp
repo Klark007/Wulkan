@@ -13,7 +13,7 @@ void PBRMesh::set_descriptor_bindings(Texture& texture_fallback, const VKW_Sampl
 	}
 }
 
-RenderPass<PushConstants, PBR_MAT_DESC_SET_COUNT> PBRMesh::create_render_pass(const VKW_Device* device, const std::array<VKW_DescriptorSetLayout, PBR_MAT_DESC_SET_COUNT>& layouts, Texture& color_rt, Texture& depth_rt, bool depth_only, bool bias_depth, bool cull_backfaces)
+RenderPass<PushConstants, PBR_MAT_DESC_SET_COUNT> PBRMesh::create_render_pass(const VKW_Device* device, const std::array<VKW_DescriptorSetLayout, PBR_MAT_DESC_SET_COUNT>& layouts, Texture& color_rt, Texture& depth_rt, VkSampleCountFlagBits sample_count, bool depth_only, bool bias_depth, bool cull_backfaces)
 {
 	RenderPass<PushConstants, PBR_MAT_DESC_SET_COUNT> render_pass{};
 
@@ -59,6 +59,8 @@ RenderPass<PushConstants, PBR_MAT_DESC_SET_COUNT> PBRMesh::create_render_pass(co
 	if (depth_only && bias_depth) {
 		graphics_pipeline.enable_dynamic_depth_bias();
 	}
+	
+	graphics_pipeline.set_sample_count(sample_count);
 
 	std::string pipeline_name;
 	if (depth_only) {

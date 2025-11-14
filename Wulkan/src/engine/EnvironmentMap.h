@@ -22,7 +22,7 @@ public:
 	void set_descriptor_bindings(const VKW_Sampler& texture_sampler);
 	void del() override;
 
-	static RenderPass<EnvironmentMapPushConstants, 2> create_render_pass(const VKW_Device* device, const std::array<VKW_DescriptorSetLayout, 2>& layouts, Texture& color_rt, Texture& depth_rt);
+	static RenderPass<EnvironmentMapPushConstants, 2> create_render_pass(const VKW_Device* device, const std::array<VKW_DescriptorSetLayout, 2>& layouts, Texture& color_rt, Texture& depth_rt, VkSampleCountFlagBits sample_count);
 	static VKW_DescriptorSetLayout create_descriptor_set_layout(const VKW_Device& device);
 
 	inline void draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame) override;

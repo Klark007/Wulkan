@@ -28,7 +28,8 @@ void DirectionalLight::init(const VKW_Device* vkw_device, const std::array<VKW_C
 		VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
 		sharing_exlusive(),
 		"Directional light shadow map",
-		0,
+		1,
+		VK_SAMPLE_COUNT_1_BIT,
 		MAX_CASCADE_COUNT
 	);
 

@@ -40,7 +40,7 @@ public:
 
 	// creates singleton render pass, needs to be deleted by caller of function
 	// depth_bias only works in depth_only mode
-	static RenderPass<TerrainPushConstants, 3> create_render_pass(const VKW_Device* device, const std::array<VKW_DescriptorSetLayout, 3>& layouts, Texture& color_rt, Texture& depth_rt, bool depth_only = false, bool wireframe_mode = false, bool bias_depth = false, int nr_shadow_cascades = 3);
+	static RenderPass<TerrainPushConstants, 3> create_render_pass(const VKW_Device* device, const std::array<VKW_DescriptorSetLayout, 3>& layouts, Texture& color_rt, Texture& depth_rt, VkSampleCountFlagBits sample_count, bool depth_only = false, bool wireframe_mode = false, bool bias_depth = false, int nr_shadow_cascades = 3);
 	static VKW_DescriptorSetLayout create_descriptor_set_layout(const VKW_Device& device);
 
 	inline void draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame) override;

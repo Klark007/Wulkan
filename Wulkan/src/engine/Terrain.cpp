@@ -150,7 +150,7 @@ void Terrain::precompute_curvature(const VKW_Device& device, const VKW_CommandPo
 	compute_desc_set.del();
 }
 
-RenderPass<TerrainPushConstants, 3> Terrain::create_render_pass(const VKW_Device* device, const std::array<VKW_DescriptorSetLayout, 3>& layouts, Texture& color_rt, Texture& depth_rt, bool depth_only, bool wireframe_mode, bool bias_depth, int nr_shadow_cascades)
+RenderPass<TerrainPushConstants, 3> Terrain::create_render_pass(const VKW_Device* device, const std::array<VKW_DescriptorSetLayout, 3>& layouts, Texture& color_rt, Texture& depth_rt, VkSampleCountFlagBits sample_count, bool depth_only, bool wireframe_mode, bool bias_depth, int nr_shadow_cascades)
 {
 	RenderPass<TerrainPushConstants, 3> render_pass{};
 
@@ -217,6 +217,8 @@ RenderPass<TerrainPushConstants, 3> Terrain::create_render_pass(const VKW_Device
 	if (depth_only && bias_depth) {
 		graphics_pipeline.enable_dynamic_depth_bias();
 	}
+
+	graphics_pipeline.set_sample_count(sample_count);
 
 	graphics_pipeline.init(device, "Terrain graphics pipeline");
 
