@@ -104,11 +104,13 @@ public:
 	template <class T>
 	inline void add_push_constant(VKW_PushConstant<T> push_const);
 	void add_push_constants(const std::vector<VkPushConstantRange>& ranges);
+
+	inline void set_sample_count(VkSampleCountFlagBits samples);
 	
 	// END TO BE SET BEFORE INIT
 	
-	void set_color_attachment(VkImageView attachment, bool do_clear_color, VkClearColorValue clear_color_value);
-	void set_depth_attachment(VkImageView attachment, bool do_clear_depth, float clear_depth_value);
+	void set_color_attachment(VkImageView attachment, bool do_clear_color, VkClearColorValue clear_color_value, VkImageView resolve_attachment = VK_NULL_HANDLE, VkResolveModeFlagBits resolve_mode = VK_RESOLVE_MODE_NONE);
+	void set_depth_attachment(VkImageView attachment, bool do_clear_depth, float clear_depth_value, VkImageView resolve_attachment = VK_NULL_HANDLE, VkResolveModeFlagBits resolve_mode = VK_RESOLVE_MODE_NONE);
 	
 	void set_render_size(VkExtent2D extend);
 
@@ -216,4 +218,9 @@ inline void VKW_GraphicsPipeline::set_dynamic_state(const VKW_CommandBuffer& cmd
 {
 	vkCmdSetViewport(cmd, 0, 1, &m_viewport);
 	vkCmdSetScissor(cmd, 0, 1, &scissor);
+}
+
+inline void VKW_GraphicsPipeline::set_sample_count(VkSampleCountFlagBits samples)
+{
+	multisampling.rasterizationSamples = samples;
 }

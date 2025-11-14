@@ -67,7 +67,7 @@ void Line::update_vertices(const std::vector<glm::vec3>& points)
 	vertex_buffer.copy(vertices.data(), vertex_buffer_size);
 }
 
-RenderPass<PushConstants, 1> Line::create_render_pass(const VKW_Device* device, const std::array<VKW_DescriptorSetLayout, 1>& layouts, Texture& color_rt, Texture& depth_rt)
+RenderPass<PushConstants, 1> Line::create_render_pass(const VKW_Device* device, const std::array<VKW_DescriptorSetLayout, 1>& layouts, Texture& color_rt, Texture& depth_rt, VkSampleCountFlagBits sample_count)
 {
 	RenderPass<PushConstants, 1> render_pass{};
 
@@ -97,6 +97,8 @@ RenderPass<PushConstants, 1> Line::create_render_pass(const VKW_Device* device, 
 
 	graphics_pipeline.set_color_attachment_format(color_rt.get_format());
 	graphics_pipeline.set_depth_attachment_format(depth_rt.get_format());
+
+	graphics_pipeline.set_sample_count(sample_count);
 
 	graphics_pipeline.init(device, "Line graphics pipeline");
 
