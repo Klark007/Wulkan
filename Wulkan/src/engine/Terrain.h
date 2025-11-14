@@ -46,7 +46,9 @@ public:
 	inline void draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame) override;
 private:
 	const VKW_Sampler* texture_sampler = nullptr;
+public: // TODO REMOVE
 	Texture height_map;
+private:
 	Texture albedo;
 	Texture normal_map;
 

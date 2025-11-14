@@ -187,15 +187,6 @@ void Engine::update()
 		);
 		meshes[3].set_visualization_mode(gui_input.pbr_vis_mode);
 
-		lod_mesh.set_model_matrix(
-			glm::translate(
-				glm::scale(
-					glm::mat4(1.f),
-					glm::vec3(1.f)
-				),
-				glm::vec3(10, -2.5, 12)
-			)
-		);
 		lod_mesh.set_camera_info(camera.get_virtual_pos(), camera.get_virtual_dir(), camera.get_near_plane(), camera.get_far_plane());
 		lod_mesh.set_visualization_mode(gui_input.pbr_vis_mode);
 		lod_mesh.set_lod_ratios(std::vector<float>{gui_input.lod_ratios[0], gui_input.lod_ratios[1], gui_input.lod_ratios[2], 1});
@@ -692,19 +683,29 @@ void Engine::init_data()
 
 	{
 		std::default_random_engine generator{};
-		std::uniform_real_distribution<float> distribution{ -32, 32 };
+		std::uniform_real_distribution<float> distribution{ -25, 25};
 
-		const int nr_instances = 1024;
+		const int nr_instances = 1024*4;
 		std::vector<InstanceData> per_instance_data{};
 		per_instance_data.reserve(nr_instances);
 
 		for (int i = 0; i < nr_instances; i++) {
+			glm::vec3 pos {
+					distribution(generator),
+					distribution(generator),
+					0
+			};
+
+			glm::vec2 uv{
+				(pos.x / 25 + 1) / 2,
+				(pos.y / 25 + 1) / 2,
+			};
+
+			// height = text * 25 * 0.8f
+			pos.z = terrain.height_map.cpu_texture_sample(uv).x * 25 * 0.8;
+
 			per_instance_data.push_back(
-				{{
-					distribution(generator),
-					distribution(generator),
-					distribution(generator)					
-				}}
+				{pos}
 			);
 		}
 
