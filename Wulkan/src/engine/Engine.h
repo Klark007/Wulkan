@@ -136,9 +136,10 @@ private:
 
 	VKW_Swapchain swapchain;
 
-	Texture color_render_target_msaa;
-	Texture depth_render_target_msaa;
+	const VkSampleCountFlagBits sample_count = VK_SAMPLE_COUNT_4_BIT; //VK_SAMPLE_COUNT_4_BIT;
+	const bool use_msaa = sample_count != VK_SAMPLE_COUNT_1_BIT;
 	Texture color_render_target;
+	Texture color_resolve_target; // we can't resolve into swapchain as we have a different format
 	Texture depth_render_target;
 
 

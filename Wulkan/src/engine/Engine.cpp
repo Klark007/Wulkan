@@ -234,6 +234,8 @@ void Engine::draw()
 							directional_light.get_texture().get_extent(),
 							VK_NULL_HANDLE, // don't attach a color image view
 							directional_light.get_texture().get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D, i, 1),
+							VK_NULL_HANDLE,				// color resolve
+							VK_NULL_HANDLE,				// depth resolve
 							false,                      // don't clear color
 							{ 1,0,1,1 },                // ignore
 							true,                       // clear depth
@@ -259,6 +261,8 @@ void Engine::draw()
 							directional_light.get_texture().get_extent(),
 							VK_NULL_HANDLE, // don't attach a color image view
 							directional_light.get_texture().get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_VIEW_TYPE_2D, i, 1),
+							VK_NULL_HANDLE,				// color resolve
+							VK_NULL_HANDLE,				// depth resolve
 							false,                      // don't clear color
 							{ 1,0,1,1 },                // ignore
 							false,                      // clear depth
@@ -311,6 +315,8 @@ void Engine::draw()
 					swapchain.get_extent(),
 					color_render_target.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT),
 					depth_render_target.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT),
+					VK_NULL_HANDLE,
+					VK_NULL_HANDLE,
 					true,                         // color clear
 					{ {0.2f, 0.2f, 0.2f, 1.0f} }, // color value
 					true,                         // depth clear
@@ -392,7 +398,12 @@ void Engine::draw()
 
 				cmd.end_debug_zone();
 			}
-			// draw lines
+			// draw lines (and resolve msaa)
+			Texture& final_res_texture = (use_msaa) ? color_resolve_target : color_render_target;
+			if (use_msaa) {
+				Texture::transition_layout(cmd, color_resolve_target, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+			}
+
 			{
 				TracyVkZone(get_current_tracy_context(), cmd, "Debug Lines");
 				cmd.begin_debug_zone("Line pass");
@@ -401,7 +412,8 @@ void Engine::draw()
 					cmd,
 					swapchain.get_extent(),
 					color_render_target.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT),
-					depth_render_target.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT)
+					depth_render_target.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT),
+					use_msaa ? color_resolve_target.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT) : VK_NULL_HANDLE
 				);
 				view_descriptor_sets[current_frame].bind(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, line_render_pass.get_pipeline_layout(), 0);
 				
@@ -412,15 +424,14 @@ void Engine::draw()
 				line_render_pass.end(cmd);
 				cmd.end_debug_zone();
 			}
-		
+
 			// transitions for copy into swapchain images
-			Texture::transition_layout(cmd, color_render_target, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+			Texture::transition_layout(cmd, final_res_texture, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 			Texture::transition_layout(cmd, swapchain.images_at(current_swapchain_image_idx), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
 			// copy (both have swapchain extent resolution
-			Texture::copy(cmd, color_render_target, swapchain.images_at(current_swapchain_image_idx), swapchain.get_extent(), swapchain.get_extent());
+			Texture::copy(cmd, final_res_texture, swapchain.images_at(current_swapchain_image_idx), swapchain.get_extent(), swapchain.get_extent());
 
-		
 			// transition for imgui
 			Texture::transition_layout(cmd, swapchain.images_at(current_swapchain_image_idx), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 			{
@@ -830,22 +841,22 @@ void Engine::init_render_targets()
 		Texture::find_format(device, Texture_Type::Tex_Colortarget),
 		VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
 		sharing_exlusive(),
-		"Color render target"
+		"Color render target",
+		1, // mip layers
+		sample_count
 	); // TODO: FIX might add it multiple times to the clean up queue	
 	cleanup_queue.add(&color_render_target);
 
-	color_render_target_msaa.init(
+	color_resolve_target.init(
 		&device,
 		swapchain.get_extent().width,
 		swapchain.get_extent().height,
 		Texture::find_format(device, Texture_Type::Tex_Colortarget),
 		VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
 		sharing_exlusive(),
-		"Color render target MSAA",
-		1, // mip layers
-		VK_SAMPLE_COUNT_4_BIT
+		"Color resolve target"
 	); // TODO: FIX might add it multiple times to the clean up queue	
-	cleanup_queue.add(&color_render_target_msaa);
+	cleanup_queue.add(&color_resolve_target);
 
 	depth_render_target.init(
 		&device,
@@ -854,22 +865,11 @@ void Engine::init_render_targets()
 		Texture::find_format(device, Texture_Type::Tex_D),
 		VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
 		sharing_exlusive(),
-		"Depth render target"
+		"Depth render target",
+		1, // mip layers
+		sample_count
 	);
 	cleanup_queue.add(&depth_render_target);
-
-	depth_render_target_msaa.init(
-		&device,
-		swapchain.get_extent().width,
-		swapchain.get_extent().height,
-		Texture::find_format(device, Texture_Type::Tex_D),
-		VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-		sharing_exlusive(),
-		"Depth render target MSAA",
-		1, // mip layers
-		VK_SAMPLE_COUNT_4_BIT
-	);
-	cleanup_queue.add(&depth_render_target_msaa);
 }
 
 void Engine::create_render_passes()
@@ -883,6 +883,7 @@ void Engine::create_render_passes()
 			descriptor_set_layouts,
 			color_render_target,
 			depth_render_target,
+			sample_count,
 			false, // not depth only
 			false, // not wireframe
 			false, // not bias depth
@@ -895,6 +896,7 @@ void Engine::create_render_passes()
 			descriptor_set_layouts, 
 			color_render_target,
 			depth_render_target,
+			sample_count,
 			false, // not depth only
 			true,  // wireframe
 			false, // not bias depth
@@ -908,25 +910,26 @@ void Engine::create_render_passes()
 		descriptor_set_layouts, 
 		color_render_target,
 		depth_render_target,
+		VK_SAMPLE_COUNT_1_BIT,
 		true,  // depth only
 		false, // not wireframe
 		true   // bias depth
 	);
 	cleanup_queue.add(&terrain_depth_render_pass);
 
-	environment_render_pass = EnvironmentMap::create_render_pass(&device, { view_desc_set_layout, environment_desc_set_layout}, color_render_target, depth_render_target);
+	environment_render_pass = EnvironmentMap::create_render_pass(&device, { view_desc_set_layout, environment_desc_set_layout}, color_render_target, depth_render_target, sample_count);
 	cleanup_queue.add(&environment_render_pass);
 
-	line_render_pass = Line::create_render_pass(&device, { view_desc_set_layout }, color_render_target, depth_render_target);
+	line_render_pass = Line::create_render_pass(&device, { view_desc_set_layout }, color_render_target, depth_render_target, sample_count);
 	cleanup_queue.add(&line_render_pass);
 
-	pbr_render_pass = ObjMesh::create_render_pass(&device, { view_desc_set_layout, shadow_desc_set_layout, pbr_desc_set_layout }, color_render_target, depth_render_target);
+	pbr_render_pass = ObjMesh::create_render_pass(&device, { view_desc_set_layout, shadow_desc_set_layout, pbr_desc_set_layout }, color_render_target, depth_render_target, sample_count);
 	cleanup_queue.add(&pbr_render_pass);
 
-	pbr_render_double_sided_pass = ObjMesh::create_render_pass(&device, { view_desc_set_layout, shadow_desc_set_layout, pbr_desc_set_layout }, color_render_target, depth_render_target, false, false, true);
+	pbr_render_double_sided_pass = ObjMesh::create_render_pass(&device, { view_desc_set_layout, shadow_desc_set_layout, pbr_desc_set_layout }, color_render_target, depth_render_target, sample_count, false, false, true);
 	cleanup_queue.add(&pbr_render_double_sided_pass);
 
-	pbr_depth_pass = ObjMesh::create_render_pass(&device, { view_desc_set_layout, shadow_desc_set_layout, pbr_desc_set_layout }, color_render_target, depth_render_target, true, true);
+	pbr_depth_pass = ObjMesh::create_render_pass(&device, { view_desc_set_layout, shadow_desc_set_layout, pbr_desc_set_layout }, color_render_target, depth_render_target, VK_SAMPLE_COUNT_1_BIT, true, true);
 	cleanup_queue.add(&pbr_depth_pass);
 }
 
@@ -962,14 +965,15 @@ void Engine::recreate_swapchain()
 void Engine::recreate_render_targets()
 {
 	// Destroys render targets
-
 	color_render_target.del();
 	depth_render_target.del();
-
+	color_resolve_target.del();
+	
 	// important to clear i.e. image view's cache
 	color_render_target = {};
 	depth_render_target = {};
-
+	color_resolve_target = {};
+	
 	init_render_targets();
 }
 

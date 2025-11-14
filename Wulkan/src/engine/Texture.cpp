@@ -79,7 +79,7 @@ void Texture::del()
 	}
 }
 
-VkImageView Texture::get_image_view(VkImageAspectFlags aspect_flag, VkImageViewType type, uint32_t base_layer, uint32_t array_layers)
+VkImageView Texture::get_image_view(VkImageAspectFlags aspect_flag, VkImageViewType type, uint32_t base_layer, uint32_t array_layers) const
 {
 	std::tuple<VkImageAspectFlags, VkImageViewType, int> tuple = std::make_tuple(aspect_flag, type, base_layer);
 	if (image_views.contains(tuple)) {

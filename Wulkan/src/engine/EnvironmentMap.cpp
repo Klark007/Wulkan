@@ -52,7 +52,7 @@ void EnvironmentMap::set_descriptor_bindings(const VKW_Sampler& texture_sampler)
 	}
 }
 
-RenderPass<EnvironmentMapPushConstants, 2> EnvironmentMap::create_render_pass(const VKW_Device* device, const std::array<VKW_DescriptorSetLayout, 2>& layouts, Texture& color_rt, Texture& depth_rt)
+RenderPass<EnvironmentMapPushConstants, 2> EnvironmentMap::create_render_pass(const VKW_Device* device, const std::array<VKW_DescriptorSetLayout, 2>& layouts, Texture& color_rt, Texture& depth_rt, VkSampleCountFlagBits sample_count)
 {
 	RenderPass<EnvironmentMapPushConstants, 2> render_pass{};
 
@@ -80,6 +80,8 @@ RenderPass<EnvironmentMapPushConstants, 2> EnvironmentMap::create_render_pass(co
 
 	graphics_pipeline.set_color_attachment_format(color_rt.get_format());
 	graphics_pipeline.set_depth_attachment_format(depth_rt.get_format());
+
+	graphics_pipeline.set_sample_count(sample_count);
 
 	graphics_pipeline.init(device, "Environment graphics pipeline");
 
