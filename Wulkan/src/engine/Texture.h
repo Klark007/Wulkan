@@ -96,7 +96,7 @@ public:
 	// samples from texture using single use compute shader (call create_cpu_sample_descriptor_set_layout before)
 	// TODO: Currently do not use during rendering
 	// TODO: reuse the buffers across frames
-	void cpu_texture_samples(const VKW_CommandPool& graphics_pool, VKW_DescriptorPool& descriptor_pool, const class VKW_DescriptorSetLayout& descriptor_layout, const class VKW_Sampler& sampler, const std::vector<glm::vec2>& samples, std::vector<glm::vec4>& results, VkImageLayout initial_layout);
+	void cpu_texture_samples(const VKW_CommandPool& graphics_pool, VKW_DescriptorPool& descriptor_pool, const class VKW_DescriptorSetLayout& descriptor_layout, const class VKW_Sampler& sampler, const std::vector<glm::vec2>& samples, std::vector<glm::vec4>& results) const;
 };
 
 

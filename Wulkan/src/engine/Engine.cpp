@@ -211,6 +211,7 @@ void Engine::draw()
 		const VKW_CommandBuffer& shadow_cmd = directional_light.begin_depth_pass(current_frame);
 		{
 			// draw using depth only pipelines
+			if (gui_input.shadow_mode != ShadowMode::NoShadows)
 			{
 
 				TracyVkZone(get_current_tracy_context(), shadow_cmd, "Shadow [Depth Only]");
@@ -590,7 +591,7 @@ void Engine::init_descriptor_set_layouts()
 	pbr_desc_set_layout = ObjMesh::create_descriptor_set_layout(device);
 	cleanup_queue.add(&pbr_desc_set_layout);
 
-	cpu_text_sample_set_layout = terrain.height_map.create_cpu_sample_descriptor_set_layout(&device);
+	cpu_text_sample_set_layout = Texture::create_cpu_sample_descriptor_set_layout(&device);
 	cleanup_queue.add(&cpu_text_sample_set_layout);
 }
 
@@ -685,29 +686,38 @@ void Engine::init_data()
 	}
 
 	{
+		// procedural tree placement (height cut off and not on green)
 		std::default_random_engine generator{};
 		std::uniform_real_distribution<float> distribution{ 0, 1};
 
-		const int nr_instances = 1024;
+		const int nr_instances = 1024*3;
 
 		std::vector<glm::vec2> uv_samples{};
-		uv_samples.reserve(nr_instances);
-		for (int i = 0; i < nr_instances; i++) {
+		uv_samples.reserve(2*nr_instances);
+		for (int i = 0; i < 2*nr_instances; i++) {
 			uv_samples.push_back({ distribution(generator), distribution(generator) });
 		}
 
-		std::vector<glm::vec4> res{};
-		terrain.height_map.cpu_texture_samples(get_current_graphics_pool(), descriptor_pool, cpu_text_sample_set_layout, linear_texture_sampler, uv_samples, res, VK_IMAGE_LAYOUT_UNDEFINED);
+		std::vector<glm::vec4> height_res{};
+		terrain.get_height_map().cpu_texture_samples(get_current_graphics_pool(), descriptor_pool, cpu_text_sample_set_layout, linear_texture_sampler, uv_samples, height_res);
+
+		std::vector<glm::vec4> albedo_res{};
+		terrain.get_albedo().cpu_texture_samples(get_current_graphics_pool(), descriptor_pool, cpu_text_sample_set_layout, linear_texture_sampler, uv_samples, albedo_res);
 
 		std::vector<InstanceData> per_instance_data{};
 		per_instance_data.reserve(nr_instances);
 
-		for (int i = 0; i < nr_instances; i++) {
-			per_instance_data.push_back({{
-				(uv_samples[i].x - 0.5) * 2 * 25,
-				(uv_samples[i].y - 0.5) * 2 * 25,
-				res[i].x * 25 * 0.8
-			}});
+		// this might not create nr_instances many instances
+		for (int i = 0; i < 2*nr_instances; i++) {
+			bool height_cutoff = height_res[i].x < 0.6f;
+			bool non_green = glm::dot(albedo_res[i], { 85.f/255, 99.f / 255, 60.f / 255, 1}) > 1.125f;
+			if (per_instance_data.size() < nr_instances && height_cutoff && non_green) {
+				per_instance_data.push_back({{
+					(uv_samples[i].x - 0.5) * 2 * 25,
+					(uv_samples[i].y - 0.5) * 2 * 25,
+					height_res[i].x * 25 * 0.8
+				}});
+			}
 		}
 
 		std::vector <InstancedShape<ObjMesh>> meshes{};

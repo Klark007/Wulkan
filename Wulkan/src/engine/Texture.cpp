@@ -141,7 +141,7 @@ VKW_DescriptorSetLayout Texture::create_cpu_sample_descriptor_set_layout(const V
 	return descriptor_layout;
 }
 
-void Texture::cpu_texture_samples(const VKW_CommandPool& graphics_pool, VKW_DescriptorPool& descriptor_pool, const VKW_DescriptorSetLayout& descriptor_layout, const VKW_Sampler& sampler, const std::vector<glm::vec2>& samples, std::vector<glm::vec4>& results, VkImageLayout initial_layout)
+void Texture::cpu_texture_samples(const VKW_CommandPool& graphics_pool, VKW_DescriptorPool& descriptor_pool, const VKW_DescriptorSetLayout& descriptor_layout, const VKW_Sampler& sampler, const std::vector<glm::vec2>& samples, std::vector<glm::vec4>& results) const
 {
 	ZoneScoped;
 
