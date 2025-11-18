@@ -478,7 +478,7 @@ void Engine::init_logger()
 	auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(log_path);
 
 #ifdef NDEBUG
-	console_sink->set_level(spdlog::level::err);
+	console_sink->set_level(spdlog::level::warn);
 #endif
 
 	spdlog::set_default_logger(std::make_shared<spdlog::logger>("Logger", spdlog::sinks_init_list({ console_sink, file_sink })));
@@ -589,6 +589,9 @@ void Engine::init_descriptor_set_layouts()
 
 	pbr_desc_set_layout = ObjMesh::create_descriptor_set_layout(device);
 	cleanup_queue.add(&pbr_desc_set_layout);
+
+	cpu_text_sample_set_layout = terrain.height_map.create_cpu_sample_descriptor_set_layout(&device);
+	cleanup_queue.add(&cpu_text_sample_set_layout);
 }
 
 void Engine::init_data()
@@ -685,8 +688,9 @@ void Engine::init_data()
 		std::default_random_engine generator{};
 		std::uniform_real_distribution<float> distribution{ -25, 25};
 
-		const int nr_instances = 1024*4;
+		const int nr_instances = 1;//1024*4;
 		std::vector<InstanceData> per_instance_data{};
+		std::vector<glm::vec2> uv_samples{};
 		per_instance_data.reserve(nr_instances);
 
 		for (int i = 0; i < nr_instances; i++) {
@@ -701,13 +705,19 @@ void Engine::init_data()
 				(pos.y / 25 + 1) / 2,
 			};
 
+			uv_samples.push_back(uv);
+
 			// height = text * 25 * 0.8f
+			spdlog::info(terrain.height_map.cpu_texture_sample(uv));
 			pos.z = terrain.height_map.cpu_texture_sample(uv).x * 25 * 0.8;
 
 			per_instance_data.push_back(
 				{pos}
 			);
 		}
+
+		std::vector<glm::vec4> res{};
+		terrain.height_map.cpu_texture_samples(get_current_graphics_pool(), descriptor_pool, cpu_text_sample_set_layout, linear_texture_sampler, uv_samples, res, VK_IMAGE_LAYOUT_UNDEFINED);
 
 		std::vector <InstancedShape<ObjMesh>> meshes{};
 		std::vector<VKW_Path> mesh_path{ "models/trees/Tree0.obj", "models/trees/Tree1.obj", "models/trees/Tree2.obj", "models/trees/Tree3.obj" };
@@ -799,6 +809,7 @@ void Engine::create_descriptor_set_pool()
 	descriptor_pool.add_layout(terrain_desc_set_layout, MAX_FRAMES_IN_FLIGHT);
 	descriptor_pool.add_layout(environment_desc_set_layout, MAX_FRAMES_IN_FLIGHT);
 	descriptor_pool.add_layout(pbr_desc_set_layout, 4 * 4 * MAX_FRAMES_IN_FLIGHT);
+	descriptor_pool.add_layout(cpu_text_sample_set_layout, 1);
 	descriptor_pool.add_type(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1); // precompute curvature
 	descriptor_pool.add_type(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1); // precompute curvature
 
@@ -1074,7 +1085,7 @@ void Engine::update_uniforms()
 	uniform.near_far_plane = glm::vec2(camera.get_near_plane(), camera.get_far_plane());
 	glfw_input_mutex.unlock();
 
-	uniform_buffers.at(current_frame).copy(&uniform, sizeof(UniformStruct));
+	uniform_buffers.at(current_frame).copy_into(&uniform, sizeof(UniformStruct));
 }
 
 std::vector<const char*> Engine::get_required_instance_extensions()

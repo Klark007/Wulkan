@@ -1,9 +1,12 @@
 # Planned features
 
 ## General features
-* 1 Compute shader for sampling arbitrary textures from cpu side (https://docs.vulkan.org/guide/latest/storage_image_and_texel_buffers.html#_storage_images) [ ]
-* 2 MSAA [ ]
+* 1 Compute shader for sampling arbitrary textures from cpu side (https://docs.vulkan.org/guide/latest/storage_image_and_texel_buffers.html#_storage_images) [X]
+* Use spdlog for validation layer as well [ ] 
+* Rework single use command buffers [ ]
 * Better init with faster start up time [ ]
+* Cleanup includes [ ] 
+* begin/end replace with lambdas/functions (for command buffers, render passes etc.) [ ] 
 
 ## Maybe and Convetions
 * void VKW_Buffer::copy(const void* data, size_t data_size, size_t offset) change order of size/offset [ ] 
@@ -69,6 +72,7 @@
 * Descriptor Pool improvements [X] 
 * loadEXR memory leak due to no free? [X] 
 * Better mapping interface with VMA (https://gpuopen-librariesandsdks.github.io/VulkanMemoryAllocator/html/memory_mapping.html) [X] 
+* MSAA [X]
 
 ## Models and Materials 
 * Basic model loading [X]

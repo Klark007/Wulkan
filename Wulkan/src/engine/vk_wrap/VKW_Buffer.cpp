@@ -66,20 +66,18 @@ void VKW_Buffer::del()
 	}
 }
 
-void VKW_Buffer::copy(const void* data, size_t data_size, size_t offset)
+void VKW_Buffer::copy_into(const void* data, size_t data_size, size_t offset)
 {
 	if (offset + data_size > size()) {
 		throw RuntimeException(
 			fmt::format("Tried copy that would write outside of bounds of buffer ({})", name), __FILE__, __LINE__
 		);
 	}
-	/*
-	memcpy_s((char*) mapped_address+offset, size(), data, data_size);
-	*/
+
 	vmaCopyMemoryToAllocation(allocator, data, allocation, offset, data_size);
 }
 
-void VKW_Buffer::copy(const VKW_CommandPool* command_pool, const VKW_Buffer& other_buffer)
+void VKW_Buffer::copy_into(const VKW_CommandPool* command_pool, const VKW_Buffer& other_buffer)
 {
 	if (size() != other_buffer.size()) {
 		throw RuntimeException(
@@ -109,6 +107,17 @@ void VKW_Buffer::copy(const VKW_CommandPool* command_pool, const VKW_Buffer& oth
 	command_buffer.submit_single_use();
 }
 
+void VKW_Buffer::copy_from(void* data, size_t data_size) const
+{
+	if (data_size > size()) {
+		throw RuntimeException(
+			fmt::format("Tried copy that would write outside of bounds of buffer ({})", name), __FILE__, __LINE__
+		);
+	}
+
+	vmaCopyAllocationToMemory(allocator, allocation, 0, data, data_size);
+}
+
 VKW_Buffer create_staging_buffer(const VKW_Device* device, VkDeviceSize buffer_size, const void* data, size_t data_size, const std::string& name)
 {
 	VKW_Buffer staging_buffer = {};
@@ -121,7 +130,7 @@ VKW_Buffer create_staging_buffer(const VKW_Device* device, VkDeviceSize buffer_s
 		name
 	);
 
-	staging_buffer.copy(data, data_size);
+	staging_buffer.copy_into(data, data_size);
 
 	return staging_buffer;
 }

@@ -26,7 +26,7 @@ void Line::init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, 
 		Mapping::Persistent,
 		"Line vertex buffer"
 	);
-	vertex_buffer.copy(vertices.data(), vertex_buffer_size);
+	vertex_buffer.copy_into(vertices.data(), vertex_buffer_size);
 
 	VkDeviceSize index_buffer_size = sizeof(uint32_t) * indices.size();
 	VKW_Buffer index_staging_buffer = create_staging_buffer(&device, index_buffer_size, indices.data(), index_buffer_size, "Index staging buffer");
@@ -40,7 +40,7 @@ void Line::init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, 
 		"Mesh index buffer"
 	);
 
-	index_buffer.copy(&transfer_pool, index_staging_buffer);
+	index_buffer.copy_into(&transfer_pool, index_staging_buffer);
 	index_staging_buffer.del();
 
 	// get device address
@@ -64,7 +64,7 @@ void Line::update_vertices(const std::vector<glm::vec3>& points)
 	}
 
 	VkDeviceSize vertex_buffer_size = sizeof(Vertex) * vertices.size();
-	vertex_buffer.copy(vertices.data(), vertex_buffer_size);
+	vertex_buffer.copy_into(vertices.data(), vertex_buffer_size);
 }
 
 RenderPass<PushConstants, 1> Line::create_render_pass(const VKW_Device* device, const std::array<VKW_DescriptorSetLayout, 1>& layouts, Texture& color_rt, Texture& depth_rt, VkSampleCountFlagBits sample_count)

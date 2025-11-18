@@ -10,6 +10,7 @@
 
 #include "vk_wrap/VKW_Device.h"
 #include "vk_wrap/VKW_Buffer.h"
+#include "vk_wrap/VKW_DescriptorPool.h"
 
 // texture type defines the potential formats, need to check if formats have requested features
 enum Texture_Type
@@ -47,7 +48,7 @@ private:
 	VkDeviceMemory memory;
 
 	mutable std::map<std::tuple<VkImageAspectFlags, VkImageViewType, int>, VkImageView> image_views;
-	std::optional<std::vector<float>> m_cpu_texture;
+	std::optional<std::vector<float>> m_cpu_texture; // CPU TEXTURES
 
 	unsigned int width, height;
 	uint32_t m_mip_levels;
@@ -94,6 +95,15 @@ public:
 	void set_cpu_texture(const std::vector<float> data) { m_cpu_texture = { data }; };
 	// samples cpu texture (nearest neighbour)
 	glm::vec4 cpu_texture_sample(glm::vec2 uv);
+
+
+	// call to create layout for texture reads on cpu (via compute shader)
+	static class VKW_DescriptorSetLayout create_cpu_sample_descriptor_set_layout(const VKW_Device* device);
+
+	// samples from texture using single use compute shader (call create_cpu_sample_descriptor_set_layout before)
+	// TODO: Currently do not use during rendering
+	// TODO: reuse the buffers across frames
+	void cpu_texture_samples(const VKW_CommandPool& graphics_pool, VKW_DescriptorPool& descriptor_pool, const class VKW_DescriptorSetLayout& descriptor_layout, const class VKW_Sampler& sampler, const std::vector<glm::vec2>& samples, std::vector<glm::vec4>& results, VkImageLayout initial_layout);
 };
 
 

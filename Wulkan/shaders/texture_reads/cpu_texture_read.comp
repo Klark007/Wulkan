@@ -1,0 +1,27 @@
+#version 460
+// read samples out of texture and store in buffer
+
+layout (local_size_x = 256, local_size_y = 1) in;
+
+layout(binding = 0) uniform sampler2D tex;
+
+layout( push_constant ) uniform PushConstant
+{	
+    uint size;
+} pc;
+
+layout(std430, binding = 1) readonly buffer Samples {
+    vec2 samples [ ];
+};
+
+layout(std430, binding = 2) buffer SampleResults {
+    vec4 results [ ];
+};
+
+void main() 
+{
+    uint index = gl_GlobalInvocationID.x;  
+    if (index < pc.size) {
+        results[index] = texture(tex, samples[index]);
+    }
+}

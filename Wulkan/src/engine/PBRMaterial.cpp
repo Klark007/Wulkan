@@ -27,7 +27,7 @@ void PBRMaterial::init(const VKW_Device& device, const VKW_CommandPool& graphics
 			fmt::format("PBR Uniform {} ({})", material_name, frame_idx)
 		);
 
-		uniform_buffer.copy(&m_uniform, sizeof(PBRUniform));
+		uniform_buffer.copy_into(&m_uniform, sizeof(PBRUniform));
 	}
 
 	if (diffuse_path != "") {

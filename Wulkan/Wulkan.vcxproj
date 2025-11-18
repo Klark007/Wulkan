@@ -274,6 +274,7 @@
     <None Include="shaders\pbr\shadow.shader" />
     <None Include="shaders\sampling.shader" />
     <None Include="shaders\terrain\terrain_common.shader" />
+    <None Include="shaders\texture_reads\cpu_texture_read.comp" />
     <None Include="src\engine\vk_wrap\README.md" />
     <None Include="TODO.md" />
   </ItemGroup>
