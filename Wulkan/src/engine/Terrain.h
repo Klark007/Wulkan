@@ -48,6 +48,7 @@ private:
 	const VKW_Sampler* texture_sampler = nullptr;
 	Texture height_map;
 	Texture albedo;
+private:
 	Texture normal_map;
 
 	Texture curvatue;
@@ -67,6 +68,9 @@ public:
 	inline void set_max_tesselation(float max) { max_tesselation = max; }; // maximum tesselation level
 	inline void set_texture_eps(float eps) { texture_eps = eps; }; // used for delta u,v for computing texture derivatives and curvature
 	inline void set_visualization_mode(TerrainVisualizationMode mode) { visualization_mode = mode; }; // switch between shading and debug views
+
+	const Texture& get_height_map() const { return height_map; };
+	const Texture& get_albedo() const { return albedo; };
 };
 
 inline void Terrain::draw(const VKW_CommandBuffer& command_buffer, uint32_t current_frame)

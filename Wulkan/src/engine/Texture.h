@@ -10,6 +10,7 @@
 
 #include "vk_wrap/VKW_Device.h"
 #include "vk_wrap/VKW_Buffer.h"
+#include "vk_wrap/VKW_DescriptorPool.h"
 
 // texture type defines the potential formats, need to check if formats have requested features
 enum Texture_Type
@@ -88,6 +89,14 @@ public:
 	inline unsigned int get_width() const { return width; };
 	inline unsigned int get_height() const { return height; };
 	inline VkExtent2D get_extent() const { return { width,height }; };
+
+	// call to create layout for texture reads on cpu (via compute shader)
+	static class VKW_DescriptorSetLayout create_cpu_sample_descriptor_set_layout(const VKW_Device* device);
+
+	// samples from texture using single use compute shader (call create_cpu_sample_descriptor_set_layout before)
+	// TODO: Currently do not use during rendering
+	// TODO: reuse the buffers across frames
+	void cpu_texture_samples(const VKW_CommandPool& graphics_pool, VKW_DescriptorPool& descriptor_pool, const class VKW_DescriptorSetLayout& descriptor_layout, const class VKW_Sampler& sampler, const std::vector<glm::vec2>& samples, std::vector<glm::vec4>& results) const;
 };
 
 

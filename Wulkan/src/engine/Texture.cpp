@@ -5,7 +5,14 @@
 #define TINYEXR_IMPLEMENTATION
 #include <tinyexr.h>
 
+#include "vk_wrap/VKW_ComputePipeline.h"
+#include "vk_wrap/VKW_Sampler.h"
+
 #include "spdlog/spdlog.h"
+
+struct CPUSamplePushConstant {
+	unsigned int size; // size of sample / result buffer
+};
 
 void Texture::init(const VKW_Device* vkw_device, unsigned int w, unsigned int h, VkFormat f, VkImageUsageFlags usage, SharingInfo sharing_info, const std::string& obj_name, uint32_t mip_levels, VkSampleCountFlagBits samples, uint32_t array_layers, VkImageCreateFlags flags)
 {
@@ -107,6 +114,119 @@ VkImageView Texture::get_image_view(VkImageAspectFlags aspect_flag, VkImageViewT
 		return image_view;
 	}
 }
+
+VKW_DescriptorSetLayout Texture::create_cpu_sample_descriptor_set_layout(const VKW_Device* device)
+{
+	// create descriptor layout
+	VKW_DescriptorSetLayout descriptor_layout{};
+	descriptor_layout.add_binding(
+		0,
+		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, // read only 
+		VK_SHADER_STAGE_COMPUTE_BIT
+	);
+
+	descriptor_layout.add_binding(
+		1,
+		VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+		VK_SHADER_STAGE_COMPUTE_BIT
+	);
+
+	descriptor_layout.add_binding(
+		2,
+		VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+		VK_SHADER_STAGE_COMPUTE_BIT
+	);
+
+	descriptor_layout.init(device, "CPU Sample Desc Layout");
+	return descriptor_layout;
+}
+
+void Texture::cpu_texture_samples(const VKW_CommandPool& graphics_pool, VKW_DescriptorPool& descriptor_pool, const VKW_DescriptorSetLayout& descriptor_layout, const VKW_Sampler& sampler, const std::vector<glm::vec2>& samples, std::vector<glm::vec4>& results) const
+{
+	ZoneScoped;
+
+	spdlog::warn("Do not use cpu_texture_samples while rendering");
+
+	if (results.size() != 0) {
+		spdlog::warn("cpu_texture_samples should input an empty results buffer");
+		results.clear();
+	}
+
+	// create ssbo's
+	VkDeviceSize sample_buffer_size = sizeof(glm::vec2) * samples.size();
+
+	VKW_Buffer sample_buffer{};
+	sample_buffer.init(
+		device,
+		sample_buffer_size,
+		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+		sharing_exlusive(),
+		Mapping::Persistent,
+		"CPU Sample Buffer"
+	);
+	sample_buffer.copy_into(samples.data(), sample_buffer_size);
+
+	VkDeviceSize result_buffer_size = sizeof(glm::vec4) * samples.size();
+	VKW_Buffer result_buffer{};
+	result_buffer.init(
+		device,
+		result_buffer_size,
+		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+		sharing_exlusive(),
+		Mapping::Persistent,
+		"CPU Sample Result Buffer"
+	);
+
+
+	// descriptor sets
+	VKW_DescriptorSet compute_desc_set{};
+	compute_desc_set.init(device, &descriptor_pool, descriptor_layout, "CPU Sample Desc Set");
+
+	// update descriptor set
+	compute_desc_set.update(0, get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), sampler);
+	compute_desc_set.update(1, sample_buffer);
+	compute_desc_set.update(2, result_buffer);
+
+	// init push constants
+	VKW_PushConstant<CPUSamplePushConstant> push_constant{};
+	push_constant.init(VK_SHADER_STAGE_COMPUTE_BIT);
+
+	// Compute pipeline
+	VKW_ComputePipeline compute_pipeline{};
+	compute_pipeline.add_descriptor_sets({ descriptor_layout });
+	compute_pipeline.add_push_constant(push_constant);
+	compute_pipeline.init(device, "shaders/texture_reads/cpu_texture_read_comp.spv", "CPU Texture Sample Compute Pass");
+
+	// Command buffer (single use)
+	VKW_CommandBuffer command_buffer{};
+	command_buffer.init(
+		device,
+		&graphics_pool,
+		true,
+		"CPU Texture Sample CMD"
+	);
+
+	command_buffer.begin_single_use();
+	{
+		compute_pipeline.bind(command_buffer);
+		compute_desc_set.bind(command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, compute_pipeline.get_layout());
+		push_constant.update({static_cast<unsigned int> (samples.size())});
+		push_constant.push(command_buffer, compute_pipeline.get_layout());
+
+		compute_pipeline.dispatch(command_buffer, static_cast<uint32_t>(std::ceil(samples.size() / 256.0)), 1, 1);
+	}
+	command_buffer.submit_single_use();
+
+	// read back the results
+	results.resize(samples.size());
+	result_buffer.copy_from(results.data(), result_buffer_size);
+
+	compute_pipeline.del();
+	result_buffer.del();
+	sample_buffer.del();
+	compute_desc_set.del();
+}
+
 
 void Texture::transition_layout(const VKW_CommandPool* command_pool, VkImageLayout initial_layout, VkImageLayout new_layout, uint32_t old_ownership, uint32_t new_ownership, uint32_t mip_level, uint32_t level_count)
 {
@@ -363,6 +483,7 @@ VkBufferImageCopy create_buffer_image_copy(VkDeviceSize buffer_offset, uint32_t 
 	return image_copy;
 }
 
+#include <spdlog/spdlog.h>
 Texture create_texture_from_path(const VKW_Device* device, const VKW_CommandPool* command_pool, const VKW_Path& path, Texture_Type type, const std::string& name) {
 	VkFormat format = Texture::find_format(*device, type);
 
@@ -374,6 +495,7 @@ Texture create_texture_from_path(const VKW_Device* device, const VKW_CommandPool
 		int channels;
 		
 		float* rgba = load_exr_image(path, width, height, channels);
+		assert(channels == 4 && "load_exr_image should always return 4 channels");
 		
 		VkDeviceSize image_size = width * height * channels * sizeof(float);
 		staging_buffer = create_staging_buffer(device, image_size, rgba, image_size, "EXR staging buffer");
@@ -382,7 +504,7 @@ Texture create_texture_from_path(const VKW_Device* device, const VKW_CommandPool
 	} else {
 		int channels;
 		stbi_uc* pixels = load_image(path, width, height, channels, format);
-
+		
 		VkDeviceSize image_size = width * height * channels * sizeof(stbi_uc);
 		staging_buffer = create_staging_buffer(device, image_size, pixels, image_size, "Image staging buffer");
 	
@@ -490,7 +612,7 @@ Texture create_cube_map_from_path(const VKW_Device* device, const VKW_CommandPoo
 
 		float* rgba = load_exr_image(paths[i], width, height, channels);
 
-		staging_buffer.copy(rgba, image_size, image_size * i);
+		staging_buffer.copy_into(rgba, image_size, image_size * i);
 
 		free(rgba);
 	}
@@ -635,7 +757,7 @@ Texture create_mipmapped_texture_from_path(const VKW_Device* device, const VKW_C
 
 		// copy images into staging buffer
 		for (unsigned int i = 1; i < mip_levels; i++) {
-			staging_buffer.copy(pixel_mips[i], image_sizes[i], staging_offsets[i]);
+			staging_buffer.copy_into(pixel_mips[i], image_sizes[i], staging_offsets[i]);
 		}
 
 		for (unsigned int i = 0; i < mip_levels; i++) {

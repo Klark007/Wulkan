@@ -179,6 +179,7 @@ private:
 	VKW_DescriptorSetLayout terrain_desc_set_layout;
 	VKW_DescriptorSetLayout environment_desc_set_layout;
 	VKW_DescriptorSetLayout pbr_desc_set_layout;
+	VKW_DescriptorSetLayout cpu_text_sample_set_layout;
 
 	// shared descriptor sets
 	std::array<VKW_DescriptorSet, MAX_FRAMES_IN_FLIGHT> view_descriptor_sets;

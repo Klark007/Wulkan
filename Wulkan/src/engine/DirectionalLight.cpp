@@ -211,7 +211,7 @@ void DirectionalLight::set_uniforms(const Camera& camera, int nr_current_cascade
 	uniform.nr_shadow_occluder_samples = o_nr_samples;
 	uniform.shadow_mode = shadow_mode;
 
-	uniform_buffers.at(current_frame).copy(&uniform, sizeof(DirectionalLightUniform));
+	uniform_buffers.at(current_frame).copy_into(&uniform, sizeof(DirectionalLightUniform));
 }
 
 VKW_DescriptorSetLayout DirectionalLight::create_shadow_descriptor_layout(const VKW_Device& device)

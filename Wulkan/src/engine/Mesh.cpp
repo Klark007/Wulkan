@@ -28,7 +28,7 @@ void Mesh::init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, 
 		"Mesh index buffer"
 	);
 
-	index_buffer.copy(&transfer_pool, index_staging_buffer);
+	index_buffer.copy_into(&transfer_pool, index_staging_buffer);
 	index_staging_buffer.del();
 
 	nr_indices = static_cast<uint32_t>(indices.size());
@@ -57,7 +57,7 @@ void create_vertex_buffer(const VKW_Device& device, const VKW_CommandPool& trans
 		"Mesh vertex buffer"
 	);
 
-	vertex_buffer.copy(&transfer_pool, vertex_staging_buffer);
+	vertex_buffer.copy_into(&transfer_pool, vertex_staging_buffer);
 	vertex_staging_buffer.del();
 
 	// get device address

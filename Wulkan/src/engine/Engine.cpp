@@ -187,15 +187,6 @@ void Engine::update()
 		);
 		meshes[3].set_visualization_mode(gui_input.pbr_vis_mode);
 
-		lod_mesh.set_model_matrix(
-			glm::translate(
-				glm::scale(
-					glm::mat4(1.f),
-					glm::vec3(1.f)
-				),
-				glm::vec3(10, -2.5, 12)
-			)
-		);
 		lod_mesh.set_camera_info(camera.get_virtual_pos(), camera.get_virtual_dir(), camera.get_near_plane(), camera.get_far_plane());
 		lod_mesh.set_visualization_mode(gui_input.pbr_vis_mode);
 		lod_mesh.set_lod_ratios(std::vector<float>{gui_input.lod_ratios[0], gui_input.lod_ratios[1], gui_input.lod_ratios[2], 1});
@@ -220,6 +211,7 @@ void Engine::draw()
 		const VKW_CommandBuffer& shadow_cmd = directional_light.begin_depth_pass(current_frame);
 		{
 			// draw using depth only pipelines
+			if (gui_input.shadow_mode != ShadowMode::NoShadows)
 			{
 
 				TracyVkZone(get_current_tracy_context(), shadow_cmd, "Shadow [Depth Only]");
@@ -487,7 +479,7 @@ void Engine::init_logger()
 	auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(log_path);
 
 #ifdef NDEBUG
-	console_sink->set_level(spdlog::level::err);
+	console_sink->set_level(spdlog::level::warn);
 #endif
 
 	spdlog::set_default_logger(std::make_shared<spdlog::logger>("Logger", spdlog::sinks_init_list({ console_sink, file_sink })));
@@ -598,6 +590,9 @@ void Engine::init_descriptor_set_layouts()
 
 	pbr_desc_set_layout = ObjMesh::create_descriptor_set_layout(device);
 	cleanup_queue.add(&pbr_desc_set_layout);
+
+	cpu_text_sample_set_layout = Texture::create_cpu_sample_descriptor_set_layout(&device);
+	cleanup_queue.add(&cpu_text_sample_set_layout);
 }
 
 void Engine::init_data()
@@ -691,21 +686,38 @@ void Engine::init_data()
 	}
 
 	{
+		// procedural tree placement (height cut off and not on green)
 		std::default_random_engine generator{};
-		std::uniform_real_distribution<float> distribution{ -32, 32 };
+		std::uniform_real_distribution<float> distribution{ 0, 1};
 
-		const int nr_instances = 1024;
+		const int nr_instances = 1024*3;
+
+		std::vector<glm::vec2> uv_samples{};
+		uv_samples.reserve(2*nr_instances);
+		for (int i = 0; i < 2*nr_instances; i++) {
+			uv_samples.push_back({ distribution(generator), distribution(generator) });
+		}
+
+		std::vector<glm::vec4> height_res{};
+		terrain.get_height_map().cpu_texture_samples(get_current_graphics_pool(), descriptor_pool, cpu_text_sample_set_layout, linear_texture_sampler, uv_samples, height_res);
+
+		std::vector<glm::vec4> albedo_res{};
+		terrain.get_albedo().cpu_texture_samples(get_current_graphics_pool(), descriptor_pool, cpu_text_sample_set_layout, linear_texture_sampler, uv_samples, albedo_res);
+
 		std::vector<InstanceData> per_instance_data{};
 		per_instance_data.reserve(nr_instances);
 
-		for (int i = 0; i < nr_instances; i++) {
-			per_instance_data.push_back(
-				{{
-					distribution(generator),
-					distribution(generator),
-					distribution(generator)					
-				}}
-			);
+		// this might not create nr_instances many instances
+		for (int i = 0; i < 2*nr_instances; i++) {
+			bool height_cutoff = height_res[i].x < 0.6f;
+			bool non_green = glm::dot(albedo_res[i], { 85.f/255, 99.f / 255, 60.f / 255, 1}) > 1.125f;
+			if (per_instance_data.size() < nr_instances && height_cutoff && non_green) {
+				per_instance_data.push_back({{
+					(uv_samples[i].x - 0.5) * 2 * 25,
+					(uv_samples[i].y - 0.5) * 2 * 25,
+					height_res[i].x * 25 * 0.8
+				}});
+			}
 		}
 
 		std::vector <InstancedShape<ObjMesh>> meshes{};
@@ -798,6 +810,7 @@ void Engine::create_descriptor_set_pool()
 	descriptor_pool.add_layout(terrain_desc_set_layout, MAX_FRAMES_IN_FLIGHT);
 	descriptor_pool.add_layout(environment_desc_set_layout, MAX_FRAMES_IN_FLIGHT);
 	descriptor_pool.add_layout(pbr_desc_set_layout, 4 * 4 * MAX_FRAMES_IN_FLIGHT);
+	descriptor_pool.add_layout(cpu_text_sample_set_layout, 1);
 	descriptor_pool.add_type(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1); // precompute curvature
 	descriptor_pool.add_type(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1); // precompute curvature
 
@@ -1073,7 +1086,7 @@ void Engine::update_uniforms()
 	uniform.near_far_plane = glm::vec2(camera.get_near_plane(), camera.get_far_plane());
 	glfw_input_mutex.unlock();
 
-	uniform_buffers.at(current_frame).copy(&uniform, sizeof(UniformStruct));
+	uniform_buffers.at(current_frame).copy_into(&uniform, sizeof(UniformStruct));
 }
 
 std::vector<const char*> Engine::get_required_instance_extensions()

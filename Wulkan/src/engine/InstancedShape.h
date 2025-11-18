@@ -66,7 +66,7 @@ inline void InstancedShape<T>::init(const VKW_Device& device, const VKW_CommandP
 				fmt::format("Instance buffer {}", i)
 			);
 
-			m_instance_buffers[i].copy(&transfer_pool, instance_staging_buffer);
+			m_instance_buffers[i].copy_into(&transfer_pool, instance_staging_buffer);
 			instance_staging_buffer.del();
 		}
 		else {
@@ -113,7 +113,7 @@ inline void InstancedShape<T>::update_instance_data(const std::vector<InstanceDa
 	
 	// copy into m_instance_data, which is guaranteed to be of size m_max_instance_count
 	memcpy_s(m_instance_data.data(), sizeof(InstanceData) * m_instance_data.size(), per_instance_data.data(), sizeof(InstanceData) * per_instance_data.size());
-	m_instance_buffers[current_frame].copy(m_instance_data.data(), sizeof(InstanceData) * per_instance_data.size());
+	m_instance_buffers[current_frame].copy_into(m_instance_data.data(), sizeof(InstanceData) * per_instance_data.size());
 	set_instance_count(per_instance_data.size());
 }
 

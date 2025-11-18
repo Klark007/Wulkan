@@ -21,8 +21,9 @@ public:
 	void init(const VKW_Device* device, VkDeviceSize size, VkBufferUsageFlags usage, SharingInfo info, Mapping mapping, const std::string& obj_name);
 	void del() override;
 
-	void copy(const void* data, size_t data_size, size_t offset=0); // copies data into VKW_Buffer (copies data_size many bytes from data to mapped_address + offset)
-	void copy(const VKW_CommandPool* command_pool, const VKW_Buffer& other_buffer); // copies other buffer into this one, creates and submits single use command buffer
+	void copy_into(const void* data, size_t data_size, size_t offset=0); // copies data into VKW_Buffer (copies data_size many bytes from data to mapped_address + offset)
+	void copy_into(const VKW_CommandPool* command_pool, const VKW_Buffer& other_buffer); // copies other buffer into this one, creates and submits single use command buffer
+	void copy_from(void* data, size_t data_size) const; // copies from buffer into data (data_size many bytes)
 private:
 	const VKW_Device* device = nullptr;
 	std::string name;
