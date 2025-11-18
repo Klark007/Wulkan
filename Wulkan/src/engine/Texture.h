@@ -48,7 +48,6 @@ private:
 	VkDeviceMemory memory;
 
 	mutable std::map<std::tuple<VkImageAspectFlags, VkImageViewType, int>, VkImageView> image_views;
-	std::optional<std::vector<float>> m_cpu_texture; // CPU TEXTURES
 
 	unsigned int width, height;
 	uint32_t m_mip_levels;
@@ -90,12 +89,6 @@ public:
 	inline unsigned int get_width() const { return width; };
 	inline unsigned int get_height() const { return height; };
 	inline VkExtent2D get_extent() const { return { width,height }; };
-
-	// sets cpu side texture which can be accessed via ..., assumes 4 channels and values between 0 and 1
-	void set_cpu_texture(const std::vector<float> data) { m_cpu_texture = { data }; };
-	// samples cpu texture (nearest neighbour)
-	glm::vec4 cpu_texture_sample(glm::vec2 uv);
-
 
 	// call to create layout for texture reads on cpu (via compute shader)
 	static class VKW_DescriptorSetLayout create_cpu_sample_descriptor_set_layout(const VKW_Device* device);

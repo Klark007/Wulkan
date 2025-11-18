@@ -686,38 +686,29 @@ void Engine::init_data()
 
 	{
 		std::default_random_engine generator{};
-		std::uniform_real_distribution<float> distribution{ -25, 25};
+		std::uniform_real_distribution<float> distribution{ 0, 1};
 
-		const int nr_instances = 1;//1024*4;
-		std::vector<InstanceData> per_instance_data{};
+		const int nr_instances = 1024;
+
 		std::vector<glm::vec2> uv_samples{};
-		per_instance_data.reserve(nr_instances);
-
+		uv_samples.reserve(nr_instances);
 		for (int i = 0; i < nr_instances; i++) {
-			glm::vec3 pos {
-					distribution(generator),
-					distribution(generator),
-					0
-			};
-
-			glm::vec2 uv{
-				(pos.x / 25 + 1) / 2,
-				(pos.y / 25 + 1) / 2,
-			};
-
-			uv_samples.push_back(uv);
-
-			// height = text * 25 * 0.8f
-			spdlog::info(terrain.height_map.cpu_texture_sample(uv));
-			pos.z = terrain.height_map.cpu_texture_sample(uv).x * 25 * 0.8;
-
-			per_instance_data.push_back(
-				{pos}
-			);
+			uv_samples.push_back({ distribution(generator), distribution(generator) });
 		}
 
 		std::vector<glm::vec4> res{};
 		terrain.height_map.cpu_texture_samples(get_current_graphics_pool(), descriptor_pool, cpu_text_sample_set_layout, linear_texture_sampler, uv_samples, res, VK_IMAGE_LAYOUT_UNDEFINED);
+
+		std::vector<InstanceData> per_instance_data{};
+		per_instance_data.reserve(nr_instances);
+
+		for (int i = 0; i < nr_instances; i++) {
+			per_instance_data.push_back({{
+				(uv_samples[i].x - 0.5) * 2 * 25,
+				(uv_samples[i].y - 0.5) * 2 * 25,
+				res[i].x * 25 * 0.8
+			}});
+		}
 
 		std::vector <InstancedShape<ObjMesh>> meshes{};
 		std::vector<VKW_Path> mesh_path{ "models/trees/Tree0.obj", "models/trees/Tree1.obj", "models/trees/Tree2.obj", "models/trees/Tree3.obj" };

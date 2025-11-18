@@ -1,7 +1,7 @@
 # Planned features
 
 ## General features
-* 1 Compute shader for sampling arbitrary textures from cpu side (https://docs.vulkan.org/guide/latest/storage_image_and_texel_buffers.html#_storage_images) [X]
+* Compute shader for sampling arbitrary textures from cpu side (https://docs.vulkan.org/guide/latest/storage_image_and_texel_buffers.html#_storage_images) [X]
 * Use spdlog for validation layer as well [ ] 
 * Rework single use command buffers [ ]
 * Better init with faster start up time [ ]
