@@ -1,6 +1,5 @@
 #pragma once
 
-#include "common.h"
 #include "vk_wrap/VKW_Object.h"
 
 #include "tph_poisson.h"

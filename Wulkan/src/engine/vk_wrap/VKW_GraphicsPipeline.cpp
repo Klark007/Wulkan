@@ -1,3 +1,4 @@
+#include "common.h"
 #include "VKW_GraphicsPipeline.h"
 
 VKW_GraphicsPipeline::VKW_GraphicsPipeline()

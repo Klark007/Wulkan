@@ -1,3 +1,4 @@
+#include "common.h"
 #include "VKW_Queue.h"
 
 void VKW_Queue::init(const VKW_Device& device, vkb::QueueType type, const std::string& obj_name)

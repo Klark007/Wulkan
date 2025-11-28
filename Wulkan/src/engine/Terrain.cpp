@@ -1,3 +1,4 @@
+#include "common.h"
 #include "Terrain.h"
 #include "vk_wrap/VKW_ComputePipeline.h"
 

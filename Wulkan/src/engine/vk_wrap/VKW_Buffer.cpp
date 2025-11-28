@@ -1,3 +1,4 @@
+#include "common.h"
 #include "VKW_Buffer.h"
 
 void VKW_Buffer::init(const VKW_Device* vkw_device, VkDeviceSize size, VkBufferUsageFlags usage, SharingInfo sharing_info, Mapping mapping, const std::string& obj_name)

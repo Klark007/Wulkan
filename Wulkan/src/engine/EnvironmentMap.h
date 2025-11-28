@@ -1,6 +1,5 @@
 #pragma once
 
-#include "common.h"
 #include "Path.h"
 #include "Shape.h"
 #include "Mesh.h"

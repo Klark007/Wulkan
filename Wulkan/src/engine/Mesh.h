@@ -1,7 +1,5 @@
 #pragma once
 
-#include "common.h"
-
 #include "Shape.h"
 #include "vk_wrap/VKW_Device.h"
 #include "vk_wrap/VKW_CommandPool.h"

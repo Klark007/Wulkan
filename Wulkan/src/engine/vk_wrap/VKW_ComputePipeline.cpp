@@ -1,3 +1,4 @@
+#include "common.h"
 #include "VKW_ComputePipeline.h"
 
 void VKW_ComputePipeline::init(const VKW_Device* vkw_device, const VKW_Path& shader_path, const std::string& obj_name)

@@ -1,3 +1,4 @@
+#include "common.h"
 #include "VKW_CommandPool.h"
 
 void VKW_CommandPool::init(const VKW_Device* vkw_device, const VKW_Queue* vkw_queue, const std::string& obj_name)

@@ -1,3 +1,4 @@
+#include "common.h"
 #include "DirectionalLight.h"
 
 void DirectionalLight::init(glm::vec3 direction, glm::vec3 color, float intensity)

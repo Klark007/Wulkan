@@ -1,3 +1,4 @@
+#include "common.h"
 #include "VKW_Instance.h"
 #include "spdlog/spdlog.h"
 

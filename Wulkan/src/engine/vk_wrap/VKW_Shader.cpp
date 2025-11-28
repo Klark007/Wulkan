@@ -1,3 +1,4 @@
+#include "common.h"
 #include "VKW_Shader.h"
 
 #include <fstream>

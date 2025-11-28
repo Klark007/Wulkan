@@ -1,7 +1,5 @@
 #pragma once
 
-#include "../common.h"
-
 #include "VKW_Device.h"
 #include "VKW_Object.h"
 #include "VKW_DescriptorPool.h"

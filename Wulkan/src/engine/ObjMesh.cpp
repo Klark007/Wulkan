@@ -1,3 +1,4 @@
+#include "common.h"
 #include "ObjMesh.h"
 
 #define TINYOBJLOADER_IMPLEMENTATION

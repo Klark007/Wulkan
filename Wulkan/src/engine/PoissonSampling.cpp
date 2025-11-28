@@ -1,3 +1,4 @@
+#include "common.h"
 #define TPH_POISSON_IMPLEMENTATION
 #include "PoissonSampling.h"
 

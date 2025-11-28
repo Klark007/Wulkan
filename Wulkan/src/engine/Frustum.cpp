@@ -1,3 +1,4 @@
+#include "common.h"
 #include "Frustum.h"
 
 void Frustum::init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, VKW_DescriptorPool& descriptor_pool, RenderPass<PushConstants, 1>& render_pass , glm::mat4 proj_view_mat, glm::vec4 color)

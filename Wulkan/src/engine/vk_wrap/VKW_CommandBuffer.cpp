@@ -1,3 +1,4 @@
+#include "common.h"
 #include "VKW_CommandBuffer.h"
 
 void VKW_CommandBuffer::init(const VKW_Device* vkw_device, const VKW_CommandPool* vkw_command_pool, bool su, const std::string& obj_name)

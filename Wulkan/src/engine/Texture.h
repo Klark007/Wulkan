@@ -1,7 +1,5 @@
 #pragma once
 
-#include "common.h"
-
 #include "Path.h"
 
 #include <stb_image.h>

@@ -1,3 +1,4 @@
+#include "common.h"
 #include "VKW_Swapchain.h"
 
 #include "GLFW/glfw3.h"

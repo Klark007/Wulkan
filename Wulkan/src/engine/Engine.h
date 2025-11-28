@@ -5,8 +5,6 @@
  	Disable safety checks if compiled in Release mode?
 */
 
-#include "common.h"
-
 #include <thread>
 #include <atomic>
 #include <mutex>

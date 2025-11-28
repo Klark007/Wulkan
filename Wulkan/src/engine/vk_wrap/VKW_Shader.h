@@ -1,6 +1,5 @@
 #pragma once
 
-#include "../common.h"
 #include "../Path.h"
 
 #include "VKW_Object.h"

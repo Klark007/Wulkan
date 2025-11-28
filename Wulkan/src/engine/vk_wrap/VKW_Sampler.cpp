@@ -1,3 +1,4 @@
+#include "common.h"
 #include "VKW_Sampler.h"
 
 VKW_Sampler::VKW_Sampler()

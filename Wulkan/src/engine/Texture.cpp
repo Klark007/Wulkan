@@ -1,3 +1,5 @@
+#include "common.h"
+
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_FAILURE_USERMSG
 #include "Texture.h"

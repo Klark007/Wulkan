@@ -1,4 +1,6 @@
+#include "common.h"
 #include "PBRMaterial.h"
+
 #include "Path.h"
 
 void PBRMaterial::init(const VKW_Device& device, const VKW_CommandPool& graphics_pool, VKW_DescriptorPool& descriptor_pool, RenderPass<PushConstants, PBR_MAT_DESC_SET_COUNT>& render_pass, const std::array<VKW_DescriptorSetLayout, 1>& descriptor_layouts, const std::array<uint32_t, 1>& set_slots, const PBRUniform& uniform, const VKW_Path& parent_path, const VKW_Path& diffuse_path, const std::string& material_name)

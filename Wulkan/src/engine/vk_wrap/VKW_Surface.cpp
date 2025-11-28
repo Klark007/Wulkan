@@ -1,5 +1,4 @@
-#pragma once
-
+#include "common.h"
 #include "VKW_Surface.h"
 
 #define GLFW_INCLUDE_NONE

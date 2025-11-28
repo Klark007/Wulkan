@@ -1,3 +1,4 @@
+#include "common.h"
 #include "VKW_DescriptorPool.h"
 
 #include "VKW_DescriptorSet.h"

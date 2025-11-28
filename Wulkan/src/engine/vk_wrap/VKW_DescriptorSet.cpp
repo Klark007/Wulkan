@@ -1,3 +1,4 @@
+#include "common.h"
 #include "VKW_DescriptorSet.h"
 
 void VKW_DescriptorSetLayout::init(const VKW_Device* vkw_device, const std::string& obj_name)

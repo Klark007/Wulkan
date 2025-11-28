@@ -1,6 +1,5 @@
 #pragma once
 
-#include "common.h"
 #include "Line.h"
 
 // visualize a camera's frustum

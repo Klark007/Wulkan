@@ -1,7 +1,5 @@
 #pragma once
 
-#include "../common.h"
-
 #include "VKW_Device.h"
 
 // ideally want a a dedicated queue for transfer or compute

@@ -1,3 +1,4 @@
+#include "common.h"
 #include "PBRMesh.h"
 
 void PBRMesh::set_descriptor_bindings(Texture& texture_fallback, const VKW_Sampler& general_sampler)
