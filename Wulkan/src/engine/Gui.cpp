@@ -140,6 +140,17 @@ void GUI::draw_gui(const VKW_CommandBuffer& cmd)
 			ImGui::ColorEdit3("Sun Color", glm::value_ptr(m_data.sun_color), ImGuiColorEditFlags_None);
 			ImGui::SliderFloat("Sun Intensity", &m_data.sun_intensity, 0.1f, 25.0f);
 
+			ImGui::Checkbox("Draw Trees", &m_data.draw_trees);
+
+			if (ImGui::TreeNode("Visualization modes")) {
+				constexpr const char* visualization_modes[] = { "Shaded", "Normals", "Diffuse", "Shadow map cascade", "LOD Level" };
+				static int selected_vis = 0;
+				ImGui::ListBox("PBR Mode", &selected_vis, visualization_modes, IM_ARRAYSIZE(visualization_modes));
+				m_data.pbr_vis_mode = static_cast<VisualizationMode>(selected_vis);
+
+				ImGui::TreePop();
+			}
+
 			if (ImGui::TreeNode("Shadows")) {
 				constexpr const char* shadow_modes[] = { "No shadows", "Hard shadows", "Soft Shadows" };
 				static int selected_shadow_mode = 2;
@@ -159,12 +170,6 @@ void GUI::draw_gui(const VKW_CommandBuffer& cmd)
 
 				ImGui::TreePop();
 			}
-
-			constexpr const char* visualization_modes[] = { "Shaded", "Normals", "Diffuse", "Shadow map cascade", "LOD Level"};
-			static int selected_vis = 0;
-			ImGui::ListBox("PBR Mode", &selected_vis, visualization_modes, IM_ARRAYSIZE(visualization_modes));
-			m_data.pbr_vis_mode = static_cast<VisualizationMode>(selected_vis);
-
 
 			if (ImGui::TreeNode("LOD")) {
 				ImGui::SliderFloat("Distance ratio LOD 0", &m_data.lod_ratios[0], 0, m_data.lod_ratios[1]);

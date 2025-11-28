@@ -1,6 +1,33 @@
 #include "VKW_Instance.h"
+#include "spdlog/spdlog.h"
 
-// set_debug_callback, ...
+// custom debug callback that uses spdlog
+inline VKAPI_ATTR VkBool32 VKAPI_CALL spdlog_debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+	VkDebugUtilsMessageTypeFlagsEXT messageType,
+	const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+	void*) {
+	auto ms = vkb::to_string_message_severity(messageSeverity);
+	auto mt = vkb::to_string_message_type(messageType);
+
+	switch (messageSeverity)
+	{
+	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
+	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
+		spdlog::info("[{}] {}", mt, pCallbackData->pMessage);
+		break;
+	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
+		spdlog::warn("[{}] {}", mt, pCallbackData->pMessage);
+		break;
+	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
+		spdlog::error("[{}] {}", mt, pCallbackData->pMessage);
+		break;
+	default:
+		spdlog::error("[Unrecognized error serverity: {} {}], {}", ms, mt, pCallbackData->pMessage);
+		break;
+	}
+	
+	return VK_FALSE; // Applications must return false here
+}
 
 void VKW_Instance::init(const std::string& app_name, std::vector<const char*> instance_extensions, std::vector<const char*> instance_layers)
 {
@@ -51,7 +78,7 @@ void VKW_Instance::init(const std::string& app_name, std::vector<const char*> in
 			| VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT
 		);
 
-		builder.use_default_debug_messenger();
+		builder.set_debug_callback(spdlog_debug_callback);
 	}
 
 	auto build_result = builder.build();

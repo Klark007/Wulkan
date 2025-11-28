@@ -155,6 +155,7 @@ void Engine::update()
 		);
 		meshes[0].set_visualization_mode(gui_input.pbr_vis_mode);
 
+		/*
 		meshes[1].set_model_matrix(
 			glm::translate(glm::mat4(1), glm::vec3(0,0,40))
 		);
@@ -164,6 +165,7 @@ void Engine::update()
 			glm::translate(glm::mat4(1), glm::vec3(-5, 0, 30))
 		);
 		meshes[2].set_visualization_mode(gui_input.pbr_vis_mode);
+		*/
 
 		/*
 		meshes[3].set_model_matrix(
@@ -174,7 +176,7 @@ void Engine::update()
 				glm::vec3(0, 20 * 100,0)
 			)
 		); // for sponza
-		*/
+		
 
 		meshes[3].set_model_matrix(
 			glm::translate(
@@ -186,12 +188,15 @@ void Engine::update()
 			)
 		);
 		meshes[3].set_visualization_mode(gui_input.pbr_vis_mode);
+		*/
 
-		lod_mesh.set_camera_info(camera.get_virtual_pos(), camera.get_virtual_dir(), camera.get_near_plane(), camera.get_far_plane());
-		lod_mesh.set_visualization_mode(gui_input.pbr_vis_mode);
-		lod_mesh.set_lod_ratios(std::vector<float>{gui_input.lod_ratios[0], gui_input.lod_ratios[1], gui_input.lod_ratios[2], 1});
+		if (gui_input.draw_trees) {
+			lod_mesh.set_camera_info(camera.get_virtual_pos(), camera.get_virtual_dir(), camera.get_near_plane(), camera.get_far_plane());
+			lod_mesh.set_visualization_mode(gui_input.pbr_vis_mode);
+			lod_mesh.set_lod_ratios(std::vector<float>{gui_input.lod_ratios[0], gui_input.lod_ratios[1], gui_input.lod_ratios[2], 1});
 
-		lod_mesh.update(current_frame);
+			lod_mesh.update(current_frame);
+		}
 	}
 
 	update_uniforms();
@@ -265,6 +270,8 @@ void Engine::draw()
 						view_descriptor_sets[current_frame].bind(shadow_cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pbr_depth_pass.get_pipeline_layout(), 0);
 						shadow_descriptor_sets[current_frame].bind(shadow_cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pbr_depth_pass.get_pipeline_layout(), 1);
 
+						meshes[0].set_cascade_idx(i);
+						meshes[0].draw(shadow_cmd, current_frame);
 						/*
 						for (size_t j = 0; j < 4; j++) {
 							meshes[j].set_cascade_idx(i);
@@ -272,8 +279,10 @@ void Engine::draw()
 						}
 						*/
 
-						lod_mesh.set_cascade_idx(i);
-						lod_mesh.draw(shadow_cmd, current_frame);
+						if (gui_input.draw_trees) {
+							lod_mesh.set_cascade_idx(i);
+							lod_mesh.draw(shadow_cmd, current_frame);
+						}
 
 						pbr_depth_pass.end(shadow_cmd);
 					}
@@ -361,6 +370,7 @@ void Engine::draw()
 				view_descriptor_sets[current_frame].bind(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pbr_render_pass.get_pipeline_layout(), 0);
 				shadow_descriptor_sets[current_frame].bind(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pbr_render_pass.get_pipeline_layout(), 1);
 
+				meshes[0].draw(cmd, current_frame);
 				/*
 				for (size_t i = 0; i < 4; i++)
 					meshes[i].draw(cmd, current_frame);
@@ -384,7 +394,9 @@ void Engine::draw()
 				view_descriptor_sets[current_frame].bind(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pbr_render_double_sided_pass.get_pipeline_layout(), 0);
 				shadow_descriptor_sets[current_frame].bind(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pbr_render_double_sided_pass.get_pipeline_layout(), 1);
 
-				lod_mesh.draw(cmd, current_frame);
+				if (gui_input.draw_trees) {
+					lod_mesh.draw(cmd, current_frame);
+				}
 
 				pbr_render_double_sided_pass.end(cmd);
 
@@ -665,11 +677,12 @@ void Engine::init_data()
 	cleanup_queue.add(&texture_not_found);
 
 	{
-		/*
+		
 		meshes[0].init(device, get_current_graphics_pool(), get_current_transfer_pool(), descriptor_pool, pbr_render_pass, "models/baloon.obj");
 		meshes[0].set_descriptor_bindings(texture_not_found, linear_texture_sampler);
 		cleanup_queue.add(&meshes[0]);
 
+		/*
 		meshes[1].init(device, get_current_graphics_pool(), get_current_transfer_pool(), descriptor_pool, pbr_render_pass, "models/plane.obj");
 		meshes[1].set_descriptor_bindings(texture_not_found, linear_texture_sampler);
 		cleanup_queue.add(&meshes[1]);

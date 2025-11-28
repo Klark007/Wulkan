@@ -46,11 +46,12 @@ struct GUI_Input {
 	int nr_shadow_receiver_samples = 18;
 	int nr_shadow_occluder_samples = 8;
 
+	VisualizationMode pbr_vis_mode = VisualizationMode::Shaded;
 	ShadowMode shadow_mode = ShadowMode::SoftShadows;
-	
+
 	std::array<float, 3> lod_ratios{0.25, 0.5, 0.75};
 
-	VisualizationMode pbr_vis_mode = VisualizationMode::Shaded;
+	bool draw_trees = true;
 };
 
 class GUI : public VKW_Object
