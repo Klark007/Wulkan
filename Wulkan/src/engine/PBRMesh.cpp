@@ -41,7 +41,7 @@ RenderPass<PushConstants, PBR_MAT_DESC_SET_COUNT> PBRMesh::create_render_pass(co
 		frag_shader.init(device, "shaders/pbr/pbr_depth_frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT, "PBR fragment shader");
 	}
 	graphics_pipeline.set_topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-	if (!(depth_only || cull_backfaces)) {
+	if (cull_backfaces) {
 		graphics_pipeline.set_culling_mode();
 	}
 	graphics_pipeline.enable_depth_test();

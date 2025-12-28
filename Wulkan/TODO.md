@@ -28,7 +28,8 @@
 * Mesh shaders [ ]
 
 ## PBR
-* 3 Normal mapping [ ] 
+* 1 Tone mapping []
+* 2 Normal mapping [ ] 
 * Automatically detect if texture requires alpha channel [ ] 
 * Emission / Ambient [ ] 
 * Support more textures [ ] 
@@ -73,6 +74,7 @@
 * MSAA [X]
 * Compute shader for sampling arbitrary textures from cpu side (https://docs.vulkan.org/guide/latest/storage_image_and_texel_buffers.html#_storage_images) [X]
 * Use spdlog for validation layer as well [X]
+* Precompiled header (common.h) [X] 
 
 ## Models and Materials 
 * Basic model loading [X]

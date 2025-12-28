@@ -953,7 +953,7 @@ void Engine::create_render_passes()
 	pbr_render_pass = ObjMesh::create_render_pass(&device, { view_desc_set_layout, shadow_desc_set_layout, pbr_desc_set_layout }, color_render_target, depth_render_target, sample_count);
 	cleanup_queue.add(&pbr_render_pass);
 
-	pbr_render_double_sided_pass = ObjMesh::create_render_pass(&device, { view_desc_set_layout, shadow_desc_set_layout, pbr_desc_set_layout }, color_render_target, depth_render_target, sample_count, false, false, true);
+	pbr_render_double_sided_pass = ObjMesh::create_render_pass(&device, { view_desc_set_layout, shadow_desc_set_layout, pbr_desc_set_layout }, color_render_target, depth_render_target, sample_count, false, false, false);
 	cleanup_queue.add(&pbr_render_double_sided_pass);
 
 	pbr_depth_pass = ObjMesh::create_render_pass(&device, { view_desc_set_layout, shadow_desc_set_layout, pbr_desc_set_layout }, color_render_target, depth_render_target, VK_SAMPLE_COUNT_1_BIT, true, true);
