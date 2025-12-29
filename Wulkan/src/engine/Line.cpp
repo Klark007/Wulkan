@@ -107,7 +107,7 @@ RenderPass<PushConstants, 1> Line::create_render_pass(const VKW_Device* device, 
 	frag_shader.del();
 
 	render_pass.init(
-		graphics_pipeline,
+		std::move(graphics_pipeline),
 		layouts,
 		push_constant
 	);

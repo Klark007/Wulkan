@@ -229,7 +229,7 @@ RenderPass<TerrainPushConstants, 3> Terrain::create_render_pass(const VKW_Device
 	terrain_frag_shader.del();
 
 	render_pass.init(
-		graphics_pipeline,
+		std::move(graphics_pipeline),
 		layouts,
 		push_constant
 	);

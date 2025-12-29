@@ -327,11 +327,14 @@
     <ClCompile Include="src\engine\vk_wrap\VKW_GraphicsPipeline.cpp" />
     <ClCompile Include="src\engine\Terrain.cpp" />
     <ClCompile Include="src\engine\vk_wrap\VKW_ComputePipeline.cpp" />
+    <ClCompile Include="src\engine\ToneMapper.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="external\lib\Notes.md" />
     <None Include="shaders\common.shader" />
     <None Include="shaders\compile.bat" />
+    <None Include="shaders\environment_maps\environment.frag" />
+    <None Include="shaders\environment_maps\environment.vert" />
     <None Include="shaders\line\line.frag" />
     <None Include="shaders\line\line.vert" />
     <None Include="shaders\pbr\pbr.frag" />
@@ -340,8 +343,17 @@
     <None Include="shaders\pbr\pbr_depth.frag" />
     <None Include="shaders\pbr\pbr_depth.vert" />
     <None Include="shaders\pbr\shadow.shader" />
+    <None Include="shaders\post_processing\tone_map.frag" />
+    <None Include="shaders\post_processing\tone_map.vert" />
     <None Include="shaders\sampling.shader" />
+    <None Include="shaders\terrain\curvature.comp" />
+    <None Include="shaders\terrain\terrain.frag" />
+    <None Include="shaders\terrain\terrain.tesc" />
+    <None Include="shaders\terrain\terrain.tese" />
+    <None Include="shaders\terrain\terrain.vert" />
     <None Include="shaders\terrain\terrain_common.shader" />
+    <None Include="shaders\terrain\terrain_depth.tesc" />
+    <None Include="shaders\terrain\terrain_depth.tese" />
     <None Include="shaders\texture_reads\cpu_texture_read.comp" />
     <None Include="src\engine\vk_wrap\README.md" />
     <None Include="TODO.md" />
@@ -405,6 +417,7 @@
     <ClInclude Include="src\engine\Terrain.h" />
     <ClInclude Include="src\engine\vk_wrap\VKW_ComputePipeline.h" />
     <ClInclude Include="src\engine\vk_wrap\VKW_SpecializationConstants.h" />
+    <ClInclude Include="src\engine\ToneMapper.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="shaders\terrain.txt" />

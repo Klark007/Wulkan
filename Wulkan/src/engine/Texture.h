@@ -89,7 +89,7 @@ public:
 	inline VkExtent2D get_extent() const { return { width,height }; };
 
 	// call to create layout for texture reads on cpu (via compute shader)
-	static class VKW_DescriptorSetLayout create_cpu_sample_descriptor_set_layout(const VKW_Device* device);
+	static class VKW_DescriptorSetLayout create_cpu_sample_descriptor_set_layout(const VKW_Device& device);
 
 	// samples from texture using single use compute shader (call create_cpu_sample_descriptor_set_layout before)
 	// TODO: Currently do not use during rendering

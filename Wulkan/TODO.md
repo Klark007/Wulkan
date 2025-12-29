@@ -1,6 +1,7 @@
 # Planned features
 
 ## General features
+* Why is Renderpass / VKW_GraphicsPipeline seperate? []
 * Cleanup includes [ ] 
 * Rework single use command buffers [ ]
 * Better init with faster start up time [ ]
@@ -36,6 +37,7 @@
 * Support more parameters [ ]
 
 ## Bugs
+* Weird flickering of tree's on low LOD []
 * Blender UV imporing weird [ ] 
 * Flickering at high frame rates [ ]
 * Looking up / down changes shadows [ ]

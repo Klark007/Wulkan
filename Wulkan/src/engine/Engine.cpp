@@ -429,7 +429,8 @@ void Engine::draw()
 				line_render_pass.end(cmd);
 				cmd.end_debug_zone();
 			}
-
+			
+			/*
 			// transitions for copy into swapchain images
 			Texture::transition_layout(cmd, final_res_texture, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 			Texture::transition_layout(cmd, swapchain.images_at(current_swapchain_image_idx), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
@@ -439,6 +440,31 @@ void Engine::draw()
 
 			// transition for imgui
 			Texture::transition_layout(cmd, swapchain.images_at(current_swapchain_image_idx), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+			*/
+
+			Texture::transition_layout(cmd, final_res_texture, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+			Texture::transition_layout(cmd, swapchain.images_at(current_swapchain_image_idx), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+			// THIS IS CURSED
+			{
+				tone_mapper.begin(cmd,
+					swapchain.get_extent(),
+					swapchain.image_views_at(current_swapchain_image_idx),
+					VK_NULL_HANDLE, // No depth buffer
+					VK_NULL_HANDLE, // No color resolve
+					VK_NULL_HANDLE, // No depth resolve
+					true
+				);
+
+				view_descriptor_sets[current_frame].bind(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, tone_mapper.get_pipeline_layout(), 0);
+				
+				tone_mapper.material.bind(cmd, current_frame, { tone_mapper.view_plane.get_vertex_address() });
+				tone_mapper.view_plane.draw(cmd, current_frame);
+
+				tone_mapper.end(cmd);
+			}
+
+
 			{
 				TracyVkZone(get_current_tracy_context(), cmd, "Imgui");
 				cmd.begin_debug_zone("ImGUI Pass");
@@ -604,8 +630,11 @@ void Engine::init_descriptor_set_layouts()
 	pbr_desc_set_layout = ObjMesh::create_descriptor_set_layout(device);
 	cleanup_queue.add(&pbr_desc_set_layout);
 
-	cpu_text_sample_set_layout = Texture::create_cpu_sample_descriptor_set_layout(&device);
+	cpu_text_sample_set_layout = Texture::create_cpu_sample_descriptor_set_layout(device);
 	cleanup_queue.add(&cpu_text_sample_set_layout);
+
+	tone_mapper_desc_set_layout = ToneMapper::create_descriptor_set_layout(device);
+	cleanup_queue.add(&tone_mapper_desc_set_layout);
 }
 
 void Engine::init_data()
@@ -762,6 +791,21 @@ void Engine::init_data()
 		);
 		cleanup_queue.add(&lod_mesh);
 	}
+
+	tone_mapper.init(
+		device, 
+		get_current_transfer_pool(),
+		descriptor_pool,
+		{view_desc_set_layout, tone_mapper_desc_set_layout}, // TODO tone mapper desc set layout
+		swapchain.get_format() // will write to swapchain
+	);
+	// needs to be called whenever we recreate our images due to resize or swap between msaa and no msaa
+	tone_mapper.set_descriptor_bindings(
+		{color_resolve_target.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), color_resolve_target.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT) },
+		//{texture_not_found.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), texture_not_found.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT)},
+		linear_texture_sampler
+	);
+	cleanup_queue.add(&tone_mapper);
 }
 
 void Engine::init_descriptor_sets()
@@ -825,6 +869,7 @@ void Engine::create_descriptor_set_pool()
 	descriptor_pool.add_layout(environment_desc_set_layout, MAX_FRAMES_IN_FLIGHT);
 	descriptor_pool.add_layout(pbr_desc_set_layout, 4 * 4 * MAX_FRAMES_IN_FLIGHT);
 	descriptor_pool.add_layout(cpu_text_sample_set_layout, 1);
+	descriptor_pool.add_layout(tone_mapper_desc_set_layout, MAX_FRAMES_IN_FLIGHT);
 	descriptor_pool.add_type(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1); // precompute curvature
 	descriptor_pool.add_type(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1); // precompute curvature
 
@@ -866,20 +911,20 @@ void Engine::init_render_targets()
 		swapchain.get_extent().width,
 		swapchain.get_extent().height,
 		Texture::find_format(device, Texture_Type::Tex_Colortarget),
-		VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
 		sharing_exlusive(),
 		"Color render target",
 		1, // mip layers
 		sample_count
 	); // TODO: FIX might add it multiple times to the clean up queue	
 	cleanup_queue.add(&color_render_target);
-
+	
 	color_resolve_target.init(
 		&device,
 		swapchain.get_extent().width,
 		swapchain.get_extent().height,
 		Texture::find_format(device, Texture_Type::Tex_Colortarget),
-		VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+		VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
 		sharing_exlusive(),
 		"Color resolve target"
 	); // TODO: FIX might add it multiple times to the clean up queue	

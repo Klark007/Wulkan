@@ -38,6 +38,7 @@
 #include "DirectionalLight.h"
 #include "ObjMesh.h"
 #include "InstancedLODShape.h"
+#include "ToneMapper.h"
 
 #include "Gui.h"
 
@@ -178,6 +179,7 @@ private:
 	VKW_DescriptorSetLayout environment_desc_set_layout;
 	VKW_DescriptorSetLayout pbr_desc_set_layout;
 	VKW_DescriptorSetLayout cpu_text_sample_set_layout;
+	VKW_DescriptorSetLayout tone_mapper_desc_set_layout;
 
 	// shared descriptor sets
 	std::array<VKW_DescriptorSet, MAX_FRAMES_IN_FLIGHT> view_descriptor_sets;
@@ -195,6 +197,8 @@ private:
 	Texture texture_not_found;
 	std::array<ObjMesh, 4> meshes;
 	InstancedLODShape<ObjMesh> lod_mesh;
+
+	ToneMapper tone_mapper;
 
 	inline const VKW_CommandPool& get_current_graphics_pool() const;
 	inline const VKW_CommandPool& get_current_transfer_pool() const;

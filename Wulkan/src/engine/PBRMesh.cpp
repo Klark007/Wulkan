@@ -40,7 +40,6 @@ RenderPass<PushConstants, PBR_MAT_DESC_SET_COUNT> PBRMesh::create_render_pass(co
 	else {
 		frag_shader.init(device, "shaders/pbr/pbr_depth_frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT, "PBR fragment shader");
 	}
-	graphics_pipeline.set_topology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
 	if (cull_backfaces) {
 		graphics_pipeline.set_culling_mode();
 	}
@@ -78,7 +77,7 @@ RenderPass<PushConstants, PBR_MAT_DESC_SET_COUNT> PBRMesh::create_render_pass(co
 	// end graphics pipeline
 
 	render_pass.init(
-		graphics_pipeline,
+		std::move(graphics_pipeline),
 		layouts,
 		push_constant
 	);

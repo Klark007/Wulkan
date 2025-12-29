@@ -117,7 +117,7 @@ VkImageView Texture::get_image_view(VkImageAspectFlags aspect_flag, VkImageViewT
 	}
 }
 
-VKW_DescriptorSetLayout Texture::create_cpu_sample_descriptor_set_layout(const VKW_Device* device)
+VKW_DescriptorSetLayout Texture::create_cpu_sample_descriptor_set_layout(const VKW_Device& device)
 {
 	// create descriptor layout
 	VKW_DescriptorSetLayout descriptor_layout{};
@@ -139,7 +139,7 @@ VKW_DescriptorSetLayout Texture::create_cpu_sample_descriptor_set_layout(const V
 		VK_SHADER_STAGE_COMPUTE_BIT
 	);
 
-	descriptor_layout.init(device, "CPU Sample Desc Layout");
+	descriptor_layout.init(&device, "CPU Sample Desc Layout");
 	return descriptor_layout;
 }
 

@@ -33,9 +33,6 @@
     <ClCompile Include="external\imgui\imgui.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="external\imgui\imgui_demo.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="external\imgui\imgui_draw.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -147,6 +144,9 @@
     <ClCompile Include="src\engine\PBRMesh.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\engine\ToneMapper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\compile.bat">
@@ -167,6 +167,17 @@
     <None Include="shaders\pbr\pbr_depth.frag" />
     <None Include="shaders\pbr\pbr_common.shader" />
     <None Include="shaders\texture_reads\cpu_texture_read.comp" />
+    <None Include="shaders\post_processing\tone_map.vert" />
+    <None Include="shaders\post_processing\tone_map.frag" />
+    <None Include="shaders\terrain\terrain.frag" />
+    <None Include="shaders\terrain\terrain.tesc" />
+    <None Include="shaders\terrain\terrain.tese" />
+    <None Include="shaders\terrain\terrain.vert" />
+    <None Include="shaders\terrain\terrain_depth.tesc" />
+    <None Include="shaders\terrain\terrain_depth.tese" />
+    <None Include="shaders\terrain\curvature.comp" />
+    <None Include="shaders\environment_maps\environment.frag" />
+    <None Include="shaders\environment_maps\environment.vert" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\engine\CameraController.h">
@@ -341,6 +352,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\engine\InstancedLODShape.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\engine\ToneMapper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

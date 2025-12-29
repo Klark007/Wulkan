@@ -90,7 +90,7 @@ RenderPass<EnvironmentMapPushConstants, 2> EnvironmentMap::create_render_pass(co
 	frag_shader.del();
 
 	render_pass.init(
-		graphics_pipeline,
+		std::move(graphics_pipeline),
 		layouts,
 		push_constant
 	);
