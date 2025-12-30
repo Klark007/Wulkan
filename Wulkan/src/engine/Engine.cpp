@@ -84,23 +84,29 @@ void Engine::render_thread_func()
 
 	spdlog::info("Start rendering");
 
-	while (!should_window_close.load()) {
-		if (aquire_image()) {
-			update();
+	try {
+		while (!should_window_close.load()) {
+			if (aquire_image()) {
+				update();
 
-			draw();
+				draw();
 
-			present();
+				present();
 
-			late_update();
+				late_update();
+			}
+
+			if (resize_window) {
+				recreate_swapchain();
+				resize_window = false;
+			}
+
+			FrameMark;
 		}
-
-		if (resize_window) {
-			recreate_swapchain();
-			resize_window = false;
-		}
-
-		FrameMark;
+	} catch (const std::exception& e) {
+		spdlog::error(e.what());
+		glfwSetWindowShouldClose(window, true); // this may be called from secondary thread
+		return;
 	}
 
 	vkDeviceWaitIdle(device);
@@ -302,9 +308,10 @@ void Engine::draw()
 		cmd.begin();
 	
 		{
+			Texture& color_rt = (use_msaa) ? color_render_target : color_resolve_target;
 
 			// initial layout transitions
-			Texture::transition_layout(cmd, color_render_target, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+			Texture::transition_layout(cmd, color_rt, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 			Texture::transition_layout(cmd, depth_render_target, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL); // TODO check if necessary for depth each frame
 
 			// draw environment map
@@ -315,7 +322,7 @@ void Engine::draw()
 				environment_render_pass.begin(
 					cmd,
 					swapchain.get_extent(),
-					color_render_target.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT),
+					color_rt.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT),
 					depth_render_target.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT),
 					VK_NULL_HANDLE,
 					VK_NULL_HANDLE,
@@ -343,7 +350,7 @@ void Engine::draw()
 				render_pass.begin(
 					cmd,
 					swapchain.get_extent(),
-					color_render_target.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT),
+					color_rt.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT),
 					depth_render_target.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT)
 				);
 
@@ -365,7 +372,7 @@ void Engine::draw()
 				pbr_render_pass.begin(
 					cmd,
 					swapchain.get_extent(),
-					color_render_target.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT),
+					color_rt.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT),
 					depth_render_target.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT)
 				);
 				view_descriptor_sets[current_frame].bind(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pbr_render_pass.get_pipeline_layout(), 0);
@@ -389,7 +396,7 @@ void Engine::draw()
 				pbr_render_double_sided_pass.begin(
 					cmd,
 					swapchain.get_extent(),
-					color_render_target.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT),
+					color_rt.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT),
 					depth_render_target.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT)
 				);
 				view_descriptor_sets[current_frame].bind(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pbr_render_double_sided_pass.get_pipeline_layout(), 0);
@@ -404,7 +411,6 @@ void Engine::draw()
 				cmd.end_debug_zone();
 			}
 			// draw lines (and resolve msaa)
-			Texture& final_res_texture = (use_msaa) ? color_resolve_target : color_render_target;
 			if (use_msaa) {
 				Texture::transition_layout(cmd, color_resolve_target, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 			}
@@ -416,7 +422,7 @@ void Engine::draw()
 				line_render_pass.begin(
 					cmd,
 					swapchain.get_extent(),
-					color_render_target.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT),
+					color_rt.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT),
 					depth_render_target.get_image_view(VK_IMAGE_ASPECT_DEPTH_BIT),
 					use_msaa ? color_resolve_target.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT) : VK_NULL_HANDLE
 				);
@@ -432,17 +438,17 @@ void Engine::draw()
 			
 			/*
 			// transitions for copy into swapchain images
-			Texture::transition_layout(cmd, final_res_texture, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+			Texture::transition_layout(cmd, color_resolve_target, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 			Texture::transition_layout(cmd, swapchain.images_at(current_swapchain_image_idx), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
 			// copy (both have swapchain extent resolution
-			Texture::copy(cmd, final_res_texture, swapchain.images_at(current_swapchain_image_idx), swapchain.get_extent(), swapchain.get_extent());
+			Texture::copy(cmd, color_resolve_target, swapchain.images_at(current_swapchain_image_idx), swapchain.get_extent(), swapchain.get_extent());
 
 			// transition for imgui
 			Texture::transition_layout(cmd, swapchain.images_at(current_swapchain_image_idx), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 			*/
 
-			Texture::transition_layout(cmd, final_res_texture, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+			Texture::transition_layout(cmd, color_resolve_target, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 			Texture::transition_layout(cmd, swapchain.images_at(current_swapchain_image_idx), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
 			// THIS IS CURSED
@@ -799,10 +805,10 @@ void Engine::init_data()
 		{view_desc_set_layout, tone_mapper_desc_set_layout}, // TODO tone mapper desc set layout
 		swapchain.get_format() // will write to swapchain
 	);
-	// needs to be called whenever we recreate our images due to resize or swap between msaa and no msaa
+
+	// needs to also be called whenever we recreate our images due to resize
 	tone_mapper.set_descriptor_bindings(
-		{color_resolve_target.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), color_resolve_target.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT) },
-		//{texture_not_found.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), texture_not_found.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT)},
+		{ color_resolve_target.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), color_resolve_target.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT) },
 		linear_texture_sampler
 	);
 	cleanup_queue.add(&tone_mapper);
@@ -1030,6 +1036,12 @@ void Engine::recreate_swapchain()
 	swapchain.recreate(window, device);
 
 	recreate_render_targets();
+
+	// needs to be called whenever we recreate our images due to resize
+	tone_mapper.set_descriptor_bindings(
+		{ color_resolve_target.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), color_resolve_target.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT) },
+		linear_texture_sampler
+	);
 
 	camera.set_aspect_ratio(res_x, res_y);
 }
