@@ -16,6 +16,7 @@
 #include "Terrain.h"
 #include "PBRMaterial.h"
 #include "DirectionalLight.h"
+#include "ToneMapper.h"
 
 struct GUI_Input {
 	// Camera
@@ -52,6 +53,9 @@ struct GUI_Input {
 	std::array<float, 3> lod_ratios{0.25, 0.5, 0.75};
 
 	bool draw_trees = true;
+
+	ToneMapperMode tone_mapper_mode = ToneMapperMode::None;
+	float luminance_white_point = 1.0;
 };
 
 class GUI : public VKW_Object

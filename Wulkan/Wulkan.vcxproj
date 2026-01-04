@@ -343,6 +343,7 @@
     <None Include="shaders\pbr\pbr_depth.frag" />
     <None Include="shaders\pbr\pbr_depth.vert" />
     <None Include="shaders\pbr\shadow.shader" />
+    <None Include="shaders\post_processing\post_processing_common.shader" />
     <None Include="shaders\post_processing\tone_map.frag" />
     <None Include="shaders\post_processing\tone_map.vert" />
     <None Include="shaders\sampling.shader" />

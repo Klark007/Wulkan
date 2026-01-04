@@ -464,7 +464,7 @@ void Engine::draw()
 
 				view_descriptor_sets[current_frame].bind(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, tone_mapper.get_pipeline_layout(), 0);
 				
-				tone_mapper.material.bind(cmd, current_frame, { tone_mapper.view_plane.get_vertex_address() });
+				tone_mapper.material.bind(cmd, current_frame, { tone_mapper.view_plane.get_vertex_address(), gui_input.tone_mapper_mode, gui_input.luminance_white_point });
 				tone_mapper.view_plane.draw(cmd, current_frame);
 
 				tone_mapper.end(cmd);

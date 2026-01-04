@@ -3,11 +3,7 @@
 
 #define REDEFINE_PUSH_CONSTANT // We want our special push constant definition
 #include "../common.shader" 
-
-layout( push_constant ) uniform constants
-{
-	VertexBuffer vertex_buffer;
-} pc;
+#include "post_processing_common.shader"
 
 layout(location = 0) out vec2 outUV;
 

@@ -2,8 +2,19 @@
 #include "Renderpass.h"
 #include "Mesh.h"
 
+enum class ToneMapperMode {
+	None,
+	Rheinhard,
+	ExtendedRheinhard,
+	Uncharted,
+	ACES,
+	AgX
+};
+
 struct ToneMapperPushConstants {
 	alignas(8) VkDeviceAddress vertex_buffer;
+	alignas(4) ToneMapperMode mode;
+	alignas(4) float luminance_white_point;
 };
 constexpr size_t TONE_MAPPER_DESC_SET_COUNT = 2;
 

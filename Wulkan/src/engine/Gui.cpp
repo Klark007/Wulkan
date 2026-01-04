@@ -143,6 +143,17 @@ void GUI::draw_gui(const VKW_CommandBuffer& cmd)
 
 			ImGui::Checkbox("Draw Trees", &m_data.draw_trees);
 
+			if (ImGui::TreeNode("Tone mapper")) {
+				constexpr const char* tone_mapper_modes[] = { "None", "Rheinhard", "Extended Rheinhard", "Uncharted", "ACES", "AgX"};
+				static int selected_tone_mapper = 0;
+				ImGui::ListBox("Tone Mapper", &selected_tone_mapper, tone_mapper_modes, IM_ARRAYSIZE(tone_mapper_modes));
+				m_data.tone_mapper_mode = static_cast<ToneMapperMode>(selected_tone_mapper);
+
+				ImGui::DragFloat("Luminance White Point", &m_data.luminance_white_point, 0.01f, 0, FLT_MAX);
+
+				ImGui::TreePop();
+			}
+
 			if (ImGui::TreeNode("Visualization modes")) {
 				constexpr const char* visualization_modes[] = { "Shaded", "Normals", "Diffuse", "Shadow map cascade", "LOD Level" };
 				static int selected_vis = 0;

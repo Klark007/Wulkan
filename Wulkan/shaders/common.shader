@@ -83,4 +83,16 @@ vec3 spherical_to_dir(vec2 sph) {
     );
 }
 
+float max3(vec3 v) {
+  return max (max (v.x, v.y), v.z);
+}
+
+bool isinf3(vec3 v) {
+    return isinf(v.x) || isinf(v.y) || isinf(v.z);
+}
+
+float luminance(vec3 c) {
+    return dot(c, vec3(0.2126, 0.7152, 0.0722));
+}
+
 #endif
