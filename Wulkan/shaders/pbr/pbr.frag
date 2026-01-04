@@ -97,6 +97,4 @@ void main()
 			outColor = vec4(1,0,1,1);
             break;
 	}
-
-	
 }

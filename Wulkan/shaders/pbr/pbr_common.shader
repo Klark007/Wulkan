@@ -93,6 +93,11 @@ vec4 pbr(vec3 w_i, vec3 w_o, vec3 n, vec3 light_color, vec2 uv, float in_shadow)
 	// angle between incoming/outcoming and normal
 	float cos_theta_i = dot(w_i, n);
 	float cos_theta_o = dot(w_o, n);
+
+	if (cos_theta_i <= 0 || cos_theta_o <= 0) {
+		return vec4(0,0,0,1);
+	}
+
 	// angle between w_h and w_i (or w_o)
 	float cos_theta_d = dot(w_i, w_h);
 	float cos_theta_h = dot(w_h, n);
