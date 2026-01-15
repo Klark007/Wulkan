@@ -145,7 +145,7 @@ void GUI::draw_gui(const VKW_CommandBuffer& cmd)
 
 			if (ImGui::TreeNode("Tone mapper")) {
 				constexpr const char* tone_mapper_modes[] = { "None", "Rheinhard", "Extended Rheinhard", "Uncharted", "ACES", "AgX"};
-				static int selected_tone_mapper = 0;
+				static int selected_tone_mapper = static_cast<int>(m_data.tone_mapper_mode);
 				ImGui::ListBox("Tone Mapper", &selected_tone_mapper, tone_mapper_modes, IM_ARRAYSIZE(tone_mapper_modes));
 				m_data.tone_mapper_mode = static_cast<ToneMapperMode>(selected_tone_mapper);
 
