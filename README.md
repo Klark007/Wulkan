@@ -34,6 +34,7 @@ Uses mean curavture (precomputed) and distance to camera to decide how much to t
 <em>
 Left we show a height map and on the right how it looks in the engine with mean curavture being visualized (from least to most: green, blue, red)
 </em>
+<br>
  
 <img src="https://github.com/Klark007/Wulkan/blob/master/Wulkan/textures/terrain/test/height_test1.png" alt="Heightmap 1" width="36%">
 <img src="https://github.com/Klark007/Wulkan/blob/master/Wulkan/screenshots/terrain/terrain_test_1.png" alt="Tesselation 1" width="45%">
@@ -75,7 +76,25 @@ Shows the difference between no shadows, hard shadows and soft shadows. Most not
 *Visualize the different cascades given the shown camera frustum*
 </div>
 
-PBR Materials supporting diffuse, metallic, roughness parameters and diffuse textures
+### Obj Support
+Enables loading Obj files using [tinyobjloader](https://github.com/tinyobjloader/tinyobjloader). Supports PBR Materials supporting diffuse, metallic, roughness parameters and diffuse textures.
+
+<div align="center">
+
+<img src="https://github.com/Klark007/Wulkan/blob/master/Wulkan/screenshots/obj_loading/basic_obj_loading.png" alt="Basic OBJ" width="100%">
+
+*Shows a simple OBJ file being loaded into the engine*
+
+
+<img src="https://github.com/Klark007/Wulkan/blob/master/Wulkan/screenshots/obj_loading/textured_material.png" alt="Basic OBJ" width="100%">
+
+*Test scene with a more complex, textured material*
+
+</div>
+
+TODO Mipmapped Textures
+
+
 Mipmapped Textures
 CPU Instancing and LOD
 Multiple Tonemappers
@@ -88,3 +107,8 @@ Multiple Tonemappers
 
 </div>
 
+## Models
+* [Air baloon](https://www.turbosquid.com/3d-models/hot-air-baloon-3d-2092268)
+* [Tree](https://sketchfab.com/3d-models/maple-trees-pack-lowpoly-game-ready-lods-b5d2833c258f4054a01ee2b4ef85adf0#download)
+* [Sponza](https://github.com/jimmiebergmann/Sponza/tree/master)
+* [Mitsuba](https://casual-effects.com/data/)
