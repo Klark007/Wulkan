@@ -94,8 +94,12 @@ vec4 pbr(vec3 w_i, vec3 w_o, vec3 n, vec3 light_color, vec2 uv, float in_shadow)
 	float cos_theta_i = dot(w_i, n);
 	float cos_theta_o = dot(w_o, n);
 
+	uint use_diffuse_texture = pbr_uniforms.configuration & 1<<0;
+	vec4 diffuse_col = texture(diffuse_tex, uv).rgba;
+
+	float alpha = (1 - use_diffuse_texture) + use_diffuse_texture * diffuse_col.a; // for transparency only the alpha of the diffuse texture counts
 	if (cos_theta_i <= 0 || cos_theta_o <= 0) {
-		return vec4(0,0,0,1);
+		return vec4(0,0,0,alpha);
 	}
 
 	// angle between w_h and w_i (or w_o)
@@ -103,11 +107,6 @@ vec4 pbr(vec3 w_i, vec3 w_o, vec3 n, vec3 light_color, vec2 uv, float in_shadow)
 	float cos_theta_h = dot(w_h, n);
 
 	float diffuse_weight = 1 - pbr_uniforms.metallic;
-
-	uint use_diffuse_texture = pbr_uniforms.configuration & 1<<0;
-	vec4 diffuse_col = texture(diffuse_tex, uv).rgba;
-	
-	float alpha = (1 - use_diffuse_texture) + use_diffuse_texture * diffuse_col.a; // for transparency only the alpha of the diffuse texture counts
 
 	vec3 albedo = (1 - use_diffuse_texture) *  pbr_uniforms.diffuse + use_diffuse_texture * diffuse_col.rgb;
 	vec3 color = specular(albedo,  cos_theta_i, cos_theta_o, cos_theta_d, cos_theta_h);

@@ -36,7 +36,7 @@ struct GUI_Input {
 	// Light / Shadows
 	glm::vec3 sun_direction = glm::vec3(0, 0.8, 0.5);
 	glm::vec3 sun_color = glm::vec3(0.8, 0.8, 1.0);
-	float sun_intensity = 1.0f;
+	float sun_intensity = 1.5f;
 	float depth_bias = 40000.0f;
 	float slope_depth_bias = 0.1f;
 	int nr_shadow_cascades = 3;
@@ -54,7 +54,7 @@ struct GUI_Input {
 
 	bool draw_trees = true;
 
-	ToneMapperMode tone_mapper_mode = ToneMapperMode::None;
+	ToneMapperMode tone_mapper_mode = ToneMapperMode::Rheinhard;
 	float luminance_white_point = 1.0;
 };
 

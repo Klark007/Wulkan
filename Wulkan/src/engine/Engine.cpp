@@ -912,6 +912,9 @@ void Engine::create_uniform_buffers()
 void Engine::init_render_targets()
 {
 	// Scene rendered into this texture before copied over, allows for higher resolution than what is used in the swapchain
+	// This image is in linear color space (no conversion durng texture read/writes)
+	// The blit/copy over into the swapchain image does the conversion (due to it being sRGB)
+
 	color_render_target.init(
 		&device,
 		swapchain.get_extent().width,
