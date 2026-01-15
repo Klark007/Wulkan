@@ -8,7 +8,7 @@ layout(std430, set = 2, binding = 0) uniform PBRData {
 	vec3 specular;
 	float roughness;
 
-	vec3 emission;
+	vec3 emission; // Not supported yet
 	float eta;
 
 	// TODO: add ambient
