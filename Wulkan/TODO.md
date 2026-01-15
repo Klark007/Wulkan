@@ -7,6 +7,10 @@
 * Better init with faster start up time [ ]
 * begin/end replace with lambdas/functions (for command buffers, render passes etc.) [ ] 
 
+## Infrastructure
+* Cmake build support [ ] 
+* Clang support [ ] 
+
 ## Maybe and Convetions
 * void VKW_Buffer::copy(const void* data, size_t data_size, size_t offset) change order of size/offset [ ] 
 * Update glfw due to https://github.com/glfw/glfw/issues/2684 or switch to SDL [ ]
