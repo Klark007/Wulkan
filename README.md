@@ -1,31 +1,44 @@
 # Wulkan
-A personal project exploring and learning Vulkan while trying to recreate the visuals of a pathtraced image created during a university course as a final project
+**Wulkan** is a personal Vulkan-based real-time renderer focused on learning modern graphics
+techniques and reproducing the visual quality of a path-traced reference image created during
+an ETH Computer Graphics course final project.
+
+<div align="center">
+
+![Showcase](https://github.com/Klark007/Wulkan/blob/master/Wulkan/screenshots/main_image.png)
+
+</div>
+
+## Feature Overview
+| Feature | Description |
+|-------|------------|
+| Terrain Tessellation | Curvature- and distance-based dynamic tessellation with frustum culling |
+| Shadows | Cascaded Shadow Maps with Contact-Hardening Soft Shadows |
+| OBJ Loading | PBR-capable OBJ loading with PBR material support |
+| CPU Instancing | Supports CPU instancing with multiple different level of detail models |
+| Tone mapping | Supports multiple tone mappers such as Rheihard, ACES & AgX |
+
 
 ## Installation
+**Supported platforms:** Windows
+
 ### Prebuild binaries
 Add binary into the Wulkan folder and execute from there
 
 ### Windows Compilation
-Needs VulkanSDK with TODO installed. Use Visual Studio to open Solution, add VulkanSDK\$Version\Lib Additional Library Directories (Linker->General) and add VulkanSDK\$Version\Include to External Include Directories (VC+ Directories).
+**Requirements:**
+- Vulkan SDK 1.3+ with TODO
+- Visual Studio 2022
 
-### Dependencies
-* VulkanSDK 1.3 or newer
-* GLFW
-* Volk
-* vk-bootstrap
-* vma
-* imgui
-* glm
-* rapidcsv
-* stb_image
-* tinyexr
-* miniz (used by tinyexr)
-* tph_poisson
-* tracy
-* tinyobjloader
+Steps:
+1. Open `Wulkan.sln` in Visual Studio
+2. Set the Vulkan SDK paths:
+   - Add `VulkanSDK\<Version>\Lib` to Linker -> General -> Additional Library Directories
+   - Add `VulkanSDK\<Version>\Include` to VC++ Directories -> External Include Directories
+3. Build in `Release` or `Debug`
 
+## Technical details
 
-## Features
 ### Terrain with Dynamic Tesselation based on curvature and distance
 Uses mean curavture (precomputed) and distance to camera to decide how much to tesselate. If a patch is completly outside of the camera frustum, it gets culled.
 
@@ -100,6 +113,7 @@ CPU Instancing and LOD
 Multiple Tonemappers
 
 ## Pathtraced Inspiration
+This image is meant as a visual target to inspire which feature to add to the project and the goal is not prefect parity. Trade off's will need to be made due to real time constraints.
 <div align="center">
 
 ![Render](https://github.com/Klark007/Wulkan/blob/master/Wulkan/screenshots/PathtracedInspiration.png)
@@ -107,8 +121,28 @@ Multiple Tonemappers
 
 </div>
 
+<!-- CONTROLS -->
+
+## Dependencies
+* GLFW
+* Volk
+* vk-bootstrap
+* vma
+* imgui
+* glm
+* rapidcsv
+* stb_image
+* tinyexr
+* miniz (used by tinyexr)
+* tph_poisson
+* tracy
+* tinyobjloader
+
 ## Models
 * [Air baloon](https://www.turbosquid.com/3d-models/hot-air-baloon-3d-2092268)
 * [Tree](https://sketchfab.com/3d-models/maple-trees-pack-lowpoly-game-ready-lods-b5d2833c258f4054a01ee2b4ef85adf0#download)
 * [Sponza](https://github.com/jimmiebergmann/Sponza/tree/master)
 * [Mitsuba](https://casual-effects.com/data/)
+
+## Roadmap
+For a roadmap see [Wulkan/TODO.md](https://github.com/Klark007/Wulkan/blob/master/Wulkan/TODO.md)
