@@ -110,7 +110,46 @@ TODO Mipmapped Textures
 
 Mipmapped Textures
 CPU Instancing and LOD
-Multiple Tonemappers
+### Tonemapping
+
+Implements different tonemappers as a post processing step (full screen quad) before ImGUI draws it's UI ontop.
+
+<div align="center">
+
+
+<img src="https://github.com/Klark007/Wulkan/blob/master/Wulkan/screenshots/tonemapper/None1.png" alt="None 1" width="45%">
+<img src="https://github.com/Klark007/Wulkan/blob/master/Wulkan/screenshots/tonemapper/None2.png" alt="None 2" width="45%">
+
+*No tonemapper*
+
+<img src="https://github.com/Klark007/Wulkan/blob/master/Wulkan/screenshots/tonemapper/Rheinhard1.png" alt="Rh 1" width="45%">
+<img src="https://github.com/Klark007/Wulkan/blob/master/Wulkan/screenshots/tonemapper/Rheinhard2.png" alt="Rh 2" width="45%">
+
+*Rheinhard on Luminance*
+
+<img src="https://github.com/Klark007/Wulkan/blob/master/Wulkan/screenshots/tonemapper/ExtRheinhard1.png" alt="Ext Rh 1" width="45%">
+<img src="https://github.com/Klark007/Wulkan/blob/master/Wulkan/screenshots/tonemapper/ExtRheinhard2.png" alt="Ext Rh 2" width="45%">
+
+*Extended Rheinhard on Luminance*
+
+<img src="https://github.com/Klark007/Wulkan/blob/master/Wulkan/screenshots/tonemapper/Uncharted1.png" alt="Uch 1" width="45%">
+<img src="https://github.com/Klark007/Wulkan/blob/master/Wulkan/screenshots/tonemapper/Uncharted2.png" alt="Uch 2" width="45%">
+
+*Uncharted / Hable Filmic with default parameters*
+
+<img src="https://github.com/Klark007/Wulkan/blob/master/Wulkan/screenshots/tonemapper/ACES1.png" alt="ACES 1" width="45%">
+<img src="https://github.com/Klark007/Wulkan/blob/master/Wulkan/screenshots/tonemapper/ACES2.png" alt="ACES 2" width="45%">
+
+*ACES tone mapper*
+
+<img src="https://github.com/Klark007/Wulkan/blob/master/Wulkan/screenshots/tonemapper/AgxPunchy1.png" alt="AGX 1" width="45%">
+<img src="https://github.com/Klark007/Wulkan/blob/master/Wulkan/screenshots/tonemapper/AgxPunchy2.png" alt="AGX 2" width="45%">
+
+*AgX with Punchy preset*
+
+</div>
+
+The white point for extended rheinhard is set using the GUI. Uncharted 2's tonemapper is shown with the default values from the following [blog](https://graphics-programming.org/blog/tone-mapping) and the plan is to replace it with a tonemapper with more understandable parameters ([New Hable filmic](http://filmicworlds.com/blog/filmic-tonemapping-with-piecewise-power-curves/)).
 
 ## Pathtraced Inspiration
 This image is meant as a visual target to inspire which feature to add to the project and the goal is not prefect parity. Trade off's will need to be made due to real time constraints.
@@ -146,3 +185,4 @@ This image is meant as a visual target to inspire which feature to add to the pr
 
 ## Roadmap
 For a roadmap see [Wulkan/TODO.md](https://github.com/Klark007/Wulkan/blob/master/Wulkan/TODO.md)
+
