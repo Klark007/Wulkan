@@ -76,4 +76,7 @@ for /r %%i in (*.comp) do (
 
 echo !line!
 
+slangc post_processing/tonemap.slang -target spirv -O3 -o post_processing/tonemap_slang.spv
+slangc post_processing/tonemap.slang -target spirv -g -o post_processing/tonemap_dslang.spv
+
 pause
