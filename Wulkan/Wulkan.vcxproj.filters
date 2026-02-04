@@ -180,6 +180,7 @@
     <None Include="shaders\environment_maps\environment.vert" />
     <None Include="shaders\post_processing\post_processing_common.shader" />
     <None Include="shaders\post_processing\agx.shader" />
+    <None Include="shaders\post_processing\tonemap.slang" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\engine\CameraController.h">
@@ -362,5 +363,6 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="shaders\terrain.txt" />
+    <Text Include="shaders\post_processing\temp.txt" />
   </ItemGroup>
 </Project>

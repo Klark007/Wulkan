@@ -345,6 +345,7 @@
     <None Include="shaders\pbr\shadow.shader" />
     <None Include="shaders\post_processing\agx.shader" />
     <None Include="shaders\post_processing\post_processing_common.shader" />
+    <None Include="shaders\post_processing\tonemap.slang" />
     <None Include="shaders\post_processing\tone_map.frag" />
     <None Include="shaders\post_processing\tone_map.vert" />
     <None Include="shaders\sampling.shader" />
@@ -422,6 +423,7 @@
     <ClInclude Include="src\engine\ToneMapper.h" />
   </ItemGroup>
   <ItemGroup>
+    <Text Include="shaders\post_processing\temp.txt" />
     <Text Include="shaders\terrain.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
