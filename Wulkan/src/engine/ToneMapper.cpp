@@ -23,12 +23,10 @@ void ToneMapper::init(const VKW_Device& device, const VKW_CommandPool& transfer_
 	VKW_GraphicsPipeline graphics_pipeline{};
 
 	VKW_Shader vert_shader{};
-	//vert_shader.init(&device, "shaders/post_processing/tone_map_vert.spv", VK_SHADER_STAGE_VERTEX_BIT, "ToneMapper vertex shader");
 	vert_shader.init(&device, "shaders/post_processing/tonemap_slang.spv", VK_SHADER_STAGE_VERTEX_BIT, "ToneMapper vertex shader", "vertexMain");
 
 
 	VKW_Shader frag_shader{};
-	//frag_shader.init(&device, "shaders/post_processing/tone_map_frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT, "ToneMapper fragment shader");
 	frag_shader.init(&device, "shaders/post_processing/tonemap_slang.spv", VK_SHADER_STAGE_FRAGMENT_BIT, "ToneMapper fragment shader", "fragmentMain");
 
 	graphics_pipeline.add_shader_stages({ vert_shader, frag_shader });

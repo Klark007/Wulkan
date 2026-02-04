@@ -13,6 +13,11 @@ set GLSLO=glslc.exe %%i -O --target-env=vulkan1.3
 :: With debug info
 set GLSLD=glslc.exe %%i -g --target-env=vulkan1.3
 
+:: Slang Optimized
+set SLANGO=slangc %%i -target spirv -O3
+:: With debug info
+set SLANGD=slangc %%i -target spirv -g
+
 echo !line!
 
 echo Vertex shaders: 
@@ -76,7 +81,14 @@ for /r %%i in (*.comp) do (
 
 echo !line!
 
-slangc post_processing/tonemap.slang -target spirv -O3 -o post_processing/tonemap_slang.spv
-slangc post_processing/tonemap.slang -target spirv -g -o post_processing/tonemap_dslang.spv
+echo Slang shaders: 
+echo.
+for /r %%i in (*.slang) do (
+    echo Compiling %%i into %%~ni_slang.spv
+    echo(
+
+    %SLANGO% -o %%~dpi%%~ni_slang.spv
+    %SLANGD% -o %%~dpi%%~ni_dslang.spv
+)
 
 pause

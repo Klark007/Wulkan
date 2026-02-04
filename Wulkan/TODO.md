@@ -1,6 +1,8 @@
 # Planned features
 
 ## General features
+* Experiment with Slang [~] 
+
 * Why is Renderpass / VKW_GraphicsPipeline seperate? []
 * Cleanup includes [ ] 
 * Rework single use command buffers [ ]
@@ -32,7 +34,7 @@
 * Mesh shaders [ ]
 
 ## PBR
-* 1 Tone mapping []
+* 1 Tone mapping [~]
 * 2 Normal mapping [ ] 
 * Automatically detect if texture requires alpha channel [ ] 
 * Emission / Ambient [ ] 
@@ -80,8 +82,6 @@
 * Compute shader for sampling arbitrary textures from cpu side (https://docs.vulkan.org/guide/latest/storage_image_and_texel_buffers.html#_storage_images) [X]
 * Use spdlog for validation layer as well [X]
 * Precompiled header (common.h) [X] 
-* Experiment with Slang [X] 
-
 
 ## Models and Materials 
 * Basic model loading [X]
