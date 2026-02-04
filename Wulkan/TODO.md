@@ -22,7 +22,6 @@
 * Maybe combine buffer + layout for uniforms [ ] 
 * Maybe cut down on parameters in favor of accessing via engine [ ] 
 * Maybe Begin / End etc replacing with std::function to be called in that "context" [ ] 
-* Maybe experiment with Slang [ ] 
 
 * Check best practises and synchronization regularly [ ]
 
@@ -81,6 +80,8 @@
 * Compute shader for sampling arbitrary textures from cpu side (https://docs.vulkan.org/guide/latest/storage_image_and_texel_buffers.html#_storage_images) [X]
 * Use spdlog for validation layer as well [X]
 * Precompiled header (common.h) [X] 
+* Experiment with Slang [X] 
+
 
 ## Models and Materials 
 * Basic model loading [X]

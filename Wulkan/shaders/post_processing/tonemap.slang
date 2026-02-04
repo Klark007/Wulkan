@@ -34,6 +34,7 @@ cbuffer PushConstant
 
 struct VOut
 {
+    float4 pos : SV_POSITION; // corresponds to gl_Position
     float2 uv;
 }
 
@@ -49,9 +50,10 @@ VOut vertexMain(uint vertexID : SV_VulkanVertexID, uint instanceIndex : SV_Vulka
     Vertex v = vertices[vertexID];
 
     float2 d_pos = float2(v.position.x*2 - 1, v.position.y*2 - 1); // NDC between -1 and 1
-    
+
     VOut output;
-    output.uv = d_pos;
+    output.pos = float4(d_pos.x, d_pos.y, 0.0, 1.0);
+    output.uv = float2(v.uv_x, v.uv_y);
     return output;
 }
 

@@ -423,7 +423,6 @@
     <ClInclude Include="src\engine\ToneMapper.h" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="shaders\post_processing\temp.txt" />
     <Text Include="shaders\terrain.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

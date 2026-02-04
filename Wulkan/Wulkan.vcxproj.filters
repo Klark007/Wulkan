@@ -363,6 +363,5 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="shaders\terrain.txt" />
-    <Text Include="shaders\post_processing\temp.txt" />
   </ItemGroup>
 </Project>
