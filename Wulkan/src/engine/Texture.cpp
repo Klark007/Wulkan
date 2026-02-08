@@ -2,6 +2,11 @@
 
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_FAILURE_USERMSG
+#include <stb_image.h>
+
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <stb_image_write.h>
+
 #include "Texture.h"
 
 #define TINYEXR_IMPLEMENTATION
@@ -13,7 +18,7 @@
 #include "spdlog/spdlog.h"
 
 struct CPUSamplePushConstant {
-	unsigned int size; // size of sample / result buffer
+	unsigned int size; // size of sample / result buffer (nr of samples)
 };
 
 void Texture::init(const VKW_Device* vkw_device, unsigned int w, unsigned int h, VkFormat f, VkImageUsageFlags usage, SharingInfo sharing_info, const std::string& obj_name, uint32_t mip_levels, VkSampleCountFlagBits samples, uint32_t array_layers, VkImageCreateFlags flags)
@@ -454,7 +459,7 @@ float* load_exr_image(const VKW_Path& path, int& width, int& height, int& channe
 }
 
 stbi_uc* load_image(const VKW_Path& path, int& width, int& height, int& channels, VkFormat format) {
-	channels = Texture::get_stbi_channels(format);
+	channels = Texture::get_channels(format);
 
 	int ch;
 	stbi_uc* pixels = stbi_load(path.string().c_str(), &width, &height, &ch, channels);
@@ -467,8 +472,11 @@ stbi_uc* load_image(const VKW_Path& path, int& width, int& height, int& channels
 	return pixels;
 }
 
+void store_image(const VKW_Path& path, const VKW_Buffer& data, int x, int y, int ) {
+}
+
 // helper function for create_*_from_path
-VkBufferImageCopy create_buffer_image_copy(VkDeviceSize buffer_offset, uint32_t mip_level, uint32_t base_array_level, unsigned int width, unsigned int height) {
+VkBufferImageCopy create_buffer_image_copy(unsigned int width, unsigned int height, VkDeviceSize buffer_offset, uint32_t mip_level, uint32_t base_array_level) {
 	VkBufferImageCopy image_copy{};
 	image_copy.bufferOffset = buffer_offset;
 
@@ -485,7 +493,6 @@ VkBufferImageCopy create_buffer_image_copy(VkDeviceSize buffer_offset, uint32_t 
 	return image_copy;
 }
 
-#include <spdlog/spdlog.h>
 Texture create_texture_from_path(const VKW_Device* device, const VKW_CommandPool* command_pool, const VKW_Path& path, Texture_Type type, const std::string& name) {
 	VkFormat format = Texture::find_format(*device, type);
 
@@ -543,7 +550,7 @@ Texture create_texture_from_path(const VKW_Device* device, const VKW_CommandPool
 	);
 
 	// copying
-	VkBufferImageCopy image_copy = create_buffer_image_copy(0, 0, 0, (unsigned int) width, (unsigned int) height);
+	VkBufferImageCopy image_copy = create_buffer_image_copy((unsigned int) width, (unsigned int) height);
 
 	vkCmdCopyBufferToImage(command_buffer, staging_buffer, texture, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &image_copy);
 
@@ -655,11 +662,11 @@ Texture create_cube_map_from_path(const VKW_Device* device, const VKW_CommandPoo
 
 		for (unsigned int i = 0; i < 6; i++) {
 			image_copies[i] = create_buffer_image_copy(
+				(unsigned int)width,
+				(unsigned int)height,
 				image_size * i, // buffer offset
 				0, // mip level
-				i, // array level
-				(unsigned int) width,
-				(unsigned int) height
+				i // array level
 			);
 		}
 
@@ -828,10 +835,10 @@ Texture create_mipmapped_texture_from_path(const VKW_Device* device, const VKW_C
 			for (unsigned int i = 0; i < mip_levels; i++) {
 				image_copies.push_back(
 					create_buffer_image_copy(
+						((unsigned int)width) >> i, ((unsigned int)height) >> i, // width / height
 						staging_offsets[i], // buffer offsetm
 						i, // mip level
-						0, // array kevek
-						((unsigned int)width) >> i, ((unsigned int)height) >> i // width / height
+						0 // array level
 					)
 				);
 			}
@@ -840,7 +847,7 @@ Texture create_mipmapped_texture_from_path(const VKW_Device* device, const VKW_C
 		}
 		else {
 			// copy staging buffer into mip level 0
-			VkBufferImageCopy image_copy = create_buffer_image_copy(0, 0, 0, (unsigned int) width, (unsigned int) height);
+			VkBufferImageCopy image_copy = create_buffer_image_copy((unsigned int) width, (unsigned int) height);
 
 			vkCmdCopyBufferToImage(command_buffer, staging_buffer, texture, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &image_copy);
 			

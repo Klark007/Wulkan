@@ -6,6 +6,7 @@
 #define IMGUI_IMPL_VULKAN_USE_VOLK
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_vulkan.h"
+#include "misc/cpp/imgui_stdlib.h"
 #include "glm/gtc/type_ptr.hpp"
 
 #include "spdlog/spdlog.h"
@@ -101,20 +102,31 @@ void GUI::draw_gui(const VKW_CommandBuffer& cmd)
 			ImGui::SliderFloat("Near plane", &m_data.camera_near_plane, 0.01f, 0.2f);
 			ImGui::SliderFloat("Far plane", &m_data.camera_far_plane, 10.0f, 250.0f);
 
+			ImGui::SeparatorText("Export camera pose");
 			// TODO: support smt like https://github.com/btzy/nativefiledialog-extended
 			m_camera_recursive_mutex->lock();
-			static char path[256] = "out/pose.csv";
-			ImGui::InputText("Camera pose path:", path, IM_ARRAYSIZE(path));
+			static std::string pose_path = "out/pose.csv";
+			ImGui::InputText("Camera pose path:", &pose_path);
 			if (ImGui::Button("Store position")) {
-				spdlog::info("Storing camera pose into {}", path);
-				m_camera_controller->export_active_camera(path);
+				spdlog::info("Storing camera pose into {}", pose_path);
+				m_camera_controller->export_active_camera(pose_path);
 			}
 
 			if (ImGui::Button("Load position")) {
-				spdlog::info("Storing camera pose into {}", path);
-				m_camera_controller->import_active_camera(path);
+				spdlog::info("Storing camera pose into {}", pose_path);
+				m_camera_controller->import_active_camera(pose_path);
 			}
 			m_camera_recursive_mutex->unlock();
+
+			ImGui::SeparatorText("Screenshot");
+			ImGui::InputText("Camera pose path:", &m_data.screenshot_path);
+			if (ImGui::Button("Screenshot")) {
+				spdlog::info("Creating screenshot {}", m_data.screenshot_path);
+				m_data.do_screenshot = true;
+			}
+			else {
+				m_data.do_screenshot = false;
+			}
 		}
 
 		if (ImGui::CollapsingHeader("Terrain")) {

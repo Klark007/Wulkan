@@ -75,6 +75,7 @@ void VKW_Buffer::copy_into(const void* data, size_t data_size, size_t offset)
 		);
 	}
 
+	// automatically maps
 	vmaCopyMemoryToAllocation(allocator, data, allocation, offset, data_size);
 }
 

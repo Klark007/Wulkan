@@ -3,6 +3,7 @@
 ## General features
 * Experiment with Slang [~] 
 
+* Consistently use string_Vk* in error message []
 * Why is Renderpass / VKW_GraphicsPipeline seperate? []
 * Cleanup includes [ ] 
 * Rework single use command buffers [ ]

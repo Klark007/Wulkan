@@ -157,8 +157,9 @@ void Engine::update()
 	{
 		ZoneScopedN("Meshes updates");
 
+		// disable moving for screen shots
 		meshes[0].set_model_matrix(
-			glm::translate(glm::scale(glm::mat4(1), glm::vec3(0.8f)), glm::vec3(10, 0, 25 + cos(glfwGetTime() / 2) / 3))
+			glm::translate(glm::scale(glm::mat4(1), glm::vec3(0.8f)), glm::vec3(10, 0, 25 /* + cos(glfwGetTime() / 2) / 3*/))
 		);
 		meshes[0].set_visualization_mode(gui_input.pbr_vis_mode);
 
@@ -470,6 +471,16 @@ void Engine::draw()
 				tone_mapper.end(cmd);
 			}
 
+			// screen shots would be here from swapchain view?
+			if (gui_input.do_screenshot) {
+				// should potentially be handled by texture with buffer being handled by engine
+				Texture::transition_layout(cmd, swapchain.images_at(current_swapchain_image_idx), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+
+				VkBufferImageCopy image_copy = create_buffer_image_copy(swapchain.get_extent().width, swapchain.get_extent().height);
+				vkCmdCopyImageToBuffer(cmd, swapchain.images_at(current_swapchain_image_idx), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, screenshot_buffer, 1, &image_copy);
+
+				Texture::transition_layout(cmd, swapchain.images_at(current_swapchain_image_idx), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+			}
 
 			{
 				TracyVkZone(get_current_tracy_context(), cmd, "Imgui");
@@ -512,6 +523,13 @@ void Engine::present()
 void Engine::late_update()
 {
 	ZoneScoped;
+
+	// TODO: Is this the correct spot to call store?
+	if (gui_input.do_screenshot) {
+		double data[3]{};
+		screenshot_buffer.copy_from(&data, 3 * sizeof(double));
+		spdlog::warn("{} {} {}", data[0], data[1], data[2]);
+	}
 
 	current_frame = (current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
@@ -645,6 +663,7 @@ void Engine::init_descriptor_set_layouts()
 
 void Engine::init_data()
 {
+	// TODO should be split up further
 	std::array<VKW_CommandPool, MAX_FRAMES_IN_FLIGHT> graphic_pools;
 	for (unsigned int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 		graphic_pools.at(i) = command_structs.at(i).graphics_command_pool;
@@ -951,6 +970,22 @@ void Engine::init_render_targets()
 		sample_count
 	);
 	cleanup_queue.add(&depth_render_target);
+
+	// TODO: could support custom set size
+	VkDeviceSize screenshot_size = 
+		swapchain.get_extent().width * swapchain.get_extent().height
+		* Texture::get_channels(swapchain.get_format()) 
+		* Texture::get_channel_byte_size(swapchain.get_format());
+
+	screenshot_buffer.init(
+		&device,
+		screenshot_size,
+		VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+		sharing_exlusive(),
+		Mapping::Persistent,
+		"Screenshot Readback Buffer"
+	);
+	cleanup_queue.add(&screenshot_buffer);
 }
 
 void Engine::create_render_passes()
@@ -1055,11 +1090,13 @@ void Engine::recreate_render_targets()
 	color_render_target.del();
 	depth_render_target.del();
 	color_resolve_target.del();
+	screenshot_buffer.del();
 	
 	// important to clear i.e. image view's cache
 	color_render_target = {};
 	depth_render_target = {};
 	color_resolve_target = {};
+	screenshot_buffer = {};
 	
 	init_render_targets();
 }
