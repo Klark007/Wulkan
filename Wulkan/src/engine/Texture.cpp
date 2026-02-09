@@ -472,9 +472,6 @@ stbi_uc* load_image(const VKW_Path& path, int& width, int& height, int& channels
 	return pixels;
 }
 
-void store_image(const VKW_Path& path, const VKW_Buffer& data, int x, int y, int ) {
-}
-
 // helper function for create_*_from_path
 VkBufferImageCopy create_buffer_image_copy(unsigned int width, unsigned int height, VkDeviceSize buffer_offset, uint32_t mip_level, uint32_t base_array_level) {
 	VkBufferImageCopy image_copy{};
@@ -491,6 +488,16 @@ VkBufferImageCopy create_buffer_image_copy(unsigned int width, unsigned int heig
 	image_copy.imageOffset = { 0,0,0 };
 	image_copy.imageExtent = { width, height, 1 };
 	return image_copy;
+}
+
+void store_image(const VKW_Path& path, const char* data, int x, int y, int ch) {
+	bool is_png = path.extension().string() == ".png";
+	
+	if (!is_png) {
+		throw NotImplementedException("store image only supports .png currently", __FILE__, __LINE__);
+	}
+
+	stbi_write_png(path.string().c_str(), x, y, ch, data, x * ch);
 }
 
 Texture create_texture_from_path(const VKW_Device* device, const VKW_CommandPool* command_pool, const VKW_Path& path, Texture_Type type, const std::string& name) {

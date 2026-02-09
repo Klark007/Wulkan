@@ -121,8 +121,6 @@ private:
 
 	void update_uniforms(); // updates uniform buffers (Pushconstant's are changed per object so not in this call)
 
-	void screenshot(const VKW_CommandBuffer& cmd);
-
 	inline std::vector<const char*> get_required_instance_extensions();
 	inline std::vector<const char*> get_required_device_extensions();
 	Required_Device_Features get_required_device_features();
@@ -202,7 +200,9 @@ private:
 
 	ToneMapper tone_mapper;
 
+	unsigned char* screenshot_buffer_cpu;
 	VKW_Buffer screenshot_buffer;
+	Texture screenshot;
 
 	inline const VKW_CommandPool& get_current_graphics_pool() const;
 	inline const VKW_CommandPool& get_current_transfer_pool() const;
