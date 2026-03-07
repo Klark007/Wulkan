@@ -152,7 +152,7 @@ Implements different tonemappers as a post processing step (full screen quad) be
 The white point for extended rheinhard is set using the GUI. Uncharted 2's tonemapper is shown with the default values from the following [blog](https://graphics-programming.org/blog/tone-mapping) and the plan is to replace it with a tonemapper with more understandable parameters ([New Hable filmic](http://filmicworlds.com/blog/filmic-tonemapping-with-piecewise-power-curves/)).
 
 ## Pathtraced Inspiration
-This image is meant as a visual target to inspire which feature to add to the project and the goal is not prefect parity. Trade off's will need to be made due to real time constraints.
+This image is meant as a visual target to inspire which feature to add to the project and the goal is not perfect parity. Trade off's will need to be made due to real time constraints.
 <div align="center">
 
 ![Render](https://github.com/Klark007/Wulkan/blob/master/Wulkan/screenshots/PathtracedInspiration.png)
@@ -185,4 +185,5 @@ This image is meant as a visual target to inspire which feature to add to the pr
 
 ## Roadmap
 For a roadmap see [Wulkan/TODO.md](https://github.com/Klark007/Wulkan/blob/master/Wulkan/TODO.md)
+
 
