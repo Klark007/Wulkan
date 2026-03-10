@@ -39,7 +39,7 @@ void PBRMaterial::init(const VKW_Device& device, const VKW_CommandPool& graphics
 			diffuse_p = find_first_existing({
 				parent_path / diffuse_p,
 				"textures" / diffuse_p
-				});
+			});
 		}
 
 		m_diffuse_texture = std::optional<Texture>{ create_mipmapped_texture_from_path(

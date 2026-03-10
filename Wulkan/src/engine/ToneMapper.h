@@ -23,7 +23,7 @@ class ToneMapper : public RenderPass< ToneMapperPushConstants, TONE_MAPPER_DESC_
 public:
 	ToneMapper() = default;
 
-	void init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, VKW_DescriptorPool& descriptor_pool, const std::array<VKW_DescriptorSetLayout, 2>& layouts, VkFormat color_attachment_format);
+	void init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, VKW_DescriptorPool& descriptor_pool, const std::array<VKW_DescriptorSetLayout, 2>& layouts, std::span<VkFormat> color_attachment_format);
 	void set_descriptor_bindings(const std::array<VkImageView, MAX_FRAMES_IN_FLIGHT>& views, const VKW_Sampler& texture_sampler);
 	void del() override;
 

@@ -84,7 +84,7 @@ private:
 	std::thread render_thread;
 	std::atomic_bool should_window_close = false;
 
-	void update();
+	void update(double time);
 	void draw();
 	void present();
 	void late_update(); // executed after draw

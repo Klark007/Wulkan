@@ -87,7 +87,7 @@ void Engine::render_thread_func()
 	try {
 		while (!should_window_close.load()) {
 			if (aquire_image()) {
-				update();
+				update(glfwGetTime());
 
 				draw();
 
@@ -112,34 +112,18 @@ void Engine::render_thread_func()
 	vkDeviceWaitIdle(device);
 }
 
-void Engine::update()
+void Engine::update(double time)
 {
 	ZoneScoped;
-
-	{
-		// screenshot from last frame; still not synched properly (only works due to duration of full copy; check with smaller portions)
-		if (gui_input.do_screenshot) {
-			screenshot_buffer.copy_from(screenshot_buffer_cpu, screenshot_buffer.size());
-			store_image(
-				gui_input.screenshot_path,
-				reinterpret_cast<const char*>(screenshot_buffer_cpu),
-				screenshot.get_extent().width,
-				screenshot.get_extent().height,
-				Texture::get_channels(screenshot.get_format())
-			);
-
-
-			spdlog::warn("{} {} {}", screenshot_buffer_cpu[0] / 255.0, screenshot_buffer_cpu[1] / 255.0, screenshot_buffer_cpu[2] / 255.0);
-			// THIS ONE
-			spdlog::warn("{} {} {}", pow(screenshot_buffer_cpu[0] / 255.0, 2.2), pow(screenshot_buffer_cpu[1] / 255.0, 2.2), pow(screenshot_buffer_cpu[2] / 255.0, 2.2));
-			spdlog::warn("{} {} {}", pow(screenshot_buffer_cpu[0] / 255.0, 1/2.2), pow(screenshot_buffer_cpu[1] / 255.0, 1/2.2), pow(screenshot_buffer_cpu[2] / 255.0, 1/2.2));
-		}
-	}
 
 	{
 		ZoneScopedN("IO");
 
 		gui_input = gui.get_input();
+
+		if (gui_input.do_screenshot) {
+			time = 0; // fixed time for screenshots to be consistent
+		}
 		
 		camera_controller.set_move_strength(gui_input.camera_movement_speed);
 		camera_controller.set_rotation_strength(gui_input.camera_rotation_speed);
@@ -179,7 +163,7 @@ void Engine::update()
 
 		// disable moving for screen shots
 		meshes[0].set_model_matrix(
-			glm::translate(glm::scale(glm::mat4(1), glm::vec3(0.8f)), glm::vec3(10, 0, 25 /* + cos(glfwGetTime() / 2) / 3*/))
+			glm::translate(glm::scale(glm::mat4(1), glm::vec3(0.8f)), glm::vec3(10, 0, 25 + cos(time / 2) / 3))
 		);
 		meshes[0].set_visualization_mode(gui_input.pbr_vis_mode);
 
@@ -472,11 +456,14 @@ void Engine::draw()
 			Texture::transition_layout(cmd, color_resolve_target, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 			Texture::transition_layout(cmd, swapchain.images_at(current_swapchain_image_idx), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
+			Texture::transition_layout(cmd, screenshot.get_image(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
 			// THIS IS CURSED
 			{
+				std::array<VkImageView, 2> tone_mapper_rts{ swapchain.image_views_at(current_swapchain_image_idx), screenshot.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT)};
 				tone_mapper.begin(cmd,
 					swapchain.get_extent(),
-					swapchain.image_views_at(current_swapchain_image_idx),
+					tone_mapper_rts,
 					VK_NULL_HANDLE, // No depth buffer
 					VK_NULL_HANDLE, // No color resolve
 					VK_NULL_HANDLE, // No depth resolve
@@ -492,35 +479,15 @@ void Engine::draw()
 			}
 
 			if (gui_input.do_screenshot) {
-				// Copies into screen shot texture and then reads that back to mapped buffer
-				// This involves two copies and could be done in one; however then one would need to deal with the buffer containing values in the format of the swapchain (outside of our control)
+				// Copies into screen shot texture and then reads that back to mapped buffer (after rendering in late_update)
+				// This involves two copies (one copy and one additional color attachment in tonemapper) and could be done in one (copy swapchain to buffer); however then one would need to deal with the buffer containing values in the format of the swapchain (outside of our control)
 				// making saving the screen shot alot harder
-				 
-				// Should potentially be handled by seperate class
+				
+				Texture::transition_layout(cmd, screenshot.get_image(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
-
-				Texture::transition_layout(cmd, swapchain.images_at(current_swapchain_image_idx), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-				Texture::transition_layout(cmd, screenshot.get_image(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-
-				// This could be replaced by writing to a second texture in the post processing shader depending on specialization/push constant
-				Texture::copy(cmd, swapchain.images_at(current_swapchain_image_idx), screenshot, swapchain.get_extent(), screenshot.get_extent());
-
-				// Necessary?
-				Texture::transition_layout(cmd, screenshot.get_image(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-
+				// Could use https://www.khronos.org/blog/copying-images-on-the-host-in-vulkan
 				VkBufferImageCopy image_copy = create_buffer_image_copy(swapchain.get_extent().width, swapchain.get_extent().height);
 				vkCmdCopyImageToBuffer(cmd, screenshot, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, screenshot_buffer, 1, &image_copy);
-
-				/*
-				VkBufferImageCopy image_copy = create_buffer_image_copy(swapchain.get_extent().width, swapchain.get_extent().height);
-				vkCmdCopyImageToBuffer(cmd, swapchain.images_at(current_swapchain_image_idx), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, screenshot_buffer, 1, &image_copy);
-
-				Texture::transition_layout(cmd, screenshot.get_image(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-
-				vkCmdCopyBufferToImage(cmd, screenshot_buffer, screenshot.get_image(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &image_copy);
-				*/
-
-				Texture::transition_layout(cmd, swapchain.images_at(current_swapchain_image_idx), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 			}
 
 			{
@@ -564,6 +531,26 @@ void Engine::present()
 void Engine::late_update()
 {
 	ZoneScoped;
+	if (gui_input.do_screenshot) {
+		// we need to wait for the frame to have finished rendering
+		VkFence render_fence = get_current_render_fence();
+		VK_CHECK_E(vkWaitForFences(device, 1, &render_fence, VK_TRUE, UINT64_MAX), RuntimeException);
+
+		screenshot_buffer.copy_from(screenshot_buffer_cpu, screenshot_buffer.size());
+		store_image(
+			gui_input.screenshot_path,
+			reinterpret_cast<const char*>(screenshot_buffer_cpu),
+			screenshot.get_extent().width,
+			screenshot.get_extent().height,
+			Texture::get_channels(screenshot.get_format())
+		);
+
+
+		//spdlog::warn("{} {} {}", screenshot_buffer_cpu[0] / 255.0, screenshot_buffer_cpu[1] / 255.0, screenshot_buffer_cpu[2] / 255.0);
+		// THIS ONE
+		//spdlog::warn("{} {} {}", pow(screenshot_buffer_cpu[0] / 255.0, 2.2), pow(screenshot_buffer_cpu[1] / 255.0, 2.2), pow(screenshot_buffer_cpu[2] / 255.0, 2.2));
+		//spdlog::warn("{} {} {}", pow(screenshot_buffer_cpu[0] / 255.0, 1/2.2), pow(screenshot_buffer_cpu[1] / 255.0, 1/2.2), pow(screenshot_buffer_cpu[2] / 255.0, 1/2.2));
+	}
 
 	current_frame = (current_frame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
@@ -851,12 +838,13 @@ void Engine::init_data()
 		cleanup_queue.add(&lod_mesh);
 	}
 
+	std::array<VkFormat, 2> tonemapper_color_formats{ swapchain.get_format() , screenshot.get_format()};
 	tone_mapper.init(
 		device, 
 		get_current_transfer_pool(),
 		descriptor_pool,
 		{view_desc_set_layout, tone_mapper_desc_set_layout}, // TODO tone mapper desc set layout
-		swapchain.get_format() // will write to swapchain
+		tonemapper_color_formats // will write to swapchain and maybe screenshot
 	);
 
 	// needs to also be called whenever we recreate our images due to resize
@@ -1009,7 +997,7 @@ void Engine::init_render_targets()
 		&device,
 		swapchain.get_extent().width, swapchain.get_extent().height, 	// TODO: could support custom set size
 		Texture::find_format(device, Tex_Screenshot),
-		VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+		VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
 		sharing_exlusive(), // exclusively owned by graphics queue
 		"Screenshot"
 	);

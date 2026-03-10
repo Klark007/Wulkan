@@ -1,7 +1,7 @@
 #include "common.h"
 #include "ToneMapper.h"
 
-void ToneMapper::init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, VKW_DescriptorPool& descriptor_pool, const std::array<VKW_DescriptorSetLayout, 2>& layouts, VkFormat color_attachment_format)
+void ToneMapper::init(const VKW_Device& device, const VKW_CommandPool& transfer_pool, VKW_DescriptorPool& descriptor_pool, const std::array<VKW_DescriptorSetLayout, 2>& layouts, std::span<VkFormat> color_attachment_formats)
 {
 	// hard coded view plane
 	const std::vector<Vertex> vertices = {
@@ -34,7 +34,7 @@ void ToneMapper::init(const VKW_Device& device, const VKW_CommandPool& transfer_
 	graphics_pipeline.add_descriptor_sets(layouts);
 	graphics_pipeline.add_push_constants({ push_constant.get_range() });
 
-	graphics_pipeline.set_color_attachment_format(color_attachment_format);
+	graphics_pipeline.set_color_attachment_format(color_attachment_formats);
 
 	graphics_pipeline.init(&device, "Tone Mapping graphics pipeline");
 
