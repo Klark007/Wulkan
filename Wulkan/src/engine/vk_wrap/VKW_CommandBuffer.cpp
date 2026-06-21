@@ -47,7 +47,11 @@ void VKW_CommandBuffer::submit_single_use()
 
 	VK_CHECK_ET(vkQueueSubmit(*queue, 1, &submit_info, VK_NULL_HANDLE), RuntimeException, fmt::format("Failed to submit one time command buffer ({})", m_name));
 	vkQueueWaitIdle(*queue);
+	del();
+}
 
+void VKW_CommandBuffer::del()
+{
 	VK_DESTROY_FROM(command_buffer, vkFreeCommandBuffers, *device, *command_pool, 1, &command_buffer);
 }
 

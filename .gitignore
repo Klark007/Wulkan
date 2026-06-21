@@ -401,3 +401,4 @@ FodyWeavers.xsd
 x64/
 /Wulkan/imgui.ini
 *.spv
+/Wulkan/out/*.png

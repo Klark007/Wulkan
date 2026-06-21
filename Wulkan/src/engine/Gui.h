@@ -56,6 +56,9 @@ struct GUI_Input {
 
 	ToneMapperMode tone_mapper_mode = ToneMapperMode::Rheinhard;
 	float luminance_white_point = 1.0;
+
+	bool do_screenshot = false;
+	std::string screenshot_path = "out/screenshot.png";
 };
 
 class GUI : public VKW_Object

@@ -46,35 +46,50 @@ VOut vertexMain(uint vertexID : SV_VulkanVertexID, uint instanceIndex : SV_Vulka
 [[vk::binding(0, 1)]]
 Sampler2D frame;
 
+struct FOut {
+    float4 color1;
+    float4 color2; // second color for screenshot
+}
+
 [shader("fragment")]
-float4 fragmentMain(VOut input) : SV_Target
+FOut fragmentMain(VOut input) : SV_Target
 {
     let color = frame.Sample(input.uv);
 
     if (any(isinf(color))) {
-        return color;
+        return FOut(color);
     }
 
+    float4 tonemapped_color;
     switch (pc.tone_mapper_mode) {
         case 0: // None
-            return color;
+            tonemapped_color = color;
+            break;
         case 1: // Rheinhard
-            return float4(rheinhard(color.rgb), 1);
+            tonemapped_color = float4(rheinhard(color.rgb), 1);
+            break;
         case 2: // extended rheinhard
-            return float4(ext_rheinhard(color.rgb), 1);
+            tonemapped_color = float4(ext_rheinhard(color.rgb), 1);
+            break;
         case 3: // Uncharted filmic
-            return float4(uncharted_filmic(color.rgb), 1);
+            tonemapped_color = float4(uncharted_filmic(color.rgb), 1);
+            break;
         case 4: // ACES
-            return float4(aces_approx(color.rgb), 1);
+            tonemapped_color = float4(aces_approx(color.rgb), 1);
+            break;
         case 5: // AgX
             float3 agx_color = agx(color.rgb);
             agx_color = agxLook(agx_color);
             agx_color = agxEotf(agx_color);
 
-            return float4(agx_color, 1);
+            tonemapped_color = float4(agx_color, 1);
+            break;
         default:
-            return float4(1, 0, 1, 1);
+            tonemapped_color = float4(1, 0, 1, 1);
+            break;
     }
+
+    return FOut(tonemapped_color, tonemapped_color);
 }
 
 float luminance(float3 c) {

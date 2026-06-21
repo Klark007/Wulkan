@@ -30,7 +30,7 @@ void VKW_Swapchain::init(GLFWwindow* window, const VKW_Device& device, const VKW
     glfwGetFramebufferSize(window, &width, &height);
   
     builder.set_desired_extent(width, height)
-        .add_image_usage_flags(VK_IMAGE_USAGE_TRANSFER_DST_BIT)
+        .add_image_usage_flags(VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT)
         .set_old_swapchain(old_swapchain)
         //.set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR) // V Sync
         .set_required_min_image_count(MAX_FRAMES_IN_FLIGHT) // This might cause issue if a device only supports at least tripple buffered images

@@ -35,8 +35,11 @@ void VKW_GraphicsPipeline::init(const VKW_Device* vkw_device, const std::string&
 	VkPipelineColorBlendStateCreateInfo color_blending{};
 	color_blending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
 	color_blending.logicOpEnable = VK_FALSE;
-	color_blending.attachmentCount = 1;
-	color_blending.pAttachments = &color_blending_attachement;
+
+	// same blending for all attachments
+	std::vector<VkPipelineColorBlendAttachmentState> color_blend_attachments{ render_info.colorAttachmentCount, color_blending_attachement };
+	color_blending.attachmentCount = static_cast<uint32_t>(color_blend_attachments.size());
+	color_blending.pAttachments = color_blend_attachments.data();
 
 	pipeline_info.pColorBlendState = &color_blending;
 	
@@ -136,7 +139,7 @@ void VKW_GraphicsPipeline::clear()
 	pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 
 
-	color_attachment_format = VK_FORMAT_UNDEFINED;
+	color_attachment_formats.clear();
 	depth_attachment_format = VK_FORMAT_UNDEFINED;
 
 
@@ -157,8 +160,7 @@ void VKW_GraphicsPipeline::clear()
 	scissor = {};
 	scissor.offset = { 0, 0 };
 
-	color_attachment_info = {};
-	color_attachment_info.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+	color_attachment_infos.clear();
 
 	depth_attachment_info = {};
 	depth_attachment_info.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
@@ -183,27 +185,43 @@ void VKW_GraphicsPipeline::add_push_constants(const std::vector<VkPushConstantRa
 	push_consts_range.insert(std::end(push_consts_range), std::begin(ranges), std::end(ranges));
 }
 
-void VKW_GraphicsPipeline::set_color_attachment(VkImageView attachment, bool do_clear_color, VkClearColorValue clear_color_value, VkImageView resolve_attachment, VkResolveModeFlagBits resolve_mode)
+void VKW_GraphicsPipeline::set_color_attachment(std::span<VkImageView> attachments, bool do_clear_color, VkClearColorValue clear_color_value, VkImageView resolve_attachment, VkResolveModeFlagBits resolve_mode)
 {
-	
-	color_attachment_info.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-	if (do_clear_color) {
-		color_attachment_info.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		color_attachment_info.clearValue.color = clear_color_value;
-	}
-	else {
-		color_attachment_info.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
-	}
-	
-	color_attachment_info.imageView = attachment;
-	color_attachment_info.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	color_attachment_infos.clear();
 
-	color_attachment_info.resolveImageView = resolve_attachment;
-	color_attachment_info.resolveImageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-	color_attachment_info.resolveMode = resolve_mode;
+	for (VkImageView view: attachments) {
+		VkRenderingAttachmentInfo render_attachment_info{};
+		render_attachment_info.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
 
-	attachment_state.pColorAttachments = &color_attachment_info;
-	attachment_state.colorAttachmentCount = 1;
+		render_attachment_info.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		if (do_clear_color) {
+			render_attachment_info.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+			render_attachment_info.clearValue.color = clear_color_value;
+		}
+		else {
+			render_attachment_info.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+		}
+	
+		render_attachment_info.imageView = view;
+		render_attachment_info.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		render_attachment_info.resolveImageView = resolve_attachment;
+		render_attachment_info.resolveImageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		render_attachment_info.resolveMode = resolve_mode;
+
+		color_attachment_infos.push_back(render_attachment_info);
+	}
+
+	if (color_attachment_infos.size() > 1 && resolve_attachment != VK_NULL_HANDLE) {
+		throw SetupException("Tried to render into multiple color attachment and resolving at the same time", __FILE__, __LINE__);
+	}
+
+	if (attachments.size() != render_info.colorAttachmentCount) {
+		throw SetupException("Tried to render into more attachments than set up for with set_color_attachment_format(s)", __FILE__, __LINE__);
+	}
+
+	attachment_state.pColorAttachments = color_attachment_infos.data();
+	attachment_state.colorAttachmentCount = static_cast<uint32_t>(color_attachment_infos.size());
 }
 
 void VKW_GraphicsPipeline::set_depth_attachment(VkImageView attachment, bool do_clear_depth, float clear_depth_value, VkImageView resolve_attachment, VkResolveModeFlagBits resolve_mode)

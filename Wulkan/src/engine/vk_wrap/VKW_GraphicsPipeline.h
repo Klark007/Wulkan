@@ -35,7 +35,7 @@ private:
 	VkPipelineColorBlendAttachmentState color_blending_attachement; // color blending for transparancy etc.
 
 	VkPipelineRenderingCreateInfo render_info; // used for dynamic rendering
-	VkFormat color_attachment_format;
+	std::vector<VkFormat> color_attachment_formats;
 	VkFormat depth_attachment_format;
 
 	std::vector<VkPipelineShaderStageCreateInfo> shader_stages; // shaders used in the pipeline
@@ -45,7 +45,7 @@ private:
 	std::vector<VkPushConstantRange> push_consts_range;
 
 	VkRenderingInfo attachment_state; // used for begin rendering, storing the area to be rendered into
-	VkRenderingAttachmentInfo color_attachment_info; // defines load ops (happen before first access) and store op (after last) for color attachment
+	std::vector<VkRenderingAttachmentInfo> color_attachment_infos; // defines load ops (happen before first access) and store op (after last) for color attachment
 	VkRenderingAttachmentInfo depth_attachment_info;  // defines load ops (happen before first access) and store op (after last) for depth attachment
 	
 	VkViewport m_viewport;
@@ -88,6 +88,7 @@ public:
 
 	// set formats of color attachments used in this pipeline
 	inline void set_color_attachment_format(VkFormat format);
+	inline void set_color_attachment_format(std::span<VkFormat> formats);
 	// set formats of depth attachments used in this pipeline
 	inline void set_depth_attachment_format(VkFormat format);
 
@@ -108,7 +109,7 @@ public:
 	
 	// END TO BE SET BEFORE INIT
 	
-	void set_color_attachment(VkImageView attachment, bool do_clear_color, VkClearColorValue clear_color_value, VkImageView resolve_attachment = VK_NULL_HANDLE, VkResolveModeFlagBits resolve_mode = VK_RESOLVE_MODE_NONE);
+	void set_color_attachment(std::span<VkImageView> attachments, bool do_clear_color, VkClearColorValue clear_color_value, VkImageView resolve_attachment = VK_NULL_HANDLE, VkResolveModeFlagBits resolve_mode = VK_RESOLVE_MODE_NONE);
 	void set_depth_attachment(VkImageView attachment, bool do_clear_depth, float clear_depth_value, VkImageView resolve_attachment = VK_NULL_HANDLE, VkResolveModeFlagBits resolve_mode = VK_RESOLVE_MODE_NONE);
 	
 	void set_render_size(VkExtent2D extend);
@@ -186,10 +187,19 @@ inline void VKW_GraphicsPipeline::set_rasterization_samples(VkSampleCountFlagBit
 
 inline void VKW_GraphicsPipeline::set_color_attachment_format(VkFormat format)
 {
-	color_attachment_format = format;
+	color_attachment_formats.clear();
+	color_attachment_formats.push_back(format);
 
-	render_info.pColorAttachmentFormats = &color_attachment_format;
+	render_info.pColorAttachmentFormats = color_attachment_formats.data();
 	render_info.colorAttachmentCount = 1;
+}
+
+inline void VKW_GraphicsPipeline::set_color_attachment_format(std::span<VkFormat> formats)
+{
+	color_attachment_formats.assign(formats.begin(), formats.end());
+
+	render_info.pColorAttachmentFormats = color_attachment_formats.data();
+	render_info.colorAttachmentCount = static_cast<uint32_t>(color_attachment_formats.size());
 }
 
 inline void VKW_GraphicsPipeline::set_depth_attachment_format(VkFormat format)

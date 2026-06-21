@@ -2,8 +2,6 @@
 
 #include "Path.h"
 
-#include <stb_image.h>
-
 #include "vk_wrap/VKW_Object.h"
 
 #include "vk_wrap/VKW_Device.h"
@@ -20,6 +18,7 @@ enum Texture_Type
 	Tex_RGB_Linear, // create RGB texture without sRGB to linear conversion
 	Tex_RGBA, // create RGBA texture
 	Tex_HDR_RGBA, // create RGBA with high dynamic range texture
+	Tex_Screenshot, // texture that is easily stored externally
 
 	Tex_Colortarget, // creates target used for rendering 
 	Tex_D,   // create depth texture
@@ -76,7 +75,7 @@ public:
 	static void copy(const VKW_CommandBuffer& command_buffer, VkImage src_texture, VkImage dst_texture, VkExtent2D src_size, VkExtent2D dst_size, VkImageAspectFlags aspect = VK_IMAGE_ASPECT_COLOR_BIT, uint32_t src_mip_level=0, uint32_t dst_mip_level=0);
 
 	inline static VkFormat find_format(const VKW_Device& device, Texture_Type type);
-	inline static int get_stbi_channels(VkFormat format);
+	inline static int get_channels(VkFormat format);
 
 	// gets image view of aspect with specific type (assumes one view per aspect flag, image view type combiniation)
 	VkImageView get_image_view(VkImageAspectFlags aspect_flag, VkImageViewType type = VK_IMAGE_VIEW_TYPE_2D, uint32_t base_layer = 0, uint32_t array_layers = 1) const;
@@ -112,6 +111,11 @@ Texture create_cube_map_from_path(const VKW_Device* device, const VKW_CommandPoo
 // if path_0 exists we assume all exists, if it doesn't we assume non exist
 Texture create_mipmapped_texture_from_path(const VKW_Device* device, const VKW_CommandPool* command_pool, const VKW_Path& path, Texture_Type type, const std::string& name);
 
+// helper function to fill out VkBufferImageCopy struct
+VkBufferImageCopy create_buffer_image_copy(unsigned int width, unsigned int height, VkDeviceSize buffer_offset = 0, uint32_t mip_level = 0, uint32_t base_array_level = 0);
+
+void store_image(const VKW_Path& path, const char* data, int x, int y, int ch);
+
 inline VkFormat Texture::find_format(const VKW_Device& device, Texture_Type type)
 {
 	VkFormatFeatureFlags format_features = required_format_features(type);
@@ -130,24 +134,26 @@ inline VkFormat Texture::find_format(const VKW_Device& device, Texture_Type type
 	throw RuntimeException(fmt::format("No format found for type {}", (unsigned int) type), __FILE__, __LINE__);
 }
 
-inline int Texture::get_stbi_channels(VkFormat format)
+inline int Texture::get_channels(VkFormat format)
 {
 	switch (format)
 	{
 	case VK_FORMAT_R8_SRGB:
 	case VK_FORMAT_R8_UNORM:
-		return STBI_grey;
+		return 1;
 	case VK_FORMAT_R8G8B8_SRGB:
 	case VK_FORMAT_R8G8B8_UNORM:
-		return STBI_rgb;
+		return 3;
 	case VK_FORMAT_R8G8B8A8_SRGB:
 	case VK_FORMAT_R8G8B8A8_UNORM:
-		return STBI_rgb_alpha;
+	case VK_FORMAT_B8G8R8A8_SRGB:
+	case VK_FORMAT_R8G8B8A8_UINT:
+		return 4;
 	case VK_FORMAT_D32_SFLOAT:
 	case VK_FORMAT_D32_SFLOAT_S8_UINT:
 	case VK_FORMAT_D24_UNORM_S8_UINT:
 	default:
-		throw NotImplementedException(fmt::format("Unknown type {:x}", static_cast<int>(format)), __FILE__, __LINE__);
+		throw NotImplementedException(fmt::format("get_channels: Unknown type {}", string_VkFormat(format)), __FILE__, __LINE__);
 	}
 }
 
@@ -170,6 +176,7 @@ inline std::vector<VkFormat> Texture::potential_formats(Texture_Type type)
 	case Tex_RGB_Linear:
 		return { VK_FORMAT_R8G8B8_UNORM, VK_FORMAT_R8G8B8A8_UNORM };
 	case Tex_RGBA:
+	case Tex_Screenshot:
 		return { VK_FORMAT_R8G8B8A8_SRGB };
 	case Tex_HDR_RGBA:
 		return { VK_FORMAT_R32G32B32A32_SFLOAT };
@@ -203,6 +210,8 @@ inline VkFormatFeatureFlags Texture::required_format_features(Texture_Type type)
 			VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT |
 			VK_FORMAT_FEATURE_TRANSFER_SRC_BIT
 			;
+	case Tex_Screenshot:
+		return VK_FORMAT_FEATURE_TRANSFER_DST_BIT | VK_FORMAT_FEATURE_TRANSFER_SRC_BIT;
 	default:
 		throw NotImplementedException(fmt::format("Unknown type {}", (unsigned int) type), __FILE__, __LINE__);
 	}

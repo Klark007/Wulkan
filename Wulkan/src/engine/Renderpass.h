@@ -19,6 +19,7 @@ public:
 	// binds current render pass, expects to be in active command buffer cmd
 	// pass in VK_NULL_HANDLE in color_rt or depth_rt to not set them in the pipeline
 	void begin(const VKW_CommandBuffer& cmd, VkExtent2D extent, VkImageView color_rt, VkImageView depth_rt, VkImageView color_rt_resolve = VK_NULL_HANDLE, VkImageView depth_rt_resolve = VK_NULL_HANDLE, bool do_clear_color = false, VkClearColorValue clear_color_value = { {1,0,1,1} }, bool do_clear_depth = false, float clear_depth_value = 0, float const_depth_bias = 0, float slope_depth_bias = 0);
+	void begin(const VKW_CommandBuffer& cmd, VkExtent2D extent, std::span<VkImageView> color_rts, VkImageView depth_rt, VkImageView color_rt_resolve = VK_NULL_HANDLE, VkImageView depth_rt_resolve = VK_NULL_HANDLE, bool do_clear_color = false, VkClearColorValue clear_color_value = { {1,0,1,1} }, bool do_clear_depth = false, float clear_depth_value = 0, float const_depth_bias = 0, float slope_depth_bias = 0);
 	void end(const VKW_CommandBuffer& cmd);
 	
 protected:
@@ -45,12 +46,18 @@ inline void RenderPass<T, N>::del()
 template<typename T, size_t N>
 inline void RenderPass<T, N>::begin(const VKW_CommandBuffer& cmd, VkExtent2D extent, VkImageView color_rt, VkImageView depth_rt, VkImageView color_rt_resolve, VkImageView depth_rt_resolve, bool do_clear_color, VkClearColorValue clear_color_value, bool do_clear_depth, float clear_depth_value, float const_depth_bias, float slope_depth_bias)
 {
+	std::array<VkImageView, 1> color_render_targets{ color_rt };
+	begin(cmd, extent, color_render_targets, depth_rt, color_rt_resolve, depth_rt_resolve, do_clear_color, clear_color_value, do_clear_depth, clear_depth_value, const_depth_bias, slope_depth_bias);
+}
+template<typename T, size_t N>
+inline void RenderPass<T, N>::begin(const VKW_CommandBuffer& cmd, VkExtent2D extent, std::span<VkImageView> color_rts, VkImageView depth_rt, VkImageView color_rt_resolve, VkImageView depth_rt_resolve, bool do_clear_color, VkClearColorValue clear_color_value, bool do_clear_depth, float clear_depth_value, float const_depth_bias, float slope_depth_bias)
+{
 	m_pipeline.set_render_size(extent);
 
 	// TODO: does this need to happen per frame?
-	if (color_rt != VK_NULL_HANDLE) {
+	if (!(color_rts.size() == 1 && color_rts[0] == VK_NULL_HANDLE)) {
 		m_pipeline.set_color_attachment(
-			color_rt,
+			color_rts,
 			do_clear_color,
 			clear_color_value,
 			color_rt_resolve,

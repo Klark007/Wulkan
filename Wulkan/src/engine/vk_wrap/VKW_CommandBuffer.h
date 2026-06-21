@@ -13,6 +13,8 @@ public:
 	// submits command buffer and waits for the queue to be idle. WARNING: could take long
 	void submit_single_use();
 
+	void del();
+
 	// begins command buffer
 	void begin() const;
 

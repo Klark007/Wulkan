@@ -84,7 +84,7 @@ private:
 	std::thread render_thread;
 	std::atomic_bool should_window_close = false;
 
-	void update();
+	void update(double time);
 	void draw();
 	void present();
 	void late_update(); // executed after draw
@@ -199,6 +199,10 @@ private:
 	InstancedLODShape<ObjMesh> lod_mesh;
 
 	ToneMapper tone_mapper;
+
+	unsigned char* screenshot_buffer_cpu;
+	VKW_Buffer screenshot_buffer;
+	Texture screenshot;
 
 	inline const VKW_CommandPool& get_current_graphics_pool() const;
 	inline const VKW_CommandPool& get_current_transfer_pool() const;
