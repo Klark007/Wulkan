@@ -840,12 +840,21 @@ void Engine::init_data()
 
 	std::array<VkFormat, 2> tonemapper_color_formats{ swapchain.get_format() , screenshot.get_format()};
 	tone_mapper.init(
-		device, 
+		&device, 
 		get_current_transfer_pool(),
 		descriptor_pool,
 		{view_desc_set_layout, tone_mapper_desc_set_layout}, // TODO tone mapper desc set layout
-		tonemapper_color_formats // will write to swapchain and maybe screenshot
+		tonemapper_color_formats, // will write to swapchain and maybe screenshot
+		512
 	);
+
+	tone_mapper.bake_filmic_power(FilmicPowerUserParams{
+		.m_toe_strength =.5,
+		.m_toe_length = .5,
+		.m_shoulder_strength = 2.0,
+		.m_shoulder_length = 0.5
+	});
+	tone_mapper.update(device, get_current_transfer_pool(), get_current_graphics_pool());
 
 	// needs to also be called whenever we recreate our images due to resize
 	tone_mapper.set_descriptor_bindings(

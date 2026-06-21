@@ -326,7 +326,7 @@ void Texture::transition_layout(const VKW_CommandBuffer& command_buffer, VkImage
 		barrier.dstAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT;
 	}
 	else if (initial_layout == VK_IMAGE_LAYOUT_UNDEFINED && new_layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
-		barrier.srcStageMask = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT | VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+		barrier.srcStageMask = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT; // used to be | VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT; check if necessary
 		barrier.dstStageMask = VK_PIPELINE_STAGE_2_ALL_TRANSFER_BIT_KHR; // needs to be in new layout before transfer stage
 
 		barrier.srcAccessMask = VK_ACCESS_2_NONE; // nothing from before as data is undefined
