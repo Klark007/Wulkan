@@ -56,6 +56,7 @@ struct GUI_Input {
 
 	ToneMapperMode tone_mapper_mode = ToneMapperMode::Rheinhard;
 	float luminance_white_point = 1.0;
+	bool rebake_power_curves = false;
 
 	bool do_screenshot = false;
 	std::string screenshot_path = "out/screenshot.png";

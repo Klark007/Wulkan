@@ -156,7 +156,7 @@ void GUI::draw_gui(const VKW_CommandBuffer& cmd)
 			ImGui::Checkbox("Draw Trees", &m_data.draw_trees);
 
 			if (ImGui::TreeNode("Tone mapper")) {
-				constexpr const char* tone_mapper_modes[] = { "None", "Rheinhard", "Extended Rheinhard", "Uncharted", "ACES", "AgX"};
+				constexpr const char* tone_mapper_modes[] = { "None", "Rheinhard", "Extended Rheinhard", "Uncharted", "ACES", "AgX", "PowerCurves"};
 				static int selected_tone_mapper = static_cast<int>(m_data.tone_mapper_mode);
 				ImGui::ListBox("Tone Mapper", &selected_tone_mapper, tone_mapper_modes, IM_ARRAYSIZE(tone_mapper_modes));
 				m_data.tone_mapper_mode = static_cast<ToneMapperMode>(selected_tone_mapper);
@@ -164,6 +164,17 @@ void GUI::draw_gui(const VKW_CommandBuffer& cmd)
 				ImGui::DragFloat("Luminance White Point", &m_data.luminance_white_point, 0.01f, 0, FLT_MAX);
 
 				ImGui::TreePop();
+
+				if (ImGui::TreeNode("Power Curve Parameters")) {
+					m_data.rebake_power_curves = false;
+
+					// Todo only update if we change a paramter
+					if (ImGui::Button("Update")) {
+						m_data.rebake_power_curves = true;
+					}
+
+					ImGui::TreePop();
+				}
 			}
 
 			if (ImGui::TreeNode("Visualization modes")) {

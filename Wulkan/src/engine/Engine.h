@@ -170,6 +170,7 @@ private:
 	std::array<VKW_Buffer, MAX_FRAMES_IN_FLIGHT> uniform_buffers;
 
 	std::array<CommandStructs, MAX_FRAMES_IN_FLIGHT> command_structs;
+	VKW_CommandPool async_graphics_pool;
 	std::array<SyncStructs, MAX_FRAMES_IN_FLIGHT> sync_structs;
 
 	// Descriptor set layouts

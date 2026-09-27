@@ -61,7 +61,7 @@ public:
 	// transitions the layout. Can also be used to change ownership to a new queue
 	void transition_layout(const VKW_CommandPool* command_pool, VkImageLayout initial_layout, VkImageLayout new_layout, uint32_t old_ownership = VK_QUEUE_FAMILY_IGNORED, uint32_t new_ownership = VK_QUEUE_FAMILY_IGNORED, uint32_t mip_level = 0, uint32_t level_count = VK_REMAINING_MIP_LEVELS);
 	// transitions layout. In contrast to the above function this is done in a currently active command buffer
-	static void transition_layout(const VKW_CommandBuffer& command_buffer, VkImage image, VkImageLayout initial_layout, VkImageLayout new_layout, uint32_t old_ownership = VK_QUEUE_FAMILY_IGNORED, uint32_t new_ownership = VK_QUEUE_FAMILY_IGNORED, uint32_t mip_level = 0, uint32_t level_count = VK_REMAINING_MIP_LEVELS);
+	static void transition_layout(const VKW_CommandBuffer& command_buffer, VkImage image, VkImageLayout initial_layout, VkImageLayout new_layout, uint32_t old_ownership = VK_QUEUE_FAMILY_IGNORED, uint32_t new_ownership = VK_QUEUE_FAMILY_IGNORED, uint32_t mip_level = 0, uint32_t level_count = VK_REMAINING_MIP_LEVELS, bool release = false);
 
 	// copies from src texture into this texture,
 	// assumes to be in an active command buffer, and that 

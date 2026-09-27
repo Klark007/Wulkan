@@ -251,7 +251,7 @@ void Texture::transition_layout(const VKW_CommandPool* command_pool, VkImageLayo
 	command_buffer.submit_single_use();
 }
 
-void Texture::transition_layout(const VKW_CommandBuffer& command_buffer, VkImage image, VkImageLayout initial_layout, VkImageLayout new_layout, uint32_t old_ownership, uint32_t new_ownership, uint32_t mip_level, uint32_t level_count)
+void Texture::transition_layout(const VKW_CommandBuffer& command_buffer, VkImage image, VkImageLayout initial_layout, VkImageLayout new_layout, uint32_t old_ownership, uint32_t new_ownership, uint32_t mip_level, uint32_t level_count, bool release)
 {
 	VkImageMemoryBarrier2 barrier{};
 	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
@@ -383,6 +383,18 @@ void Texture::transition_layout(const VKW_CommandBuffer& command_buffer, VkImage
 
 		barrier.srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT;
 		barrier.dstAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT | VK_ACCESS_2_MEMORY_READ_BIT;
+	}
+
+	if (old_ownership != VK_QUEUE_FAMILY_IGNORED || new_ownership != VK_QUEUE_FAMILY_IGNORED) {
+		// aquire or release operation
+		if (release) {
+			barrier.dstStageMask = VK_PIPELINE_STAGE_2_NONE;
+			barrier.dstAccessMask = VK_ACCESS_2_NONE_KHR;
+		}
+		else {
+			barrier.srcStageMask = VK_PIPELINE_STAGE_2_NONE;
+			barrier.srcAccessMask = VK_ACCESS_2_NONE_KHR;
+		}
 	}
 
 	VkDependencyInfo depency_info{};

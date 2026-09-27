@@ -211,6 +211,22 @@ void Engine::update(double time)
 		}
 	}
 
+	{
+		ZoneScoped("Powercurve Updates");
+
+		// TODO MOVE INTO UPDATE OF tonemapper
+		if (gui_input.rebake_power_curves) {
+			tone_mapper.bake_filmic_power(FilmicPowerUserParams{
+				.m_toe_strength = .5,
+				.m_toe_length = .5,
+				.m_shoulder_strength = 2.0,
+				.m_shoulder_length = 0.5
+			});
+		}
+		tone_mapper.update(device, get_current_transfer_pool(), async_graphics_pool, current_frame, linear_texture_sampler);
+
+	}
+
 	update_uniforms();
 }
 
@@ -460,6 +476,23 @@ void Engine::draw()
 
 			// THIS IS CURSED
 			{
+				if (tone_mapper.m_graphics_aquire_ownership) {
+					spdlog::info("Aquire ownership of {}", tone_mapper.m_current_render_curve);
+					
+					// aquire ownership from transfer queue
+					Texture::transition_layout(
+						cmd,
+						tone_mapper.m_baked_curves[tone_mapper.m_current_render_curve],
+						VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+						VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+						transfer_queue.get_queue_family(),
+						graphics_queue.get_queue_family()
+					);
+
+					tone_mapper.m_graphics_aquire_ownership = false;
+				}
+				
+				
 				std::array<VkImageView, 2> tone_mapper_rts{ swapchain.image_views_at(current_swapchain_image_idx), screenshot.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT)};
 				tone_mapper.begin(cmd,
 					swapchain.get_extent(),
@@ -841,6 +874,7 @@ void Engine::init_data()
 	std::array<VkFormat, 2> tonemapper_color_formats{ swapchain.get_format() , screenshot.get_format()};
 	tone_mapper.init(
 		&device, 
+		async_graphics_pool,
 		get_current_transfer_pool(),
 		descriptor_pool,
 		{view_desc_set_layout, tone_mapper_desc_set_layout}, // TODO tone mapper desc set layout
@@ -854,7 +888,7 @@ void Engine::init_data()
 		.m_shoulder_strength = 2.0,
 		.m_shoulder_length = 0.5
 	});
-	tone_mapper.update(device, get_current_transfer_pool(), get_current_graphics_pool());
+	tone_mapper.update(device, get_current_transfer_pool(), async_graphics_pool, current_frame, linear_texture_sampler);
 
 	// needs to also be called whenever we recreate our images due to resize
 	tone_mapper.set_descriptor_bindings(
@@ -1167,6 +1201,9 @@ void Engine::create_command_structs()
 		command_structs.at(i).graphics_queue_tracy_context = TracyVkContextCalibrated(device.get_physical_device(), device, graphics_queue, command_structs.at(i).graphics_command_buffer, vkGetPhysicalDeviceCalibrateableTimeDomainsEXT, vkGetCalibratedTimestampsEXT);
 		TracyVkContextName(command_structs.at(i).graphics_queue_tracy_context, "Graphics Context", sizeof("Graphics Context"));
 	}
+
+	async_graphics_pool.init(&device, &graphics_queue, "Async graphics pool");
+	cleanup_queue.add(&async_graphics_pool);
 }
 
 void Engine::create_sync_structs()

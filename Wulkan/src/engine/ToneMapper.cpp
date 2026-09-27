@@ -2,7 +2,7 @@
 #include "ToneMapper.h"
 #include "spdlog/spdlog.h"
 
-void ToneMapper::init(const VKW_Device* device, const VKW_CommandPool& transfer_pool, VKW_DescriptorPool& descriptor_pool, const std::array<VKW_DescriptorSetLayout, 2>& layouts, std::span<VkFormat> color_attachment_formats, unsigned int bake_resolution)
+void ToneMapper::init(const VKW_Device* device, const VKW_CommandPool& graphics_pool, const VKW_CommandPool& transfer_pool, VKW_DescriptorPool& descriptor_pool, const std::array<VKW_DescriptorSetLayout, 2>& layouts, std::span<VkFormat> color_attachment_formats, unsigned int bake_resolution)
 {
 	m_device = device;
 
@@ -46,6 +46,18 @@ void ToneMapper::init(const VKW_Device* device, const VKW_CommandPool& transfer_
 
 	m_resolution = bake_resolution;
 	VkFormat baked_texture_format = Texture::find_format(*device, Texture_Type::Tex_R_Linear);
+	
+
+	VKW_CommandBuffer command_buffer{};
+	command_buffer.init(
+		device,
+		&graphics_pool,
+		true,
+		"Curve Transition CMD"
+	);
+	command_buffer.begin_single_use();
+
+
 	for (int i = 0; i < 2; i++) {
 		m_baked_curves[i].init(
 			device,
@@ -53,10 +65,18 @@ void ToneMapper::init(const VKW_Device* device, const VKW_CommandPool& transfer_
 			1,
 			baked_texture_format,
 			VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-			sharing_exlusive(),
+			{ VkSharingMode::VK_SHARING_MODE_CONCURRENT, { graphics_pool.get_queue()->get_queue_family(), transfer_pool.get_queue()->get_queue_family()} }, // TODO: make exclusive with explicit handling of ownership transfers
 			fmt::format("Baked tone curve {}", i)
 		);
+
+		Texture::transition_layout(
+			command_buffer,
+			m_baked_curves[i],
+			VK_IMAGE_LAYOUT_UNDEFINED,
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+		);
 	}
+	command_buffer.submit_single_use();
 
 	VkFenceCreateInfo fence_info{};
 	fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
@@ -73,6 +93,12 @@ void ToneMapper::init(const VKW_Device* device, const VKW_CommandPool& transfer_
 		"Baked tone curve staging buffer"
 	);
 	m_staging_buffer_data.resize(m_resolution);
+
+	VkSemaphoreCreateInfo semaphore_create_info{};
+	semaphore_create_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+	for (int i = 0; i < 2; i++) {
+		VK_CHECK_E(vkCreateSemaphore(*device, &semaphore_create_info, nullptr, &m_release_semaphores.at(i)), SetupException);
+	}
 	
 
 	// super init
@@ -86,7 +112,7 @@ void ToneMapper::set_descriptor_bindings(const std::array<VkImageView, MAX_FRAME
 	for (unsigned int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 		const VKW_DescriptorSet& set1 = material.get_descriptor_set(i, 0);
 		set1.update(0, views[i], texture_sampler);
-		//set1.update(1, other texture);
+		set1.update(1, m_baked_curves[0].get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), texture_sampler);
 	}
 }
 
@@ -103,33 +129,40 @@ void ToneMapper::del()
 	m_staging_buffer.del();
 }
 
-void ToneMapper::update(const VKW_Device& device, const VKW_CommandPool& transfer_pool, const VKW_CommandPool& graphics_pool)
+void ToneMapper::update(const VKW_Device& device, const VKW_CommandPool& transfer_pool, const VKW_CommandPool& graphics_pool, unsigned int current_frame, const VKW_Sampler& texture_sampler)
 {
+	if (m_set_desc_set) {
+		// change happened last frame, also update desc set of this frame
+		m_set_desc_set = false;
+		material.get_descriptor_set(current_frame, 0).update(1, m_baked_curves[m_current_render_curve].get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), texture_sampler);
+	}
+
 	if (m_upload_in_flight) {
 		// check if finished
 		VkResult fence_status = vkGetFenceStatus(device, m_staging_fence);
 		if (fence_status == VK_SUCCESS) {
 			spdlog::info("Upload finished");
 
+			vkResetFences(device, 1, &m_staging_fence);
+
 			// delete cmd buffer
 			m_transfer_cmd_buffer.del();
+			m_graphics_cmd_buffer.del();
 
 			m_upload_in_flight = false;
 
-			// might have changed in the time it took to upload
-			if (m_do_upload) {
-				// start an upload
-				upload(device, transfer_pool, graphics_pool);
-			}
-			else {
-				spdlog::info("Please change ownership");
+			m_current_render_curve = (m_current_render_curve + 1) % 2;
 
-				m_graphics_aquire_ownership = true; // will need to get ownership in the graphics queue
-				m_current_render_curve = (m_current_render_curve + 1) % 2;
-			}
+			m_set_desc_set = true; // update for other frame as well
+			const VKW_DescriptorSet& set1 = material.get_descriptor_set(current_frame, 0);
+			set1.update(1, m_baked_curves[m_current_render_curve].get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), texture_sampler);
+
+			spdlog::info("Upload finished properly; Using curve {}", m_current_render_curve);
+
+			m_graphics_aquire_ownership = true; // will need to get ownership in the graphics queue
 		}
 		else if (fence_status == VK_ERROR_DEVICE_LOST) {
-
+			throw RuntimeException("Device lost", __FILE__, __LINE__);
 		}
 	}
 	else if (m_do_upload) {
@@ -147,13 +180,13 @@ VKW_DescriptorSetLayout ToneMapper::create_descriptor_set_layout(const VKW_Devic
 		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 		VK_SHADER_STAGE_FRAGMENT_BIT
 	);
-	/*
+	
 	descriptor_set_layout.add_binding(
 		1,
 		VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 		VK_SHADER_STAGE_FRAGMENT_BIT
 	);
-	*/
+
 	descriptor_set_layout.init(&device, "Tone Mapper Desc Layout");
 
 	return descriptor_set_layout;
@@ -253,52 +286,82 @@ void ToneMapper::bake_filmic_power(FilmicPowerUserParams user_params)
 		
 		float y = evaluate_filmic_power(m_power_curves[index], x);
 		m_staging_buffer_data[i] = static_cast<unsigned char>(round(y * 255));
-
-		spdlog::info("{}:{},", index, y);
 	}
 }
 
 void ToneMapper::upload(const VKW_Device& device, const VKW_CommandPool& transfer_pool, const VKW_CommandPool& graphics_pool)
 {
-	spdlog::info("Upload");
+	unsigned int unused_texture = (m_current_render_curve + 1) % 2;
+
+	spdlog::info("Upload into {}", unused_texture);
 	m_do_upload = false;
 	m_upload_in_flight = true;
 
 	// update m_staging_buffer
 	m_staging_buffer.copy_into(m_staging_buffer_data.data(), m_staging_buffer_data.size() * sizeof(unsigned char));
 
+	// release graphics ownership
+	m_graphics_cmd_buffer.init(
+		&device,
+		&graphics_pool,
+		true,
+		"Tonemap graphics release CMD"
+	);
+
+	m_graphics_cmd_buffer.begin_single_use();
+
+	// release from graphics queue
+	Texture::transition_layout(
+		m_graphics_cmd_buffer,
+		m_baked_curves[unused_texture],
+		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		graphics_pool.get_queue()->get_queue_family(),
+		transfer_pool.get_queue()->get_queue_family(),
+		0, // mip level
+		VK_REMAINING_MIP_LEVELS,
+		true // release ownership
+	);
+
+	m_graphics_cmd_buffer.submit({}, {}, {m_release_semaphores[unused_texture]}, VK_NULL_HANDLE);
+
+
 	m_transfer_cmd_buffer.init(
 		&device,
 		&transfer_pool,
 		true,
-		"Tonemap curve upload"
+		"Tonemap curve upload CMD"
 	);
 
 	m_transfer_cmd_buffer.begin_single_use();
 
-	unsigned int unused_texture = (m_current_render_curve + 1) % 2;
-
+	// explicit aquire from transfer queue
 	Texture::transition_layout(
 		m_transfer_cmd_buffer,
 		m_baked_curves[unused_texture],
-		VK_IMAGE_LAYOUT_UNDEFINED,
-		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		graphics_pool.get_queue()->get_queue_family(),
+		transfer_pool.get_queue()->get_queue_family()
 	);
 	
 	VkBufferImageCopy image_copy = create_buffer_image_copy((unsigned int)m_resolution, (unsigned int)1);
 	vkCmdCopyBufferToImage(m_transfer_cmd_buffer, m_staging_buffer, m_baked_curves[unused_texture], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &image_copy);
 
-	// might need a semaphore to the drawing of the tonemapping
+	// explicit release from transfer queue
 	Texture::transition_layout(
 		m_transfer_cmd_buffer,
 		m_baked_curves[unused_texture],
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 		transfer_pool.get_queue()->get_queue_family(),
-		graphics_pool.get_queue()->get_queue_family()
+		graphics_pool.get_queue()->get_queue_family(),
+		0, // mip level
+		VK_REMAINING_MIP_LEVELS,
+		true // release ownership
 	);
 
-	m_transfer_cmd_buffer.submit({}, {}, {}, m_staging_fence);
+	m_transfer_cmd_buffer.submit({ m_release_semaphores[unused_texture] }, { VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT }, {}, m_staging_fence);
 }
 
 

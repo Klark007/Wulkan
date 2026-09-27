@@ -8,7 +8,8 @@ enum class ToneMapperMode {
 	ExtendedRheinhard,
 	Uncharted,
 	ACES,
-	AgX
+	AgX,
+	PowerCurves,
 };
 
 struct ToneMapperPushConstants {
@@ -39,11 +40,11 @@ class ToneMapper : public RenderPass< ToneMapperPushConstants, TONE_MAPPER_DESC_
 public:
 	ToneMapper() = default;
 
-	void init(const VKW_Device* device, const VKW_CommandPool& transfer_pool, VKW_DescriptorPool& descriptor_pool, const std::array<VKW_DescriptorSetLayout, 2>& layouts, std::span<VkFormat> color_attachment_format, unsigned int bake_resolution);
+	void init(const VKW_Device* device, const VKW_CommandPool& graphics_pool, const VKW_CommandPool& transfer_pool, VKW_DescriptorPool& descriptor_pool, const std::array<VKW_DescriptorSetLayout, 2>& layouts, std::span<VkFormat> color_attachment_format, unsigned int bake_resolution);
 	void set_descriptor_bindings(const std::array<VkImageView, MAX_FRAMES_IN_FLIGHT>& views, const VKW_Sampler& texture_sampler);
 	void del() override;
 
-	void update(const VKW_Device& device, const VKW_CommandPool& transfer_pool, const VKW_CommandPool& graphics_pool);
+	void update(const VKW_Device& device, const VKW_CommandPool& transfer_pool, const VKW_CommandPool& graphics_pool, unsigned int current_frame, const VKW_Sampler& texture_sampler);
 
 	static VKW_DescriptorSetLayout create_descriptor_set_layout(const VKW_Device& device);
 
@@ -56,23 +57,26 @@ private:
 	const VKW_Device* m_device;
 
 	std::array<FilmicPowerCurveSegment, 3> m_power_curves;
+public: // TODO remove
 	std::array<Texture, 2> m_baked_curves;
-	unsigned int m_current_render_curve = 0;; // indicates which of the two curves is currently being used for rendering
+	unsigned int m_current_render_curve = 0; // indicates which of the two curves is currently being used for rendering
 	unsigned int m_resolution;
 
 	bool m_upload_in_flight = false; // true if currently are uploading, wait for fence to check if finished
 	bool m_do_upload = false; // m_staging_buffer_data changed, need to upload again
-	
+	bool m_set_desc_set = false;
 
 	VkFence m_staging_fence;
 	VKW_Buffer m_staging_buffer;
+	std::array<VkSemaphore, 2> m_release_semaphores;
+
+	VKW_CommandBuffer m_graphics_cmd_buffer;
 	VKW_CommandBuffer m_transfer_cmd_buffer;
 	std::vector<unsigned char> m_staging_buffer_data;
 
 	inline static VKW_DescriptorSetLayout descriptor_set_layout;
 
 	static void solve_lnA_B(float& lnA, float& B, float x, float y, float m);
-public: // TODO remove
 	bool m_graphics_aquire_ownership = false; 
 	MaterialInstance< ToneMapperPushConstants, 1> material;
 	Mesh view_plane; // plane spanning full view

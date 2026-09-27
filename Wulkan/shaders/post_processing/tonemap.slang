@@ -46,6 +46,10 @@ VOut vertexMain(uint vertexID : SV_VulkanVertexID, uint instanceIndex : SV_Vulka
 [[vk::binding(0, 1)]]
 Sampler2D frame;
 
+[[vk::binding(1, 1)]]
+Sampler2D baked_curve;
+
+
 struct FOut {
     float4 color1;
     float4 color2; // second color for screenshot
@@ -83,6 +87,10 @@ FOut fragmentMain(VOut input) : SV_Target
             agx_color = agxEotf(agx_color);
 
             tonemapped_color = float4(agx_color, 1);
+            break;
+        case 6: // power curves
+            // tonemapped_color = float4(power_curves(color.rgb), 1);
+            tonemapped_color = baked_curve.Sample(input.uv.x);
             break;
         default:
             tonemapped_color = float4(1, 0, 1, 1);
@@ -224,4 +232,8 @@ float3 agxLook(float3 val) {
     float luma = dot(val, lw);
 
     return luma + sat * (val - luma);
+}
+
+float3 power_curves(float3 val) {
+    return float3(1, 0, 0);
 }
