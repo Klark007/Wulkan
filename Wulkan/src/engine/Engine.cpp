@@ -9,6 +9,9 @@
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include "spdlog/sinks/basic_file_sink.h"
+
+#include "tracy/TracyC.h"
+
 #include <cstdio>
 
 #include <random>
@@ -87,13 +90,13 @@ void Engine::render_thread_func()
 	try {
 		while (!should_window_close.load()) {
 			if (aquire_image()) {
-				update(glfwGetTime());
+				GUI_Input& input = update(glfwGetTime());
 
-				draw();
+				draw(input);
 
 				present();
 
-				late_update();
+				late_update(input);
 			}
 
 			if (resize_window) {
@@ -112,24 +115,26 @@ void Engine::render_thread_func()
 	vkDeviceWaitIdle(device);
 }
 
-void Engine::update(double time)
+GUI_Input& Engine::update(double time)
 {
 	ZoneScoped;
 
-	{
-		ZoneScopedN("IO");
+	TracyCZoneN(io_ctx, "IO", true); 
+	
 
-		gui_input = gui.get_input();
+	GUI_Input& gui_input = gui.get_input();
 
-		if (gui_input.do_screenshot) {
-			time = 0; // fixed time for screenshots to be consistent
-		}
-		
-		camera_controller.set_move_strength(gui_input.camera_movement_speed);
-		camera_controller.set_rotation_strength(gui_input.camera_rotation_speed);
-		camera.set_near_plane(gui_input.camera_near_plane);
-		camera.set_far_plane(gui_input.camera_far_plane);
+	if (gui_input.do_screenshot) {
+		time = 0; // fixed time for screenshots to be consistent
 	}
+		
+	camera_controller.set_move_strength(gui_input.camera_movement_speed);
+	camera_controller.set_rotation_strength(gui_input.camera_rotation_speed);
+	camera.set_near_plane(gui_input.camera_near_plane);
+	camera.set_far_plane(gui_input.camera_far_plane);
+	
+
+	TracyCZoneEnd(io_ctx)
 
 	{
 		ZoneScopedN("Terrain updates");
@@ -216,21 +221,20 @@ void Engine::update(double time)
 
 		// TODO MOVE INTO UPDATE OF tonemapper
 		if (gui_input.rebake_power_curves) {
-			tone_mapper.bake_filmic_power(FilmicPowerUserParams{
-				.m_toe_strength = .5,
-				.m_toe_length = .5,
-				.m_shoulder_strength = 2.0,
-				.m_shoulder_length = 0.5
-			});
-		}
-		tone_mapper.update(device, get_current_transfer_pool(), async_graphics_pool, current_frame, linear_texture_sampler);
+			gui_input.rebake_power_curves = false;
 
+			tone_mapper.bake_filmic_power(gui_input.power_curve_params);
+		}
+		tone_mapper.update(device, get_current_transfer_pool(), async_graphics_pool, current_frame, edge_clamped_linear_texture_sampler);
+		
 	}
 
 	update_uniforms();
+
+	return gui_input;
 }
 
-void Engine::draw()
+void Engine::draw(const GUI_Input& gui_input)
 {
 	ZoneScoped;
 
@@ -505,7 +509,7 @@ void Engine::draw()
 
 				view_descriptor_sets[current_frame].bind(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, tone_mapper.get_pipeline_layout(), 0);
 				
-				tone_mapper.material.bind(cmd, current_frame, { tone_mapper.view_plane.get_vertex_address(), gui_input.tone_mapper_mode, gui_input.luminance_white_point });
+				tone_mapper.material.bind(cmd, current_frame, { tone_mapper.view_plane.get_vertex_address(), gui_input.tone_mapper_mode, gui_input.luminance_white_point, tone_mapper.m_power_w });
 				tone_mapper.view_plane.draw(cmd, current_frame);
 
 				tone_mapper.end(cmd);
@@ -561,7 +565,7 @@ void Engine::present()
 	}
 }
 
-void Engine::late_update()
+void Engine::late_update(const GUI_Input& gui_input)
 {
 	ZoneScoped;
 	if (gui_input.do_screenshot) {
@@ -882,14 +886,6 @@ void Engine::init_data()
 		512
 	);
 
-	tone_mapper.bake_filmic_power(FilmicPowerUserParams{
-		.m_toe_strength =.5,
-		.m_toe_length = .5,
-		.m_shoulder_strength = 2.0,
-		.m_shoulder_length = 0.5
-	});
-	tone_mapper.update(device, get_current_transfer_pool(), async_graphics_pool, current_frame, linear_texture_sampler);
-
 	// needs to also be called whenever we recreate our images due to resize
 	tone_mapper.set_descriptor_bindings(
 		{ color_resolve_target.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), color_resolve_target.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT) },
@@ -931,6 +927,11 @@ void Engine::create_texture_samplers()
 {
 	linear_texture_sampler.init(&device, "Default sampler");
 	cleanup_queue.add(&linear_texture_sampler);
+
+	edge_clamped_linear_texture_sampler.set_address_mode(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE);
+	edge_clamped_linear_texture_sampler.init(&device, "Edge clamped linear sampler");
+	cleanup_queue.add(&edge_clamped_linear_texture_sampler);
+
 
 	nearest_texture_sampler.set_min_filter(VK_FILTER_NEAREST);
 	nearest_texture_sampler.set_mag_filter(VK_FILTER_NEAREST);

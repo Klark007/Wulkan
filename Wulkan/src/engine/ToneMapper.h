@@ -16,6 +16,7 @@ struct ToneMapperPushConstants {
 	alignas(8) VkDeviceAddress vertex_buffer;
 	alignas(4) ToneMapperMode mode;
 	alignas(4) float luminance_white_point;
+	alignas(4) float power_curve_white_point;
 };
 constexpr size_t TONE_MAPPER_DESC_SET_COUNT = 2;
 
@@ -61,6 +62,7 @@ public: // TODO remove
 	std::array<Texture, 2> m_baked_curves;
 	unsigned int m_current_render_curve = 0; // indicates which of the two curves is currently being used for rendering
 	unsigned int m_resolution;
+	float m_power_w;
 
 	bool m_upload_in_flight = false; // true if currently are uploading, wait for fence to check if finished
 	bool m_do_upload = false; // m_staging_buffer_data changed, need to upload again

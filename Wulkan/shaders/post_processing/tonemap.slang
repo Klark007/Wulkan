@@ -16,6 +16,7 @@ cbuffer PushConstant
     uint64_t vertex_address;
     int tone_mapper_mode;
     float l_white_point; // luminance
+    float power_curve_white_point;
 } pc;
 
 struct VOut
@@ -89,8 +90,8 @@ FOut fragmentMain(VOut input) : SV_Target
             tonemapped_color = float4(agx_color, 1);
             break;
         case 6: // power curves
-            // tonemapped_color = float4(power_curves(color.rgb), 1);
-            tonemapped_color = baked_curve.Sample(input.uv.x);
+            //tonemapped_color = float4(clamp(baked_curve.Sample(input.uv.x).r, 0, 1), input.uv.x, 0, 1);
+            tonemapped_color = float4(power_curves(color.rgb), 1);
             break;
         default:
             tonemapped_color = float4(1, 0, 1, 1);
@@ -234,6 +235,9 @@ float3 agxLook(float3 val) {
     return luma + sat * (val - luma);
 }
 
-float3 power_curves(float3 val) {
-    return float3(1, 0, 0);
+float3 power_curves(float3 c) {
+    float old_l = luminance(c);
+    float new_l = baked_curve.Sample(clamp(old_l / pc.power_curve_white_point, 0, 1)).r;
+
+    return c * (new_l / old_l);
 }

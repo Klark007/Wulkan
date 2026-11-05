@@ -119,7 +119,7 @@ void GUI::draw_gui(const VKW_CommandBuffer& cmd)
 			m_camera_recursive_mutex->unlock();
 
 			ImGui::SeparatorText("Screenshot");
-			ImGui::InputText("Camera pose path:", &m_data.screenshot_path);
+			ImGui::InputText("Screenshot path:", &m_data.screenshot_path);
 			if (ImGui::Button("Screenshot")) {
 				spdlog::info("Creating screenshot {}", m_data.screenshot_path);
 				m_data.do_screenshot = true;
@@ -166,12 +166,13 @@ void GUI::draw_gui(const VKW_CommandBuffer& cmd)
 				ImGui::TreePop();
 
 				if (ImGui::TreeNode("Power Curve Parameters")) {
-					m_data.rebake_power_curves = false;
+					bool update = ImGui::SliderFloat("Toe Length", &m_data.power_curve_params.m_toe_length, 0, 1);
+					update |= ImGui::SliderFloat("Toe Strength", &m_data.power_curve_params.m_toe_strength, 0, 1);
 
-					// Todo only update if we change a paramter
-					if (ImGui::Button("Update")) {
-						m_data.rebake_power_curves = true;
-					}
+					update |= ImGui::SliderFloat("Shoulder Strength", &m_data.power_curve_params.m_shoulder_strength, 0, 5);
+					update |= ImGui::SliderFloat("Shoulder Length", &m_data.power_curve_params.m_shoulder_length, 0, 1);
+
+					m_data.rebake_power_curves = update;
 
 					ImGui::TreePop();
 				}

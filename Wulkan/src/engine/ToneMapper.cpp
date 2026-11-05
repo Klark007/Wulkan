@@ -110,9 +110,9 @@ void ToneMapper::init(const VKW_Device* device, const VKW_CommandPool& graphics_
 void ToneMapper::set_descriptor_bindings(const std::array<VkImageView, MAX_FRAMES_IN_FLIGHT>& views, const VKW_Sampler& texture_sampler)
 {
 	for (unsigned int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-		const VKW_DescriptorSet& set1 = material.get_descriptor_set(i, 0);
-		set1.update(0, views[i], texture_sampler);
-		set1.update(1, m_baked_curves[0].get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), texture_sampler);
+		const VKW_DescriptorSet& set0 = material.get_descriptor_set(i, 0);
+		set0.update(0, views[i], texture_sampler);
+		set0.update(1, m_baked_curves[0].get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), texture_sampler);
 	}
 }
 
@@ -127,6 +127,10 @@ void ToneMapper::del()
 	}
 	VK_DESTROY(m_staging_fence, vkDestroyFence, *m_device, m_staging_fence);
 	m_staging_buffer.del();
+
+	for (VkSemaphore& semaphore : m_release_semaphores) {
+		VK_DESTROY(semaphore, vkDestroySemaphore, *m_device, semaphore);
+	}
 }
 
 void ToneMapper::update(const VKW_Device& device, const VKW_CommandPool& transfer_pool, const VKW_CommandPool& graphics_pool, unsigned int current_frame, const VKW_Sampler& texture_sampler)
@@ -154,8 +158,8 @@ void ToneMapper::update(const VKW_Device& device, const VKW_CommandPool& transfe
 			m_current_render_curve = (m_current_render_curve + 1) % 2;
 
 			m_set_desc_set = true; // update for other frame as well
-			const VKW_DescriptorSet& set1 = material.get_descriptor_set(current_frame, 0);
-			set1.update(1, m_baked_curves[m_current_render_curve].get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), texture_sampler);
+			const VKW_DescriptorSet& set0 = material.get_descriptor_set(current_frame, 0);
+			set0.update(1, m_baked_curves[m_current_render_curve].get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), texture_sampler);
 
 			spdlog::info("Upload finished properly; Using curve {}", m_current_render_curve);
 
@@ -222,6 +226,8 @@ void ToneMapper::bake_filmic_power(FilmicPowerUserParams user_params)
 	float extraW = exp(user_params.m_shoulder_strength) - 1.0f;
 	float W = x0 + remaining_y + extraW;
 
+	m_power_w = W; // TODO: this might be out of sync with texture upload
+
 	// compute sections power curves
 	// first rescale x to be within [0,1]
 	float W_inv = 1 / W;
@@ -285,6 +291,8 @@ void ToneMapper::bake_filmic_power(FilmicPowerUserParams user_params)
 		int index = (x < x0) ? 0 : ((x < x1) ? 1 : 2);
 		
 		float y = evaluate_filmic_power(m_power_curves[index], x);
+		spdlog::info("f({}) = {}", x, y);
+
 		m_staging_buffer_data[i] = static_cast<unsigned char>(round(y * 255));
 	}
 }
