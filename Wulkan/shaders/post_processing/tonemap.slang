@@ -90,7 +90,6 @@ FOut fragmentMain(VOut input) : SV_Target
             tonemapped_color = float4(agx_color, 1);
             break;
         case 6: // power curves
-            //tonemapped_color = float4(clamp(baked_curve.Sample(input.uv.x).r, 0, 1), input.uv.x, 0, 1);
             tonemapped_color = float4(power_curves(color.rgb), 1);
             break;
         default:

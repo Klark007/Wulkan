@@ -62,7 +62,10 @@ public: // TODO remove
 	std::array<Texture, 2> m_baked_curves;
 	unsigned int m_current_render_curve = 0; // indicates which of the two curves is currently being used for rendering
 	unsigned int m_resolution;
-	float m_power_w;
+
+	float m_power_w; // current W to be used
+	float m_staging_W; // updated by every bake, what is currently in m_staging_buffer_data 
+	float m_uploading_W; // updated every upload, what is currently in flight
 
 	bool m_upload_in_flight = false; // true if currently are uploading, wait for fence to check if finished
 	bool m_do_upload = false; // m_staging_buffer_data changed, need to upload again

@@ -161,6 +161,9 @@ void ToneMapper::update(const VKW_Device& device, const VKW_CommandPool& transfe
 			const VKW_DescriptorSet& set0 = material.get_descriptor_set(current_frame, 0);
 			set0.update(1, m_baked_curves[m_current_render_curve].get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), texture_sampler);
 
+			// change w in push constant
+			m_power_w = m_uploading_W;
+
 			spdlog::info("Upload finished properly; Using curve {}", m_current_render_curve);
 
 			m_graphics_aquire_ownership = true; // will need to get ownership in the graphics queue
@@ -226,7 +229,7 @@ void ToneMapper::bake_filmic_power(FilmicPowerUserParams user_params)
 	float extraW = exp(user_params.m_shoulder_strength) - 1.0f;
 	float W = x0 + remaining_y + extraW;
 
-	m_power_w = W; // TODO: this might be out of sync with texture upload
+	m_staging_W = W; // cant be used immediately as push constant
 
 	// compute sections power curves
 	// first rescale x to be within [0,1]
@@ -307,6 +310,7 @@ void ToneMapper::upload(const VKW_Device& device, const VKW_CommandPool& transfe
 
 	// update m_staging_buffer
 	m_staging_buffer.copy_into(m_staging_buffer_data.data(), m_staging_buffer_data.size() * sizeof(unsigned char));
+	m_uploading_W = m_staging_W;
 
 	// release graphics ownership
 	m_graphics_cmd_buffer.init(
