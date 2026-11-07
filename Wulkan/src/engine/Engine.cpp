@@ -889,7 +889,8 @@ void Engine::init_data()
 	// needs to also be called whenever we recreate our images due to resize
 	tone_mapper.set_descriptor_bindings(
 		{ color_resolve_target.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), color_resolve_target.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT) },
-		linear_texture_sampler
+		linear_texture_sampler,
+		edge_clamped_linear_texture_sampler
 	);
 	cleanup_queue.add(&tone_mapper);
 }
@@ -1153,7 +1154,8 @@ void Engine::recreate_swapchain()
 	// needs to be called whenever we recreate our images due to resize
 	tone_mapper.set_descriptor_bindings(
 		{ color_resolve_target.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), color_resolve_target.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT) },
-		linear_texture_sampler
+		linear_texture_sampler,
+		edge_clamped_linear_texture_sampler
 	);
 
 	camera.set_aspect_ratio(res_x, res_y);

@@ -107,12 +107,12 @@ void ToneMapper::init(const VKW_Device* device, const VKW_CommandPool& graphics_
 	material.init(*device, descriptor_pool, *this, { descriptor_set_layout }, { 1 }, "Tone Mapper Material");
 }
 
-void ToneMapper::set_descriptor_bindings(const std::array<VkImageView, MAX_FRAMES_IN_FLIGHT>& views, const VKW_Sampler& texture_sampler)
+void ToneMapper::set_descriptor_bindings(const std::array<VkImageView, MAX_FRAMES_IN_FLIGHT>& views, const VKW_Sampler& frame_sampler, const VKW_Sampler& baked_curve_sampler)
 {
 	for (unsigned int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 		const VKW_DescriptorSet& set0 = material.get_descriptor_set(i, 0);
-		set0.update(0, views[i], texture_sampler);
-		set0.update(1, m_baked_curves[0].get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), texture_sampler);
+		set0.update(0, views[i], frame_sampler);
+		set0.update(1, m_baked_curves[m_current_render_curve].get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), baked_curve_sampler);
 	}
 }
 
@@ -133,12 +133,12 @@ void ToneMapper::del()
 	}
 }
 
-void ToneMapper::update(const VKW_Device& device, const VKW_CommandPool& transfer_pool, const VKW_CommandPool& graphics_pool, unsigned int current_frame, const VKW_Sampler& texture_sampler)
+void ToneMapper::update(const VKW_Device& device, const VKW_CommandPool& transfer_pool, const VKW_CommandPool& graphics_pool, unsigned int current_frame, const VKW_Sampler& baked_curve_sampler)
 {
 	if (m_set_desc_set) {
 		// change happened last frame, also update desc set of this frame
 		m_set_desc_set = false;
-		material.get_descriptor_set(current_frame, 0).update(1, m_baked_curves[m_current_render_curve].get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), texture_sampler);
+		material.get_descriptor_set(current_frame, 0).update(1, m_baked_curves[m_current_render_curve].get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), baked_curve_sampler);
 	}
 
 	if (m_upload_in_flight) {
@@ -159,7 +159,7 @@ void ToneMapper::update(const VKW_Device& device, const VKW_CommandPool& transfe
 
 			m_set_desc_set = true; // update for other frame as well
 			const VKW_DescriptorSet& set0 = material.get_descriptor_set(current_frame, 0);
-			set0.update(1, m_baked_curves[m_current_render_curve].get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), texture_sampler);
+			set0.update(1, m_baked_curves[m_current_render_curve].get_image_view(VK_IMAGE_ASPECT_COLOR_BIT), baked_curve_sampler);
 
 			// change w in push constant
 			m_power_w = m_uploading_W;
@@ -294,7 +294,6 @@ void ToneMapper::bake_filmic_power(FilmicPowerUserParams user_params)
 		int index = (x < x0) ? 0 : ((x < x1) ? 1 : 2);
 		
 		float y = evaluate_filmic_power(m_power_curves[index], x);
-		spdlog::info("f({}) = {}", x, y);
 
 		m_staging_buffer_data[i] = static_cast<unsigned char>(round(y * 255));
 	}

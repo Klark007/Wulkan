@@ -42,10 +42,10 @@ public:
 	ToneMapper() = default;
 
 	void init(const VKW_Device* device, const VKW_CommandPool& graphics_pool, const VKW_CommandPool& transfer_pool, VKW_DescriptorPool& descriptor_pool, const std::array<VKW_DescriptorSetLayout, 2>& layouts, std::span<VkFormat> color_attachment_format, unsigned int bake_resolution);
-	void set_descriptor_bindings(const std::array<VkImageView, MAX_FRAMES_IN_FLIGHT>& views, const VKW_Sampler& texture_sampler);
+	void set_descriptor_bindings(const std::array<VkImageView, MAX_FRAMES_IN_FLIGHT>& views, const VKW_Sampler& frame_sampler, const VKW_Sampler& baked_curve_sampler);
 	void del() override;
 
-	void update(const VKW_Device& device, const VKW_CommandPool& transfer_pool, const VKW_CommandPool& graphics_pool, unsigned int current_frame, const VKW_Sampler& texture_sampler);
+	void update(const VKW_Device& device, const VKW_CommandPool& transfer_pool, const VKW_CommandPool& graphics_pool, unsigned int current_frame, const VKW_Sampler& baked_curve_sampler);
 
 	static VKW_DescriptorSetLayout create_descriptor_set_layout(const VKW_Device& device);
 
