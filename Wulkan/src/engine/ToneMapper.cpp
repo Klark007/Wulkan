@@ -1,10 +1,15 @@
 #include "common.h"
 #include "ToneMapper.h"
-#include "spdlog/spdlog.h"
+#include "Gui.h"
 
-void ToneMapper::init(const VKW_Device* device, const VKW_CommandPool& graphics_pool, const VKW_CommandPool& transfer_pool, VKW_DescriptorPool& descriptor_pool, const std::array<VKW_DescriptorSetLayout, 2>& layouts, std::span<VkFormat> color_attachment_formats, unsigned int bake_resolution)
+
+void ToneMapper::init(const VKW_Device* device, const VKW_CommandPool* graphics_pool, const VKW_CommandPool* transfer_pool, VKW_DescriptorPool& descriptor_pool, const std::array<VKW_DescriptorSetLayout, 2>& layouts, std::span<VkFormat> color_attachment_formats, unsigned int bake_resolution)
 {
 	m_device = device;
+	m_transfer_pool = transfer_pool;
+	m_graphics_pool = graphics_pool;
+	m_graphics_queue_family_idx = graphics_pool->get_queue()->get_queue_family();
+	m_transfer_queue_family_idx = transfer_pool->get_queue()->get_queue_family();
 
 	// hard coded view plane
 	const std::vector<Vertex> vertices = {
@@ -15,7 +20,7 @@ void ToneMapper::init(const VKW_Device* device, const VKW_CommandPool& graphics_
 	};
 	const std::vector<uint32_t> indices = { 0,1,2,1,3,2 };
 
-	view_plane.init(*device, transfer_pool, vertices, indices);
+	view_plane.init(*device, *transfer_pool, vertices, indices);
 
 	// push constants
 	VKW_PushConstant<ToneMapperPushConstants> push_constant{};
@@ -51,7 +56,7 @@ void ToneMapper::init(const VKW_Device* device, const VKW_CommandPool& graphics_
 	VKW_CommandBuffer command_buffer{};
 	command_buffer.init(
 		device,
-		&graphics_pool,
+		graphics_pool,
 		true,
 		"Curve Transition CMD"
 	);
@@ -65,7 +70,7 @@ void ToneMapper::init(const VKW_Device* device, const VKW_CommandPool& graphics_
 			1,
 			baked_texture_format,
 			VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-			{ VkSharingMode::VK_SHARING_MODE_CONCURRENT, { graphics_pool.get_queue()->get_queue_family(), transfer_pool.get_queue()->get_queue_family()} }, // TODO: make exclusive with explicit handling of ownership transfers
+			{ VkSharingMode::VK_SHARING_MODE_CONCURRENT, { m_graphics_queue_family_idx, m_transfer_queue_family_idx} }, // TODO: make exclusive with explicit handling of ownership transfers
 			fmt::format("Baked tone curve {}", i)
 		);
 
@@ -133,8 +138,55 @@ void ToneMapper::del()
 	}
 }
 
-void ToneMapper::update(const VKW_Device& device, const VKW_CommandPool& transfer_pool, const VKW_CommandPool& graphics_pool, unsigned int current_frame, const VKW_Sampler& baked_curve_sampler)
+void ToneMapper::do_pass(const VKW_CommandBuffer& cmd, uint32_t current_frame, VkImageView swapchain_img_view, VkExtent2D swapchain_extend, VkImageView screenshot_img_view, const VKW_DescriptorSet& view_descriptor_set)
 {
+	if (m_graphics_aquire_ownership) {
+		// aquire ownership from transfer queue
+		Texture::transition_layout(
+			cmd,
+			m_baked_curves[m_current_render_curve],
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			m_transfer_queue_family_idx,
+			m_graphics_queue_family_idx
+		);
+
+		m_graphics_aquire_ownership = false;
+	}
+
+
+	std::array<VkImageView, 2> tone_mapper_rts{ swapchain_img_view, screenshot_img_view };
+	begin(cmd,
+		swapchain_extend,
+		tone_mapper_rts,
+		VK_NULL_HANDLE, // No depth buffer
+		VK_NULL_HANDLE, // No color resolve
+		VK_NULL_HANDLE, // No depth resolve
+		true
+	);
+
+	view_descriptor_set.bind(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, get_pipeline_layout(), 0);
+
+	material.bind(cmd, current_frame, { 
+		.vertex_buffer = view_plane.get_vertex_address(), 
+		.mode = m_input->tone_mapper_mode, 
+		.luminance_white_point = (m_input->tone_mapper_mode == ToneMapperMode::PowerCurves) ? m_power_w : m_input->luminance_white_point 
+		}
+	);
+	view_plane.draw(cmd, current_frame);
+
+	end(cmd);
+}
+
+void ToneMapper::update(const VKW_Device& device, const VKW_Sampler& baked_curve_sampler, GUI_Input* input, unsigned int current_frame)
+{
+	m_input = input;
+	if (m_input->rebake_power_curves) {
+		m_input->rebake_power_curves = false;
+
+		bake_filmic_power(m_input->power_curve_params);
+	}
+
 	if (m_set_desc_set) {
 		// change happened last frame, also update desc set of this frame
 		m_set_desc_set = false;
@@ -145,8 +197,6 @@ void ToneMapper::update(const VKW_Device& device, const VKW_CommandPool& transfe
 		// check if finished
 		VkResult fence_status = vkGetFenceStatus(device, m_staging_fence);
 		if (fence_status == VK_SUCCESS) {
-			spdlog::info("Upload finished");
-
 			vkResetFences(device, 1, &m_staging_fence);
 
 			// delete cmd buffer
@@ -164,8 +214,6 @@ void ToneMapper::update(const VKW_Device& device, const VKW_CommandPool& transfe
 			// change w in push constant
 			m_power_w = m_uploading_W;
 
-			spdlog::info("Upload finished properly; Using curve {}", m_current_render_curve);
-
 			m_graphics_aquire_ownership = true; // will need to get ownership in the graphics queue
 		}
 		else if (fence_status == VK_ERROR_DEVICE_LOST) {
@@ -174,7 +222,7 @@ void ToneMapper::update(const VKW_Device& device, const VKW_CommandPool& transfe
 	}
 	else if (m_do_upload) {
 		// start an upload
-		upload(device, transfer_pool, graphics_pool);
+		upload(device);
 	}
 }
 
@@ -299,11 +347,10 @@ void ToneMapper::bake_filmic_power(FilmicPowerUserParams user_params)
 	}
 }
 
-void ToneMapper::upload(const VKW_Device& device, const VKW_CommandPool& transfer_pool, const VKW_CommandPool& graphics_pool)
+void ToneMapper::upload(const VKW_Device& device)
 {
 	unsigned int unused_texture = (m_current_render_curve + 1) % 2;
 
-	spdlog::info("Upload into {}", unused_texture);
 	m_do_upload = false;
 	m_upload_in_flight = true;
 
@@ -314,7 +361,7 @@ void ToneMapper::upload(const VKW_Device& device, const VKW_CommandPool& transfe
 	// release graphics ownership
 	m_graphics_cmd_buffer.init(
 		&device,
-		&graphics_pool,
+		m_graphics_pool,
 		true,
 		"Tonemap graphics release CMD"
 	);
@@ -327,8 +374,8 @@ void ToneMapper::upload(const VKW_Device& device, const VKW_CommandPool& transfe
 		m_baked_curves[unused_texture],
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-		graphics_pool.get_queue()->get_queue_family(),
-		transfer_pool.get_queue()->get_queue_family(),
+		m_graphics_queue_family_idx,
+		m_transfer_queue_family_idx,
 		0, // mip level
 		VK_REMAINING_MIP_LEVELS,
 		true // release ownership
@@ -339,7 +386,7 @@ void ToneMapper::upload(const VKW_Device& device, const VKW_CommandPool& transfe
 
 	m_transfer_cmd_buffer.init(
 		&device,
-		&transfer_pool,
+		m_transfer_pool,
 		true,
 		"Tonemap curve upload CMD"
 	);
@@ -352,8 +399,8 @@ void ToneMapper::upload(const VKW_Device& device, const VKW_CommandPool& transfe
 		m_baked_curves[unused_texture],
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-		graphics_pool.get_queue()->get_queue_family(),
-		transfer_pool.get_queue()->get_queue_family()
+		m_graphics_queue_family_idx,
+		m_transfer_queue_family_idx
 	);
 	
 	VkBufferImageCopy image_copy = create_buffer_image_copy((unsigned int)m_resolution, (unsigned int)1);
@@ -365,8 +412,8 @@ void ToneMapper::upload(const VKW_Device& device, const VKW_CommandPool& transfe
 		m_baked_curves[unused_texture],
 		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-		transfer_pool.get_queue()->get_queue_family(),
-		graphics_pool.get_queue()->get_queue_family(),
+		m_transfer_queue_family_idx,
+		m_graphics_queue_family_idx,
 		0, // mip level
 		VK_REMAINING_MIP_LEVELS,
 		true // release ownership

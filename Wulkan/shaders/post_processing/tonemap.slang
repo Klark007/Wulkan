@@ -16,7 +16,6 @@ cbuffer PushConstant
     uint64_t vertex_address;
     int tone_mapper_mode;
     float l_white_point; // luminance
-    float power_curve_white_point;
 } pc;
 
 struct VOut
@@ -236,7 +235,7 @@ float3 agxLook(float3 val) {
 
 float3 power_curves(float3 c) {
     float old_l = luminance(c);
-    float new_l = baked_curve.Sample(clamp(old_l / pc.power_curve_white_point, 0, 1)).r;
+    float new_l = baked_curve.Sample(clamp(old_l / pc.l_white_point, 0, 1)).r;
 
     return c * (new_l / old_l);
 }

@@ -163,8 +163,6 @@ void GUI::draw_gui(const VKW_CommandBuffer& cmd)
 
 				ImGui::DragFloat("Luminance White Point", &m_data.luminance_white_point, 0.01f, 0, FLT_MAX);
 
-				ImGui::TreePop();
-
 				if (ImGui::TreeNode("Power Curve Parameters")) {
 					bool update = ImGui::SliderFloat("Toe Length", &m_data.power_curve_params.m_toe_length, 0, 1);
 					update |= ImGui::SliderFloat("Toe Strength", &m_data.power_curve_params.m_toe_strength, 0, 1);
@@ -176,6 +174,8 @@ void GUI::draw_gui(const VKW_CommandBuffer& cmd)
 
 					ImGui::TreePop();
 				}
+
+				ImGui::TreePop();
 			}
 
 			if (ImGui::TreeNode("Visualization modes")) {

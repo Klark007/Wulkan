@@ -127,7 +127,8 @@ GUI_Input& Engine::update(double time)
 	if (gui_input.do_screenshot) {
 		time = 0; // fixed time for screenshots to be consistent
 	}
-		
+	
+	// TODO condense into one function that takes in gui_input
 	camera_controller.set_move_strength(gui_input.camera_movement_speed);
 	camera_controller.set_rotation_strength(gui_input.camera_rotation_speed);
 	camera.set_near_plane(gui_input.camera_near_plane);
@@ -218,15 +219,8 @@ GUI_Input& Engine::update(double time)
 
 	{
 		ZoneScoped("Powercurve Updates");
-
-		// TODO MOVE INTO UPDATE OF tonemapper
-		if (gui_input.rebake_power_curves) {
-			gui_input.rebake_power_curves = false;
-
-			tone_mapper.bake_filmic_power(gui_input.power_curve_params);
-		}
-		tone_mapper.update(device, get_current_transfer_pool(), async_graphics_pool, current_frame, edge_clamped_linear_texture_sampler);
 		
+		tone_mapper.update(device, edge_clamped_linear_texture_sampler, &gui_input, current_frame);
 	}
 
 	update_uniforms();
@@ -461,25 +455,21 @@ void Engine::draw(const GUI_Input& gui_input)
 				cmd.end_debug_zone();
 			}
 			
-			/*
-			// transitions for copy into swapchain images
-			Texture::transition_layout(cmd, color_resolve_target, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
-			Texture::transition_layout(cmd, swapchain.images_at(current_swapchain_image_idx), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-
-			// copy (both have swapchain extent resolution
-			Texture::copy(cmd, color_resolve_target, swapchain.images_at(current_swapchain_image_idx), swapchain.get_extent(), swapchain.get_extent());
-
-			// transition for imgui
-			Texture::transition_layout(cmd, swapchain.images_at(current_swapchain_image_idx), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-			*/
-
 			Texture::transition_layout(cmd, color_resolve_target, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 			Texture::transition_layout(cmd, swapchain.images_at(current_swapchain_image_idx), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
 			Texture::transition_layout(cmd, screenshot.get_image(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
-			// THIS IS CURSED
 			{
+				tone_mapper.do_pass(
+					cmd,
+					current_frame,
+					swapchain.image_views_at(current_swapchain_image_idx),
+					swapchain.get_extent(),
+					screenshot.get_image_view(VK_IMAGE_ASPECT_COLOR_BIT),
+					view_descriptor_sets[current_frame]
+				);
+				/*
 				if (tone_mapper.m_graphics_aquire_ownership) {
 					spdlog::info("Aquire ownership of {}", tone_mapper.m_current_render_curve);
 					
@@ -513,6 +503,7 @@ void Engine::draw(const GUI_Input& gui_input)
 				tone_mapper.view_plane.draw(cmd, current_frame);
 
 				tone_mapper.end(cmd);
+				*/
 			}
 
 			if (gui_input.do_screenshot) {
@@ -878,8 +869,8 @@ void Engine::init_data()
 	std::array<VkFormat, 2> tonemapper_color_formats{ swapchain.get_format() , screenshot.get_format()};
 	tone_mapper.init(
 		&device, 
-		async_graphics_pool,
-		get_current_transfer_pool(),
+		&async_graphics_pool,
+		&get_current_transfer_pool(),
 		descriptor_pool,
 		{view_desc_set_layout, tone_mapper_desc_set_layout}, // TODO tone mapper desc set layout
 		tonemapper_color_formats, // will write to swapchain and maybe screenshot
