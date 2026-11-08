@@ -4,6 +4,7 @@
 * Experiment with Slang [~] 
 
 * Consistently use string_Vk* in error message []
+* Conistent use of forward decleration ? []
 * Why is Renderpass / VKW_GraphicsPipeline seperate? []
 * Cleanup includes [ ] 
 * Rework single use command buffers [ ]
@@ -15,11 +16,11 @@
 * Clang support [ ] 
 
 ## Maybe and Convetions
+* First frame analysis [ ] 
 * void VKW_Buffer::copy(const void* data, size_t data_size, size_t offset) change order of size/offset [ ] 
 * Update glfw due to https://github.com/glfw/glfw/issues/2684 or switch to SDL [ ]
-* m_ convention[ ] 
+* m_ convention [ ] 
 * static_cast and not c style casts [ ] 
-* First frame analysis [ ] 
 
 * Maybe Make warnings only be compiled in debug mode [ ]
 * Maybe combine buffer + layout for uniforms [ ] 
@@ -35,8 +36,7 @@
 * Mesh shaders [ ]
 
 ## PBR
-* 1 Tone mapping [~]
-* 2 Normal mapping [ ] 
+* Normal mapping [ ] 
 * Automatically detect if texture requires alpha channel [ ] 
 * Emission / Ambient [ ] 
 * Support more textures [ ] 
@@ -44,7 +44,7 @@
 
 ## Bugs
 * Weird flickering of tree's on low LOD []
-* Blender UV imporing weird [ ] 
+* Blender UV importing weird [ ] 
 * Flickering at high frame rates [ ]
 * Looking up / down changes shadows [ ]
 
@@ -58,7 +58,8 @@
 
 ## Foliage
 ### CPU Side
-* Orienting Bill boards [ ]
+* Orienting Billboards? [ ]
+* Impostors? [ ]
 
 ### GPU Side
 * Procedural placement[ ] 
@@ -92,6 +93,8 @@
 * Completly transparent texture support (discard; also in depth) [X] 
 * Texture mipmaps [X]
 * Deduplicate texture code [X]
+* Tone mapping [X]
+
 
 ## Tracy 
 * CPU side basics [X]

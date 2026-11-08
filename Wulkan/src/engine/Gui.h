@@ -54,9 +54,15 @@ struct GUI_Input {
 
 	bool draw_trees = true;
 
-	ToneMapperMode tone_mapper_mode = ToneMapperMode::Rheinhard;
+	ToneMapperMode tone_mapper_mode = ToneMapperMode::PowerCurves;
 	float luminance_white_point = 1.0;
-	bool rebake_power_curves = false;
+	bool rebake_power_curves = true; // only reset on bake
+	FilmicPowerUserParams power_curve_params = FilmicPowerUserParams{
+		.m_toe_strength = .1,
+		.m_toe_length = .2,
+		.m_shoulder_strength = 1.5,
+		.m_shoulder_length = 0.8
+	};
 
 	bool do_screenshot = false;
 	std::string screenshot_path = "out/screenshot.png";
@@ -80,6 +86,6 @@ private:
 
 	void draw_gui(const VKW_CommandBuffer& cmd);
 public:
-	inline const GUI_Input& get_input() const { return m_data; };
+	inline GUI_Input& get_input() { return m_data; };
 };
 

@@ -89,8 +89,7 @@ FOut fragmentMain(VOut input) : SV_Target
             tonemapped_color = float4(agx_color, 1);
             break;
         case 6: // power curves
-            // tonemapped_color = float4(power_curves(color.rgb), 1);
-            tonemapped_color = baked_curve.Sample(input.uv.x);
+            tonemapped_color = float4(power_curves(color.rgb), 1);
             break;
         default:
             tonemapped_color = float4(1, 0, 1, 1);
@@ -234,6 +233,9 @@ float3 agxLook(float3 val) {
     return luma + sat * (val - luma);
 }
 
-float3 power_curves(float3 val) {
-    return float3(1, 0, 0);
+float3 power_curves(float3 c) {
+    float old_l = luminance(c);
+    float new_l = baked_curve.Sample(clamp(old_l / pc.l_white_point, 0, 1)).r;
+
+    return c * (new_l / old_l);
 }

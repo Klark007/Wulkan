@@ -84,10 +84,10 @@ private:
 	std::thread render_thread;
 	std::atomic_bool should_window_close = false;
 
-	void update(double time);
-	void draw();
+	GUI_Input& update(double time);
+	void draw(const GUI_Input& gui_input);
 	void present();
-	void late_update(); // executed after draw
+	void late_update(const GUI_Input& gui_input); // executed after draw
 
 	bool resize_window = false; // will execute resize to avoid issues with resources 
 
@@ -158,6 +158,7 @@ private:
 	// general sampler for texture (Linear sampling, repeat address mode)
 	VKW_Sampler nearest_texture_sampler;
 	VKW_Sampler linear_texture_sampler;
+	VKW_Sampler edge_clamped_linear_texture_sampler;
 	VKW_Sampler mirror_texture_sampler;
 	VKW_Sampler shadow_map_gather_sampler;
 
@@ -221,7 +222,6 @@ private:
 	Camera camera;
 
 	GUI gui;
-	GUI_Input gui_input;
 public:
 	std::recursive_mutex& get_glfw_input_recursive_mutex() { return glfw_input_mutex; };
 	CameraController& get_camera_controller() { return camera_controller; };

@@ -40,11 +40,12 @@ class ToneMapper : public RenderPass< ToneMapperPushConstants, TONE_MAPPER_DESC_
 public:
 	ToneMapper() = default;
 
-	void init(const VKW_Device* device, const VKW_CommandPool& graphics_pool, const VKW_CommandPool& transfer_pool, VKW_DescriptorPool& descriptor_pool, const std::array<VKW_DescriptorSetLayout, 2>& layouts, std::span<VkFormat> color_attachment_format, unsigned int bake_resolution);
-	void set_descriptor_bindings(const std::array<VkImageView, MAX_FRAMES_IN_FLIGHT>& views, const VKW_Sampler& texture_sampler);
+	void init(const VKW_Device* device, const VKW_CommandPool* graphics_pool, const VKW_CommandPool* transfer_pool, VKW_DescriptorPool& descriptor_pool, const std::array<VKW_DescriptorSetLayout, 2>& layouts, std::span<VkFormat> color_attachment_format, unsigned int bake_resolution);
+	void set_descriptor_bindings(const std::array<VkImageView, MAX_FRAMES_IN_FLIGHT>& views, const VKW_Sampler& frame_sampler, const VKW_Sampler& baked_curve_sampler);
 	void del() override;
 
-	void update(const VKW_Device& device, const VKW_CommandPool& transfer_pool, const VKW_CommandPool& graphics_pool, unsigned int current_frame, const VKW_Sampler& texture_sampler);
+	void do_pass(const VKW_CommandBuffer& cmd, uint32_t current_frame, VkImageView swapchain_img_view, VkExtent2D swapchain_extend, VkImageView screenshot_img_view, const VKW_DescriptorSet& view_descriptor_set);
+	void update(const VKW_Device& device, const VKW_Sampler& baked_curve_sampler, struct GUI_Input* input, unsigned int current_frame);
 
 	static VKW_DescriptorSetLayout create_descriptor_set_layout(const VKW_Device& device);
 
@@ -52,19 +53,13 @@ public:
 	void bake_filmic_power(FilmicPowerUserParams user_params);
 
 private:
-	void upload(const VKW_Device& device, const VKW_CommandPool& transfer_pool, const VKW_CommandPool& graphics_pool);
+	void upload(const VKW_Device& device);
 
 	const VKW_Device* m_device;
-
-	std::array<FilmicPowerCurveSegment, 3> m_power_curves;
-public: // TODO remove
-	std::array<Texture, 2> m_baked_curves;
-	unsigned int m_current_render_curve = 0; // indicates which of the two curves is currently being used for rendering
-	unsigned int m_resolution;
-
-	bool m_upload_in_flight = false; // true if currently are uploading, wait for fence to check if finished
-	bool m_do_upload = false; // m_staging_buffer_data changed, need to upload again
-	bool m_set_desc_set = false;
+	const VKW_CommandPool* m_transfer_pool;
+	const VKW_CommandPool* m_graphics_pool;
+	uint32_t m_graphics_queue_family_idx;
+	uint32_t m_transfer_queue_family_idx;
 
 	VkFence m_staging_fence;
 	VKW_Buffer m_staging_buffer;
@@ -72,13 +67,30 @@ public: // TODO remove
 
 	VKW_CommandBuffer m_graphics_cmd_buffer;
 	VKW_CommandBuffer m_transfer_cmd_buffer;
+
+	MaterialInstance< ToneMapperPushConstants, 1> material;
+	Mesh view_plane; // plane spanning full view
+
+	struct GUI_Input* m_input;
+
+	std::array<FilmicPowerCurveSegment, 3> m_power_curves;
+
+	std::array<Texture, 2> m_baked_curves;
+	unsigned int m_resolution; // resolution of baked curve
 	std::vector<unsigned char> m_staging_buffer_data;
+
+	float m_power_w; // current W to be used
+	float m_staging_W; // updated by every bake, what is currently in m_staging_buffer_data 
+	float m_uploading_W; // updated every upload, what is currently in flight
+
+	unsigned int m_current_render_curve = 0; // indicates which of the two curves is currently being used for rendering
+	bool m_upload_in_flight = false; // true if currently are uploading, wait for fence to check if finished
+	bool m_do_upload = false; // m_staging_buffer_data changed, need to upload again
+	bool m_set_desc_set = false;
+	bool m_graphics_aquire_ownership = false;
 
 	inline static VKW_DescriptorSetLayout descriptor_set_layout;
 
 	static void solve_lnA_B(float& lnA, float& B, float x, float y, float m);
-	bool m_graphics_aquire_ownership = false; 
-	MaterialInstance< ToneMapperPushConstants, 1> material;
-	Mesh view_plane; // plane spanning full view
 };
 
