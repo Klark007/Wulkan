@@ -1,3 +1,9 @@
+#include <iostream>
+
+int main() {
+    std::cout << "TEST" << std::endl;
+}
+/*
 #include "common.h"
 #include "Engine.h"
 
@@ -31,3 +37,4 @@ int main() {
 
     return EXIT_SUCCESS;
 }
+*/

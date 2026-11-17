@@ -1,0 +1,63 @@
+Compiler Notes
+C++ Standard 20
+Use Unicode Character set
+
+VC Directories
+	Include Dirs
+		C:\VulkanSDK\1.4.321.1\Include
+		external\include
+		external\imgui
+		external\miniz
+		external\tracy\public
+		external\vk-bootstrap
+		external\Volk
+		external\ (Necessary ?)
+
+C/C++
+	Include Dirs  (difference between C++ and VC dirs?)
+		src/engine
+
+	Warning Level 
+		W4
+	SDL Checks Yes; changes security related warnings into errors
+	Multiprocessor compilation Yes
+
+	Preprocessor Definitions
+		Debug: _DEBUG _CONSOLE; _CONSOLE is set to indicate the subsystem
+		Profile: NDEBUG _CONSOLE TRACY_ENABLE WIN32_LEAN_AND_MEAN; excluding some of the less frequently used APIs (necessary ?)
+		Release: NDEBUG _CONSOLE
+
+	Conformance mode: permissive; Disable permissive behavior to conform to standard
+
+	Precompiled headers: Use
+		File: common.h
+
+	External header warning: Level1
+
+Linker
+	Additional Link Library Dependencies:
+		C:\VulkanSDK\1.4.321.1\Lib
+		external\lib
+	
+	Additional Dependencies:
+		vulkan-1.lib
+		glfw3d.lib (Debug) glfw3.lib (Release)
+		fmtd.lib (Debug) fmt.lib (Release)
+
+	Generate Debug Info
+	
+	Subsystem Console; OS provides console
+
+Debug:
+Use Debug Libraries
+Address Sanitizer: Yes
+
+Release / Profile
+Whole program optimizations
+Enable intrinsic functions
+Enable function level linking 
+
+Reference; exclude dead code and data
+Enable COMDAT Folding; merge identical function or data during linking
+
+Compare manual with auto generated file
