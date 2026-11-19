@@ -1,7 +1,10 @@
 #include <iostream>
+#include "Path.h"
+
+#include "spdlog/spdlog.h"
 
 int main() {
-    std::cout << "TEST" << std::endl;
+    spdlog::info("{}", VKW_Path{ "engine" });
 }
 /*
 #include "common.h"

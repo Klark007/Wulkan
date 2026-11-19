@@ -1,6 +1,6 @@
 Compiler Notes
 C++ Standard 20
-Use Unicode Character set
+Use Unicode Character set (required by fmt)
 
 VC Directories
 	Include Dirs
