@@ -1,12 +1,3 @@
-#include <iostream>
-#include "Path.h"
-
-#include "spdlog/spdlog.h"
-
-int main() {
-    spdlog::info("{}", VKW_Path{ "engine" });
-}
-/*
 #include "common.h"
 #include "Engine.h"
 
@@ -40,4 +31,3 @@ int main() {
 
     return EXIT_SUCCESS;
 }
-*/
