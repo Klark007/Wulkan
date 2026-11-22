@@ -58,12 +58,13 @@ add_executable(Wulkan
 )
 
 if(WULKAN_TRACY)
-    target_sources(Wulkan PRIVATE ${EXT_DIR}/tracy/public/TracyClient.cpp)
+	set(TRACY_ENABLE ${WULKAN_TRACY} CACHE BOOL "" FORCE)
+	add_subdirectory(${EXT_DIR}/tracy SYSTEM)
+	target_link_libraries(Wulkan PRIVATE Tracy::TracyClient)
 	
-	target_compile_definitions(Wulkan PRIVATE
-        TRACY_ENABLE
-        WIN32_LEAN_AND_MEAN
-    )
+	#target_compile_definitions(Wulkan PRIVATE
+    #    WIN32_LEAN_AND_MEAN
+    #)
 endif()
 
 if (MSVC)
@@ -88,12 +89,10 @@ target_include_directories(Wulkan SYSTEM PRIVATE
 	${EXT_DIR}/include
 	${EXT_DIR}/imgui
 	${EXT_DIR}/miniz
-	${EXT_DIR}/tracy/public
 	${EXT_DIR}/vk-bootstrap
 	${EXT_DIR}/Volk
 	${EXT_DIR} # Necessary for imgui_impl_vulkan include volk; looks for Volk/volk.h
 )
-
 
 # TODO: move to submodules or package manager for external libraries
 # change depending on build
