@@ -4,3 +4,15 @@
 [submodule "Wulkan/external/tinyobjloader"]
 	path = Wulkan/external/tinyobjloader
 	url = https://github.com/tinyobjloader/tinyobjloader.git
+[submodule "Wulkan/external/stb"]
+	path = Wulkan/external/stb
+	url = https://github.com/nothings/stb.git
+[submodule "Wulkan/external/tph_poisson"]
+	path = Wulkan/external/tph_poisson
+	url = https://github.com/thinks/tph_poisson.git
+[submodule "Wulkan/external/tinyexr"]
+	path = Wulkan/external/tinyexr
+	url = https://github.com/syoyo/tinyexr.git
+[submodule "Wulkan/external/miniz"]
+	path = Wulkan/external/miniz
+	url = https://github.com/richgel999/miniz.git

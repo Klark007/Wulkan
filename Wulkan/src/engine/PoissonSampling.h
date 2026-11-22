@@ -2,7 +2,7 @@
 
 #include "vk_wrap/VKW_Object.h"
 
-#include "tph_poisson.h"
+#include "thinks/tph_poisson.h"
 #include "glm/glm.hpp"
 
 class PoissonSampling

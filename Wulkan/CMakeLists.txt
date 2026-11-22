@@ -52,7 +52,6 @@ add_executable(Wulkan
 	${WULKAN_SOURCES} ${WULKAN_HEADERS}
 	
 	${IMGUI_SOURCES}
-	${EXT_DIR}/miniz/miniz.c
 	${EXT_DIR}/vk-bootstrap/VkBootstrap.cpp
 	${EXT_DIR}/Volk/volk.c
 )
@@ -82,23 +81,32 @@ target_include_directories(Wulkan SYSTEM PRIVATE
 	"C:/VulkanSDK/1.4.321.1/Include"
 	${EXT_DIR}/include
 	${EXT_DIR}/imgui
-	${EXT_DIR}/miniz
 	${EXT_DIR}/vk-bootstrap
 	${EXT_DIR}/Volk
 	${EXT_DIR} # Necessary for imgui_impl_vulkan include volk; looks for Volk/volk.h
 )
 
+# handle external libraries
 set(TINYOBJLOADER_BUILD_C_LIBRARY OFF CACHE BOOL "" FORCE)
 set(TINYOBJLOADER_C_ENABLE_FILE_IO OFF CACHE BOOL "" FORCE)
 add_subdirectory(${EXT_DIR}/tinyobjloader SYSTEM)
 target_link_libraries(Wulkan PRIVATE tinyobjloader)
 
-#add_library(tinyobjloader INTERFACE)
-#target_include_directories(tinyobjloader SYSTEM INTERFACE ${EXT_DIR}/tinyobjloader)
-#target_link_libraries(Wulkan PRIVATE tinyobjloader)
+add_library(stb INTERFACE) # no cmake support
+target_include_directories(stb SYSTEM INTERFACE ${EXT_DIR}/stb)
+target_link_libraries(Wulkan PRIVATE stb)
 
-# TODO: move to submodules or package manager for external libraries
-# change depending on build
+add_subdirectory(${EXT_DIR}/tph_poisson SYSTEM)
+target_link_libraries(Wulkan PRIVATE thinks::tph_poisson)
+
+add_library(tinyexr INTERFACE)
+target_include_directories(tinyexr SYSTEM INTERFACE ${EXT_DIR}/tinyexr)
+target_link_libraries(Wulkan PRIVATE tinyexr)
+
+add_subdirectory(${EXT_DIR}/miniz SYSTEM)
+target_link_libraries(Wulkan PRIVATE miniz)
+
+# TODO handle vulkansdk
 target_link_directories(Wulkan PRIVATE
 	${EXT_DIR}/lib
 	"C:/VulkanSDK/1.4.321.1/Lib"

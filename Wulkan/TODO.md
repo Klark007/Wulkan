@@ -3,6 +3,8 @@
 ## General features
 * Experiment with Slang [~] 
 
+* Include with <> for libs/external stuff; "" for internal [ ]
+
 * Consistently use string_Vk* in error message []
 * Conistent use of forward decleration ? []
 * Why is Renderpass / VKW_GraphicsPipeline seperate? []
