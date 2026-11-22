@@ -53,10 +53,18 @@ add_executable(Wulkan
 	
 	${IMGUI_SOURCES}
 	${EXT_DIR}/miniz/miniz.c
-	${EXT_DIR}/tracy/public/TracyClient.cpp
 	${EXT_DIR}/vk-bootstrap/VkBootstrap.cpp
 	${EXT_DIR}/Volk/volk.c
 )
+
+if(WULKAN_TRACY)
+    target_sources(Wulkan PRIVATE ${EXT_DIR}/tracy/public/TracyClient.cpp)
+	
+	target_compile_definitions(Wulkan PRIVATE
+        TRACY_ENABLE
+        WIN32_LEAN_AND_MEAN
+    )
+endif()
 
 if (MSVC)
 	target_compile_options(Wulkan PRIVATE /Zi) # Generate Debug Info
@@ -69,8 +77,6 @@ if (MSVC)
 		$<$<NOT:$<CONFIG:Debug>>:/OPT:REF> # References
 	)
 endif()
-
-
 
 target_include_directories(Wulkan PRIVATE
 	${CMAKE_CURRENT_SOURCE_DIR}/src/engine

@@ -218,7 +218,7 @@ GUI_Input& Engine::update(double time)
 	}
 
 	{
-		ZoneScoped("Powercurve Updates");
+		ZoneScopedN("Powercurve Updates");
 		
 		tone_mapper.update(device, edge_clamped_linear_texture_sampler, &gui_input, current_frame);
 	}

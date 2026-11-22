@@ -66,8 +66,6 @@ Compare manual with auto generated file
 Copy clang_rt.asan_dynamic-x86_64.dll to build dir
 TODO:
 
-Fix / ignore build directory 
-Release build
 Profiling build
 
 
