@@ -1,3 +1,6 @@
 [submodule "Wulkan/external/tracy"]
 	path = Wulkan/external/tracy
 	url = https://github.com/wolfpld/tracy
+[submodule "Wulkan/external/tinyobjloader"]
+	path = Wulkan/external/tinyobjloader
+	url = https://github.com/tinyobjloader/tinyobjloader.git

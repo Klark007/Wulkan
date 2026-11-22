@@ -1,7 +1,6 @@
 #include "common.h"
 #include "ObjMesh.h"
 
-#define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader.h"
 
 #include "DirectionalLight.h"

@@ -57,15 +57,9 @@ add_executable(Wulkan
 	${EXT_DIR}/Volk/volk.c
 )
 
-if(WULKAN_TRACY)
-	set(TRACY_ENABLE ${WULKAN_TRACY} CACHE BOOL "" FORCE)
-	add_subdirectory(${EXT_DIR}/tracy SYSTEM)
-	target_link_libraries(Wulkan PRIVATE Tracy::TracyClient)
-	
-	#target_compile_definitions(Wulkan PRIVATE
-    #    WIN32_LEAN_AND_MEAN
-    #)
-endif()
+set(TRACY_ENABLE ${WULKAN_TRACY} CACHE BOOL "" FORCE)
+add_subdirectory(${EXT_DIR}/tracy SYSTEM)
+target_link_libraries(Wulkan PRIVATE Tracy::TracyClient)
 
 if (MSVC)
 	target_compile_options(Wulkan PRIVATE /Zi) # Generate Debug Info
@@ -93,6 +87,15 @@ target_include_directories(Wulkan SYSTEM PRIVATE
 	${EXT_DIR}/Volk
 	${EXT_DIR} # Necessary for imgui_impl_vulkan include volk; looks for Volk/volk.h
 )
+
+set(TINYOBJLOADER_BUILD_C_LIBRARY OFF CACHE BOOL "" FORCE)
+set(TINYOBJLOADER_C_ENABLE_FILE_IO OFF CACHE BOOL "" FORCE)
+add_subdirectory(${EXT_DIR}/tinyobjloader SYSTEM)
+target_link_libraries(Wulkan PRIVATE tinyobjloader)
+
+#add_library(tinyobjloader INTERFACE)
+#target_include_directories(tinyobjloader SYSTEM INTERFACE ${EXT_DIR}/tinyobjloader)
+#target_link_libraries(Wulkan PRIVATE tinyobjloader)
 
 # TODO: move to submodules or package manager for external libraries
 # change depending on build
