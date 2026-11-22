@@ -59,11 +59,19 @@ Enable function level linking
 References; exclude dead code and data X
 Enable COMDAT Folding; merge identical function or data during linking X
 
+
+
 Compare manual with auto generated file
 
+Copy clang_rt.asan_dynamic-x86_64.dll to build dir
 TODO:
-Fix build directory
+
+Fix / ignore build directory 
+Release build
+Profiling build
+
+
+
 Work on dependency management (either compilation recomp with submodules or package manager)
 Support clang
 
-Copy clang_rt.asan_dynamic-x86_64.dll to build dir
